@@ -34,6 +34,10 @@
 # -- Intended to be compliant with SHL Common ICD v C, except as noted above
 # -- Only the Thermometer, PDU1, & PDU2 are installed, 1/3/11
 #
+# $Rev$
+# $LastChangedBy$
+# $LastChangedDate$
+# 
 
 
 import socket
