@@ -577,220 +577,227 @@ def main(args):
 			mjd         = int(payload[22:28]) 
 			mpm         = int(payload[28:37]) 
 			data        = payload[38:38+datalen]
+			
+			# If it isn't intended for us, ignore it
+			if destination not in (mibEntry['SUBSYSTEM'], 'ALL'):
+				continue
 
-			if destination in (mibEntry['SUBSYSTEM'], 'ALL'): # comparing to MIB entry 1.4, "SUBSYSTEM"              
-				bRespond = True
+			bRespond = True
 
-				# --- Reread the MIB ---
-				mibIndex, mibEntry = readMIB(MIB_FILE)
-				response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Command not recognized' # use this until we find otherwise
+			# --- Reread the MIB ---
+			mibIndex, mibEntry = readMIB(MIB_FILE)
+			response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Command not recognized' # use this until we find otherwise
 
-				if command == 'PNG':
-					if initialised:
-						response = 'A'+string.rjust(mibEntry['SUMMARY'], 7) 
-					else:
-						response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Initialize the SHL first'
-						
-				if command == 'RPT':
-					if initialised:
-						mib_label = data.strip()
-						try:
-							response = 'A'+string.rjust(mibEntry['SUMMARY'],7)+mibEntry[mib_label.upper()]
-							if verbose:
-								print "RPT response is", response 
-						except KeyError:
-							response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Invalid MIB label' # use this until we find otherwise
-					else:
-						response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Initialize the SHL first'
+			if command == 'PNG':
+				if initialised:
+					response = 'A'+string.rjust(mibEntry['SUMMARY'], 7) 
+				else:
+					response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Initialize the SHL first'
+					
+			elif command == 'RPT':
+				if initialised:
+					mib_label = data.strip()
+					try:
+						response = 'A'+string.rjust(mibEntry['SUMMARY'],7)+mibEntry[mib_label.upper()]
+						if verbose:
+							print "RPT response is", response 
+					except KeyError:
+						response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Invalid MIB label' # use this until we find otherwise
+				else:
+					response = 'R'+string.rjust(mibEntry['SUMMARY'], 7)+' Initialize the SHL first'
 
-				if command == 'SHT':
-					if initialised:
-						mibEntry['SUMMARY'] = 'SHUTDWN'
-						response = 'A'+string.rjust(mibEntry['SUMMARY'], 7)  # use this until we find otherwise
-						arg = data.strip()
-						writeMIB(MIB_FILE, mibIndex, mibEntry)
-						# verify arguments
-						
-						ReBoot = True	# flag to cleanup and restart
-						while len(arg)>0:
-							args = args.split(None, 1)
-							args[0] = args[0].strip()
-							
-							if args[0] not in ('SCRAM', 'RESTART'):
-								response = 'R'+string.rjust(mibEntry['SUMMARY'],7)+' Invalid extra arguments' 
-							if len(args) > 1:
-								arg = args[1]
-							else:
-								arg = '' 
-					else:
-						response = 'R'+string.rjust(mibEntry['SUMMARY'],7)+' Initialize the SHL first'
-
-				if command == 'INI':
+			elif command == 'SHT':
+				if initialised:
+					mibEntry['SUMMARY'] = 'SHUTDWN'
+					response = 'A'+string.rjust(mibEntry['SUMMARY'], 7)  # use this until we find otherwise
 					arg = data.strip()
-					if len(arg) > 0:
-						args = string.split(arg,'&',3)
-						if len(args) < 3:
-							response = 'R' + string.rjust(mibEntry['SUMMARY'],7)+' Invalid number of arguments'
-						elif len(args[0]) not in (3, 5, 6):
-							response = 'R' +  string.rjust(mibEntry['SUMMARY'],7)+ ' Invalid argument length'
-						else: 
-							set_point = args[0]
-							diff_point = args[1]
-							racks_install = args[2]
+					writeMIB(MIB_FILE, mibIndex, mibEntry)
+					# verify arguments
+					
+					ReBoot = True	# flag to cleanup and restart
+					while len(arg)>0:
+						args = args.split(None, 1)
+						args[0] = args[0].strip()
+						
+						if args[0] not in ('SCRAM', 'RESTART'):
+							response = 'R'+string.rjust(mibEntry['SUMMARY'],7)+' Invalid extra arguments' 
+						if len(args) > 1:
+							arg = args[1]
+						else:
+							arg = '' 
+				else:
+					response = 'R'+string.rjust(mibEntry['SUMMARY'],7)+' Initialize the SHL first'
+
+			elif command == 'INI':
+				arg = data.strip()
+				if len(arg) > 0:
+					args = string.split(arg,'&',3)
+					if len(args) < 3:
+						response = 'R' + string.rjust(mibEntry['SUMMARY'],7)+' Invalid number of arguments'
+					elif len(args[0]) not in (3, 5, 6):
+						response = 'R' +  string.rjust(mibEntry['SUMMARY'],7)+ ' Invalid argument length'
+					else: 
+						set_point = args[0]
+						diff_point = args[1]
+						racks_install = args[2]
+						
+						if not isHalfIncrements(float(set_point)):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should be between increments of 0.5 F'
+						elif MAX_SHL_TEMP < float(set_point):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be higher than %.1f F' % MAX_SHL_TEMP
+						elif MIN_SHL_TEMP > float(set_point):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be lower than %.1f F' % MIN_SHL_TEMP
+						else:
+							mibEntry['SET-POINT'] = set_point
 							
-							if not isHalfIncrements(float(set_point)):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should be between increments of 0.5 F'
-							elif MAX_SHL_TEMP < float(set_point):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be higher than %.1f F' % MAX_SHL_TEMP
-							elif MIN_SHL_TEMP > float(set_point):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be lower than %.1f F' % MIN_SHL_TEMP
+							if not isHalfIncrements(float(diff_point)):
+								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Point should be in increments of 0.5 F'
+							elif float(diff_point) > MAX_SHL_DIFF:
+								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Point should not be greater than %.1f F' % MAX_SHL_DIFF
+							elif float(diff_point) < MIN_SHL_DIFF:
+								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Point should not be less than %.1f F' % MIN_SHL_DIFF
 							else:
-								mibEntry['SET-POINT'] = set_point
+								mibEntry['DIFFERENTIAL'] = diff_point
 								
-								if not isHalfIncrements(float(diff_point)):
-									response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Point should be in increments of 0.5 F'
-								elif float(diff_point) > MAX_SHL_DIFF:
-									response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Point should not be greater than %.1f F' % MAX_SHL_DIFF
-								elif float(diff_point) < MIN_SHL_DIFF:
-									response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Point should not be less than %.1f F' % MIN_SHL_DIFF
-								else:
-									mibEntry['DIFFERENTIAL'] = diff_point
-									
-									initialised = True # INI command passes
-									
-									###################################################
-									#                                                 #
-									# Start threads for reading PDUs and temp. sensor #
-									#                                                 #
-									###################################################
-									shlThermo.start()
-									for k in PDUs.keys():
-										PDUs[k].start()
-									
-									ri = list(racks_install)
-													
-									for j in xrange(len(ri)):
-										if (ri[j] == '1'): 
-											mibEntry['PORTS-AVAILABLE-R%i' % (j+1,)] = str(PDUs[j+1].nOutlets)
-											mibEntry['CURRENT-R%i' % (j+1,)] = '0'
-											default_val = 'OFF' # setting all ports under the 'set' rack to OFF 
-											for k in xrange(PDUs[j+1].nOutlets): # initializing 8 ports for the 'set' rack
-												mibEntry['PWR-R%i-%i' % (j+1, k+1)] = default_val                       
-										else:
-											mibEntry['PORTS-AVAILABLE-R%i' % (j+1,)] = '0'
-											
-									mibEntry['SUMMARY'] = 'NORMAL'
-									writeMIB(MIB_FILE, mibIndex, mibEntry)
-									response = 'A'+string.rjust(mibEntry['SUMMARY'],7)     
-
-				if command == 'TMP':
-					if initialised:
-						arg = string.strip(data)
-						if (len(arg)!=5):
-							response = 'R' +string.rjust(mibEntry['SUMMARY'],7) + ' Invalid argument length'
-						else:
-							if not isHalfIncrements(float(arg)):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should be between in increments of 0.5 F'
-							elif MAX_SHL_TEMP < float(arg):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be higher than %.1f F' % MAX_SHL_TEMP
-							elif MIN_SHL_TEMP > float(arg):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be lower than %.1f F' % MIN_SHL_TEMP
-							else:
-								mibEntry['SET-POINT'] = arg
+								initialised = True # INI command passes
+								
+								###################################################
+								#                                                 #
+								# Start threads for reading PDUs and temp. sensor #
+								#                                                 #
+								###################################################
+								shlThermo.start()
+								for k in PDUs.keys():
+									PDUs[k].start()
+								
+								ri = list(racks_install)
+												
+								for j in xrange(len(ri)):
+									if (ri[j] == '1'): 
+										mibEntry['PORTS-AVAILABLE-R%i' % (j+1,)] = str(PDUs[j+1].nOutlets)
+										mibEntry['CURRENT-R%i' % (j+1,)] = '0'
+										default_val = 'OFF' # setting all ports under the 'set' rack to OFF 
+										for k in xrange(PDUs[j+1].nOutlets): # initializing 8 ports for the 'set' rack
+											mibEntry['PWR-R%i-%i' % (j+1, k+1)] = default_val                       
+									else:
+										mibEntry['PORTS-AVAILABLE-R%i' % (j+1,)] = '0'
+										
+								mibEntry['SUMMARY'] = 'NORMAL'
 								writeMIB(MIB_FILE, mibIndex, mibEntry)
-					else:
-						response = 'R' +string.rjust(mibEntry['SUMMARY'],7) +' Initialize the SHL first' 
+								response = 'A'+string.rjust(mibEntry['SUMMARY'],7)     
 
-				if command == 'DIF':
-					if initialised:
-						arg = string.strip(data)
-						if len(arg) != 3 :
-							response = 'R' +string.rjust(mibEntry['SUMMARY'],7) +' Invalid argument length'
+			elif command == 'TMP':
+				if initialised:
+					arg = string.strip(data)
+					if (len(arg)!=5):
+						response = 'R' +string.rjust(mibEntry['SUMMARY'],7) + ' Invalid argument length'
+					else:
+						if not isHalfIncrements(float(arg)):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should be between in increments of 0.5 F'
+						elif MAX_SHL_TEMP < float(arg):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be higher than %.1f F' % MAX_SHL_TEMP
+						elif MIN_SHL_TEMP > float(arg):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Set-Point should not be lower than %.1f F' % MIN_SHL_TEMP
 						else:
-							if not isHalfIncrements(float(arg)):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Set-Point should be increments of 0.5 F'
-							elif MAX_SHL_DIFF < float(arg):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Set-Point should not be greater than %.1f F' % MAX_SHL_DIFF
-							elif MIN_SHL_DIFF > float(arg):
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Set-Point should not be less than %.1f F' % MIN_SHL_DIFF
+							mibEntry['SET-POINT'] = arg
+							writeMIB(MIB_FILE, mibIndex, mibEntry)
+				else:
+					response = 'R' +string.rjust(mibEntry['SUMMARY'],7) +' Initialize the SHL first' 
+
+			elif command == 'DIF':
+				if initialised:
+					arg = string.strip(data)
+					if len(arg) != 3 :
+						response = 'R' +string.rjust(mibEntry['SUMMARY'],7) +' Invalid argument length'
+					else:
+						if not isHalfIncrements(float(arg)):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Set-Point should be increments of 0.5 F'
+						elif MAX_SHL_DIFF < float(arg):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Set-Point should not be greater than %.1f F' % MAX_SHL_DIFF
+						elif MIN_SHL_DIFF > float(arg):
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) +' Differential Set-Point should not be less than %.1f F' % MIN_SHL_DIFF
+						else:
+							mibEntry['DIFFERENTIAL'] = arg
+							writeMIB(MIB_FILE, mibIndex, mibEntry)
+				else:
+					response = 'R'+  string.rjust(mibEntry['SUMMARY'],7)+' Initialize the SHL first' 
+
+			elif command == 'PWR':
+				if initialised:
+					response = 'A' +string.rjust(mibEntry['SUMMARY'],7) #assume this unless there is some error
+					arg = data
+					if len(arg) > 6:
+						response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid arguments | Larger than 6 bytes'
+					else:
+						rack = int(arg[:1])
+						port = int(arg[1:3])
+						control = arg[3:]    
+						
+						if rack not in PDUs:
+							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid rack number'
+						else: 
+							if port not in PDUs[rack].status.keys():
+								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid port number'
+							elif control not in ('ON ', 'OFF'):
+								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid control argument'
 							else:
-								mibEntry['DIFFERENTIAL'] = arg
-								writeMIB(MIB_FILE, mibIndex, mibEntry)
-					else:
-						response = 'R'+  string.rjust(mibEntry['SUMMARY'],7)+' Initialize the SHL first' 
-
-				if command == 'PWR':
-					if initialised:
-						response = 'A' +string.rjust(mibEntry['SUMMARY'],7) #assume this unless there is some error
-						arg = data
-						if len(arg) > 6:
-							response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid arguments | Larger than 6 bytes'
-						else:
-							rack = int(arg[:1])
-							port = int(arg[1:3])
-							control = arg[3:]    
-							
-							if rack not in PDUs:
-								response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid rack number'
-							else: 
-								if port not in PDUs[rack].status.keys():
-									response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid port number'
-								elif control not in ('ON ', 'OFF'):
-									response = 'R' + string.rjust(mibEntry['SUMMARY'],7) + ' Invalid control argument'
-								else:
-									PDUs[rack].setStatus(outlet=port, status=control)
-									mibEntry['LASTLOG'] = 'rack %i, port %i, changed to %s' % (rack, port, control)
-									if verbose:
-										print "Rack %i, port %ihas been changed to %s" % (rack, port, control)
-									writeMIB(MIB_FILE, mibIndex, mibEntry)               
-					else:
-						response = 'R' +string.rjust(mibEntry['SUMMARY'],7) + ' Initialize the SHL first'
+								PDUs[rack].setStatus(outlet=port, status=control)
+								mibEntry['LASTLOG'] = 'rack %i, port %i, changed to %s' % (rack, port, control)
+								if verbose:
+									print "Rack %i, port %ihas been changed to %s" % (rack, port, control)
+								writeMIB(MIB_FILE, mibIndex, mibEntry)               
+				else:
+					response = 'R' +string.rjust(mibEntry['SUMMARY'],7) + ' Initialize the SHL first'
+			
+			else:
+				# Do nothing
+				pass
 
 
-				##################################
-				#                                #
-				# Message preparation and return #
-				#                                #
-				##################################
+			##################################
+			#                                #
+			# Message preparation and return #
+			#                                #
+			##################################
 
-				payload = '(nothing)' # default payload
-				if bRespond:
-					# determine current time
-					dt = datetime.datetime.utcnow()
-					year        = dt.year
-					month       = dt.month
-					day         = dt.day
-					hour        = dt.hour
-					minute      = dt.minute
-					second      = dt.second
-					millisecond = dt.microsecond / 1000        
+			payload = '(nothing)' # default payload
+			if bRespond:
+				# determine current time
+				dt = datetime.datetime.utcnow()
+				year        = dt.year
+				month       = dt.month
+				day         = dt.day
+				hour        = dt.hour
+				minute      = dt.minute
+				second      = dt.second
+				millisecond = dt.microsecond / 1000        
 
-					# compute MJD
-					# adapted from http://paste.lisp.org/display/73536
-					# can check result using http://www.csgnetwork.com/julianmodifdateconv.html
-					a = (14 - month) // 12
-					y = year + 4800 - a
-					m = month + (12 * a) - 3
-					p = day + (((153 * m) + 2) // 5) + (365 * y)
-					q = (y // 4) - (y // 100) + (y // 400) - 32045
-					mjdi = int(math.floor( (p+q) - 2400000.5))
-					mjd = string.rjust(str(mjdi),6)
-					#print '#'+mjd+'#'
+				# compute MJD
+				# adapted from http://paste.lisp.org/display/73536
+				# can check result using http://www.csgnetwork.com/julianmodifdateconv.html
+				a = (14 - month) // 12
+				y = year + 4800 - a
+				m = month + (12 * a) - 3
+				p = day + (((153 * m) + 2) // 5) + (365 * y)
+				q = (y // 4) - (y // 100) + (y // 400) - 32045
+				mjdi = int(math.floor( (p+q) - 2400000.5))
+				mjd = string.rjust(str(mjdi),6)
+				#print '#'+mjd+'#'
 
-					# compute MPM
-					mpmi = int(math.floor( (hour*3600 + minute*60 + second)*1000 + millisecond ))
-					mpm = string.rjust(str(mpmi),9) 
-					#print '#'+mpm+'#'
+				# compute MPM
+				mpmi = int(math.floor( (hour*3600 + minute*60 + second)*1000 + millisecond ))
+				mpm = string.rjust(str(mpmi),9) 
+				#print '#'+mpm+'#'
 
-					# Build the payload
-					# Note we are just using a single, non-updating REFERENCE number in this case
-					payload = 'MCS'+mibEntry['SUBSYSTEM']+command+string.rjust(str(reference),9)
-					payload = payload + string.rjust(str(len(response)),4)+str(mjd)+str(mpm)+' '
-					payload = payload + response
-					t.send(payload)      # send it 
+				# Build the payload
+				# Note we are just using a single, non-updating REFERENCE number in this case
+				payload = 'MCS'+mibEntry['SUBSYSTEM']+command+string.rjust(str(reference),9)
+				payload = payload + string.rjust(str(len(response)),4)+str(mjd)+str(mpm)+' '
+				payload = payload + response
+				t.send(payload)      # send it 
 
-					if verbose:
-						print 'sent> '+payload+'|' # say what was sent (exclude checksum)
+				if verbose:
+					print 'sent> '+payload+'|' # say what was sent (exclude checksum)
 
 	except KeyboardInterrupt:
 		shlThermo.stop()
