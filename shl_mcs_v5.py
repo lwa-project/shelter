@@ -27,7 +27,7 @@
 # -- The MIB is implemented as a text file: "MIB_shl.txt" 
 # -- The file is provided by the subsystem software, and is read when this program starts
 # -- The format is: one row per MIB entry; each row is index (space) label (space) value
-# -- Upon receipt of INI,TMP,DIF or PWR command this file is overwritten to update MIB entries
+# -- Upon receipt of INI, TMP, DIF or PWR command this file is overwritten to update MIB entries
 # -- Upon receipt of a PNG or RPT command, the file is re-read to get values for the response 
 #
 # Some notes:
@@ -49,6 +49,7 @@ import struct
 import sys
 import optparse
 import threading
+import signal
 import os
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
@@ -104,7 +105,7 @@ class Thermometer(object):
 		self.temp = None
 		
 	def __str__(self):
-		t = self.getTemperature(degreesF=True)
+		t = self.getTemperature(DegreesF=True)
 		if t is None:
 			return "Thermometer at IP: %s, current temperature is unknown" % self.ip
 		else:
@@ -144,6 +145,13 @@ class Thermometer(object):
 			# NOTE: self.temp is in Celsius
 			try:
 				errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidTemperatureEntry)
+				
+				# Check for SNMP errors
+				if errorIndication:
+					raise RuntimeError("SNMP error indication: %s" % errorIndication)
+				if errorStatus:
+					raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+				
 				name, value = varBinds[0]
 				
 				self.temp = float(unicode(value))
@@ -176,7 +184,7 @@ class PDU(object):
 	
 	.. note::
 		This way this class is written the attributes "oidCurrentEntry", 
-		"oidOutletBaseEntry", and "oidOutletChangeEntry" need to be over-
+		"oidOutletStuatusBaseEntry", and "oidOutletChangeEntry" need to be over-
 		ridden with the appropriate values when it is sub-classed.
 	"""
 	
@@ -252,6 +260,12 @@ class PDU(object):
 				try:
 					# Get the current draw of outlet #(i+1)
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidCurrentEntry)
+					
+					# Check for SNMP errors
+					if errorIndication:
+						raise RuntimeError("SNMP error indication: %s" % errorIndication)
+					if errorStatus:
+						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
 							
 					name, PWRcurrent = varBinds[0]
 					self.current = float(unicode(PWRcurrent)) / 10
@@ -260,7 +274,7 @@ class PDU(object):
 					self.current = None
 					self.lastError = str(e)
 			
-			if self.oidOutletBaseEntry is not None:
+			if self.oidOutletStatusBaseEntry is not None:
 				for i in xrange(1, self.nOutlets+1):
 					# Get the status of outlet #(i+1).
 					# NOTE:  Since the self.oidOutletStatusBaseEntry is just a base entry, 
@@ -271,6 +285,12 @@ class PDU(object):
 					try:
 						errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidOutletStatusEntry)
 						
+						# Check for SNMP errors
+						if errorIndication:
+							raise RuntimeError("SNMP error indication: %s" % errorIndication)
+						if errorStatus:
+							raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+						
 						name, PortStatus = varBinds[0]
 						PortStatus = int(unicode(PortStatus))
 						
@@ -278,9 +298,11 @@ class PDU(object):
 							self.status[i] = self.outletStatusCodes[PortStatus]
 						except KeyError:
 							self.status[i] = "UNK"
-						self.lastError = None
+						if self.lastError is not None:
+							self.lastError = None
 					except Exception as e:
-						self.lastError = str(e)
+						if self.lastError is not None:
+							self.lastError = "%s; %s" % (self.lastError, str(e))
 						self.status[i] = "UNK"
 						
 			# Sleep for a bit
@@ -398,7 +420,7 @@ def readMIB(filename):
 	mibEntry = {}
 	for line in fp:
 		line = line.replace('\n', '')
-		column = string.split(line[i],' ',2) # split line into columns
+		column = string.split(line, ' ', 2) # split line into columns
 		column[1] = column[1].upper()
 		column[2] = column[2].strip()
 		
@@ -509,6 +531,20 @@ def main(args):
 
 	initialised = False		# To keep a check on whether the SHL has been initialized
 	ReBoot = False			# flag to check if SHT was issued
+
+	#####################
+	#                   #
+	# Deal with SIGTERM #
+	#                   #
+	#####################
+	def HandleSignalExit(signum, frame, MIB_FILE=MIB_FILE, mibIndex=mibIndex, mibEntry=mibEntry):
+		# Save the MIB as it currently is
+		writeMIB(MIB_FILE, mibIndex, mibEntry)
+		
+		# Exit
+		sys.exit(1)
+		
+	signal.signal(signal.SIGTERM, HandleSignalExit)
 
 
 	#####################
@@ -800,9 +836,14 @@ def main(args):
 					print 'sent> '+payload+'|' # say what was sent (exclude checksum)
 
 	except KeyboardInterrupt:
+		# Stop threads
 		shlThermo.stop()
 		for k in PDUs.keys():
 			PDUs[k].stop()
+		time.sleep(1)
+		
+		# Save the MIB as it currently is
+		writeMIB(MIB_FILE, mibIndex, mibEntry)
 		
 		print ''
 
