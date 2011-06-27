@@ -354,17 +354,17 @@ class PDU(object):
 				if self.outletStatusCodes[k] == status.upper().strip():
 					numericCode = k
 					break
-			
+					
 			if numericCode < 0:
 				return False
 			else:
 				# NOTE:  Since the self.oidOutletChangeBaseEntry is just a base entry, 
 				# we need to append on the outlet number (1-indexed) before we can use
 				# it
-				oidOutletChangeEntry = self.oidOutletControlBaseEntry + (outlet,)
+				oidOutletChangeEntry = self.oidOutletChangeBaseEntry + (outlet,)
 				
 				try:
-					errorIndication, errorStatus, errorIndex, varBinds =                                                                          cmdgen.CommandGenerator().setCmd(self.community, self.network, oidOutletChangeEntry, rfc1902.Integer(numericCode))
+					errorIndication, errorStatus, errorIndex, varBinds =                                                                          cmdgen.CommandGenerator().setCmd(self.community, self.network, (oidOutletChangeEntry, rfc1902.Integer(numericCode)))
 				except Exception as e:
 					print str(e)
 					return False
@@ -634,7 +634,7 @@ def main(args):
 				if initialised:
 					mib_label = data.strip()
 					try:
-						response = 'A'+string.rjust(mibEntry['SUMMARY'],7)+mibEntry[mib_label.upper()]
+						response = 'A'+string.rjust(mibEntry['SUMMARY'],7)+' '+mibEntry[mib_label.upper()]
 						if verbose:
 							print "RPT response is", response 
 					except KeyError:
@@ -780,7 +780,7 @@ def main(args):
 								PDUs[rack].setStatus(outlet=port, status=control)
 								mibEntry['LASTLOG'] = 'rack %i, port %i, changed to %s' % (rack, port, control)
 								if verbose:
-									print "Rack %i, port %ihas been changed to %s" % (rack, port, control)
+									print "Rack %i, port %i has been changed to %s" % (rack, port, control)
 								writeMIB(MIB_FILE, mibIndex, mibEntry)               
 				else:
 					response = 'R' +string.rjust(mibEntry['SUMMARY'],7) + ' Initialize the SHL first'
@@ -839,8 +839,10 @@ def main(args):
 		# Stop threads
 		shlThermo.stop()
 		for k in PDUs.keys():
-			PDUs[k].stop()
-		time.sleep(1)
+			try:
+				PDUs[k].stop()
+			except:
+				pass
 		
 		# Save the MIB as it currently is
 		writeMIB(MIB_FILE, mibIndex, mibEntry)
