@@ -480,7 +480,7 @@ PDUs[4] = TrippLite('172.16.1.112', 161, cmdgen.CommunityData('my-agent', 'publi
 				description="3-Bay - 120VAC - #1")
 PDUs[5] = TrippLite('172.16.1.115', 161, cmdgen.CommunityData('my-agent', 'public', 0), nOutlets=8, 
 				description="3-Bay - 120VAC - #2")
-PDUs[6] =       APC('172.16.1.116', 161, cmdgen.CommunityData('my-agent', 'public', 0), nOutlets=8, 
+PDUs[6] =       APC('172.16.1.116', 161, cmdgen.CommunityData('my-agent', 'private', 0), nOutlets=8, 
 				description="3-Bay - PASI")
 
 
