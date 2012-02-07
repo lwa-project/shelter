@@ -35,7 +35,7 @@ from shlThreads import *
 from shlFunctions import ShippingContainer
 
 __version__ = "0.1"
-__revision__ = "$Rev: 1 $"
+__revision__ = "$Rev$"
 __date__ = "$LastChangedBy$"
 __all__ = ['DEFAULTS_FILENAME', 'parseConfigFile', 'MCSCommunicate', '__version__', '__revision__', '__date__', '__all__']
 
