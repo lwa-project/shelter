@@ -363,7 +363,7 @@ class MCSCommunicate(object):
 					
 					status, voltage = self.SHLInstance.getInputVoltage(rack)
 					if status:
-						if current is not None:
+						if voltage is not None:
 							packed_data = str(voltage)
 						else:
 							packed_data = '0'
@@ -377,7 +377,7 @@ class MCSCommunicate(object):
 					
 					status, freq = self.SHLInstance.getInputFrequency(rack)
 					if status:
-						if current is not None:
+						if freq is not None:
 							packed_data = str(freq)
 						else:
 							packed_data = '0'
