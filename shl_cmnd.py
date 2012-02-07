@@ -372,8 +372,8 @@ class MCSCommunicate(object):
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
 				## PDU State - Input Frequency
-				elif data[0:9] == 'FREQUENCY-R':
-					rack = int(data[9:])
+				elif data[0:11] == 'FREQUENCY-R':
+					rack = int(data[11:])
 					
 					status, freq = self.SHLInstance.getInputFrequency(rack)
 					if status:
