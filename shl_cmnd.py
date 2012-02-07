@@ -349,11 +349,43 @@ class MCSCommunicate(object):
 					
 					status, current = self.SHLInstance.getCurrentDraw(rack)
 					if status:
-						packed_data = str(current)
+						if current is not None:
+							packed_data = str(current)
+						else:
+							packed_data = '0'
 					else:
 						packed_data = self.SHLInstance.currentState['lastLog']
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
+				## PDU State - Input Voltage
+				elif data[0:9] == 'VOLTAGE-R':
+					rack = int(data[9:])
+					
+					status, voltage = self.SHLInstance.getInputVoltage(rack)
+					if status:
+						if current is not None:
+							packed_data = str(voltage)
+						else:
+							packed_data = '0'
+					else:
+						packed_data = self.SHLInstance.currentState['lastLog']
+						
+					self.logger.debug('%s = exited with status %s', data, str(status))
+				## PDU State - Input Frequency
+				elif data[0:9] == 'FREQUENCY-R':
+					rack = int(data[9:])
+					
+					status, freq = self.SHLInstance.getInputFrequency(rack)
+					if status:
+						if current is not None:
+							packed_data = str(freq)
+						else:
+							packed_data = '0'
+					else:
+						packed_data = self.SHLInstance.currentState['lastLog']
+						
+					self.logger.debug('%s = exited with status %s', data, str(status))
+				## PDU State - Outlet Status
 				elif data[0:5] == 'PWR-R':
 					rack, port = data[5:].split('-', 1)
 					rack = int(rack)

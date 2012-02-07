@@ -172,6 +172,8 @@ class PDU(object):
 		ridden with the appropriate values when it is sub-classed.
 	"""
 	
+	oidFrequencyEntry = None
+	oidVoltageEntry = None
 	oidCurrentEntry = None
 	oidOutletStatusBaseEntry = None
 	oidOutletChangeBaseEntry = None
@@ -187,6 +189,7 @@ class PDU(object):
 		
 		# Setup the outlets, their currents and status codes
 		self.nOutlets = nOutlets
+		self.voltage = None
 		self.current = None
 		self.status = {}
 		for i in xrange(1, self.nOutlets+1):
@@ -243,6 +246,74 @@ class PDU(object):
 
 		while self.alive.isSet():
 			tStart = time.time()
+			if self.oidFrequencyEntry is not None:
+				try:
+					# Get the current input frequency
+					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFrequencyEntry)
+					
+					# Check for SNMP errors
+					if errorIndication:
+						raise RuntimeError("SNMP error indication: %s" % errorIndication)
+					if errorStatus:
+						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+							
+					name, PWRfreq = varBinds[0]
+					self.frequency = float(unicode(PWRfreq)) / 10.0
+					self.lastError = None
+					
+					shlThreadsLogger.debug("Input frequency on PDU '%s' is %.1f Hz", self.description, self.frequency)
+					
+				except Exception, e:
+					exc_type, exc_value, exc_traceback = sys.exc_info()
+					shlThreadsLogger.error("PDU: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+					
+					## Grab the full traceback and save it to a string via StringIO
+					fileObject = StringIO.StringIO()
+					traceback.print_tb(exc_traceback, file=fileObject)
+					tbString = fileObject.getvalue()
+					fileObject.close()
+					## Print the traceback to the logger as a series of DEBUG messages
+					for line in tbString.split('\n'):
+						shlThreadsLogger.debug("%s", line)
+					
+					self.frequency = None
+					self.lastError = str(e)
+			
+			if self.oidVoltageEntry is not None:
+				try:
+					# Get the current input voltage
+					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidVoltageEntry)
+					
+					# Check for SNMP errors
+					if errorIndication:
+						raise RuntimeError("SNMP error indication: %s" % errorIndication)
+					if errorStatus:
+						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+							
+					name, PWRvoltage = varBinds[0]
+					self.voltage = float(unicode(PWRvoltage))
+					self.lastError = None
+					
+					shlThreadsLogger.debug("Input voltage on PDU '%s' is %.1f V", self.description, self.voltage)
+					
+				except Exception, e:
+					exc_type, exc_value, exc_traceback = sys.exc_info()
+					shlThreadsLogger.error("PDU: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+					
+					## Grab the full traceback and save it to a string via StringIO
+					fileObject = StringIO.StringIO()
+					traceback.print_tb(exc_traceback, file=fileObject)
+					tbString = fileObject.getvalue()
+					fileObject.close()
+					## Print the traceback to the logger as a series of DEBUG messages
+					for line in tbString.split('\n'):
+						shlThreadsLogger.debug("%s", line)
+					
+					if self.lastError is not None:
+						self.lastError = "%s; %s" % (self.lastError, str(e))
+					else:
+						self.lastError = str(e)
+					self.voltage = None
 			
 			if self.oidCurrentEntry is not None:
 				try:
@@ -272,8 +343,11 @@ class PDU(object):
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
 					
+					if self.lastError is not None:
+						self.lastError = "%s; %s" % (self.lastError, str(e))
+					else:
+						self.lastError = str(e)
 					self.current = None
-					self.lastError = str(e)
 			
 			if self.oidOutletStatusBaseEntry is not None:
 				for i in xrange(1, self.nOutlets+1):
@@ -317,6 +391,8 @@ class PDU(object):
 						
 						if self.lastError is not None:
 							self.lastError = "%s; %s" % (self.lastError, str(e))
+						else:
+							self.lastError = str(e)
 						self.status[i] = "UNK"
 						
 			# Stop time
@@ -330,10 +406,23 @@ class PDU(object):
 				time.sleep(0.2)
 				sleepCount += 0.2
 
+	def getFrequency(self):
+		"""
+		Return the input frequency of the DPU in Hz or None if it is unknown.
+		"""
+		
+		return self.frequency
+
+	def getVoltage(self):
+		"""
+		Return the input voltage of the PDU in volts AC or None if it is unknown.
+		"""
+		
+		return self.voltage
 
 	def getCurrent(self):
 		"""
-		Return the current associated with the PDU or None if it unknown.
+		Return the current associated with the PDU in amps or None if it is unknown.
 		"""
 		
 		return self.current
@@ -415,6 +504,8 @@ class TrippLite(PDU):
 		super(TrippLite, self).__init__(ip, port, community, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
+		self.oidFrequencyEntry = (1,3,6,1,2,1,33,1,3,3,1,2)
+		self.oidVoltageEntry = (1,3,6,1,2,1,33,1,3,3,1,3)
 		self.oidCurrentEntry = (1,3,6,1,2,1,33,1,4,4,1,3,1)
 		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,2,)
 		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,4,)
@@ -432,6 +523,8 @@ class APC(PDU):
 		super(APC, self).__init__(ip, port, community, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
+		self.oidFrequencyEntry = None
+		self.oidVoltageEntry = None
 		self.oidCurrentEntry = None
 		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
 		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)

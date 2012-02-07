@@ -467,6 +467,52 @@ class ShippingContainer(object):
 		
 		return True, self.currentState['pduThreads'][rack-1].getStatus(outlet=port)
 		
+	def getInputFrequency(self, rack):
+		"""
+		Given a rack return the input line frequency as a two-element tuple 
+		(success, value) where success is a boolean related to if the frequency was 
+		found.  See the currentState['lastLog'] entry for the reason for failure if 
+		the returned success value is False.
+		"""
+		
+		# Check the rack number
+		if rack == 0 or rack > self.currentState['nRacks']:
+			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
+			return False, 0
+		if not self.currentState['rackPresent'][rack-1]:
+			self.currentState['lastLog'] = 'Rack #%i not present during INI call' % rack
+			return False, 0
+			
+		# Make sure the monitoring thread is running
+		if not self.currentState['pduThreads'][rack-1].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			return False, 0
+			
+		return True, self.currentState['pduThreads'][rack-1].getFrequency()
+		
+	def getInputVoltage(self, rack):
+		"""
+		Given a rack return the input line voltage of all outlets as a two-elements 
+		tuple (success, value) where success is a boolean related to if the voltage 
+		was found.  See the currentState['lastLog'] entry for the reason for failure 
+		if the returned success value is False.
+		"""
+		
+		# Check the rack number
+		if rack == 0 or rack > self.currentState['nRacks']:
+			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
+			return False, 0
+		if not self.currentState['rackPresent'][rack-1]:
+			self.currentState['lastLog'] = 'Rack #%i not present during INI call' % rack
+			return False, 0
+			
+		# Make sure the monitoring thread is running
+		if not self.currentState['pduThreads'][rack-1].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			return False, 0
+			
+		return True, self.currentState['pduThreads'][rack-1].getVoltage()
+		
 	def getCurrentDraw(self, rack):
 		"""
 		Given a rack return the current power draw of all outlets as a two-elements 
