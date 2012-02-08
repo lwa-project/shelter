@@ -371,7 +371,7 @@ class MCSCommunicate(object):
 		
 	def processCommand(self, data):
 		"""
-		Interperate the data of a UDP packet as a DP MCS command.
+		Interperate the data of a UDP packet as a SHL MCS command.
 		"""
 		
 		destination = data[:3]
