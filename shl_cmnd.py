@@ -478,7 +478,7 @@ class MCSCommunicate(object):
 			elif command == 'PWR':
 				rack    = int(data[:1])
 				port    = int(data[1:3])
-				control = arg[3:]
+				control = data[3:]
 				
 				status, exitCode = self.SHLInstance.pwr(rack, port, control)
 				if status:
