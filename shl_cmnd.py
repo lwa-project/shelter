@@ -347,7 +347,7 @@ class MCSCommunicate(object):
 			response = 'R'
 			
 		# Set the sender
-		sender = 'ASP'
+		sender = self.SHLInstance.subSystem
 
 		# Get current time
 		(mjd, mpm) = getTime()
