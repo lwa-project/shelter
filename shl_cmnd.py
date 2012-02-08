@@ -360,8 +360,14 @@ class MCSCommunicate(object):
 		payload = payload + string.rjust(str(len(data)+8),4)+string.rjust(str(mjd),6)+string.rjust(str(mpm),9)+' '
 		payload = payload + response + string.rjust(str(systemStatus),7) + data
 	
-		bytes_sent = self.socketOut.sendto(payload, self.destAddress)
-		self.logger.debug("mcsSend - Sent to MCS '%s'", payload)
+		try:
+			bytes_sent = self.socketOut.sendto(payload, self.destAddress)
+			self.logger.debug("mcsSend - Sent to MCS '%s'", payload)
+			return True
+			
+		except socket.error:
+			self.logger.warning("mcsSend - Failed to send response to MCS, retrying")
+			return False
 		
 	def processCommand(self, data):
 		"""
