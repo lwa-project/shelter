@@ -37,9 +37,10 @@ class Thermometer(object):
 
 	oidTemperatureEntry = (1,3,6,1,4,1,22626,1,5,2,1,2,0)
 
-	def __init__(self, ip, port, community, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+	def __init__(self, ip, port, community, id, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
 		self.ip = ip
 		self.port = port
+		self.id = id
 		self.description = description
 		self.SHLCallbackInstance = SHLCallbackInstance
 		self.MonitorPeriod = MonitorPeriod
@@ -135,6 +136,11 @@ class Thermometer(object):
 				
 				self.temp = None
 				self.lastError = str(e)
+			
+			toDataLog = '%.2f,%.2f' % (time.time(), self.temp if self.temp is not None else -1)
+			fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
+			fh.write('%s\n' % toDataLog)
+			fh.close()
 				
 			# Stop time
 			tStop = time.time()
@@ -180,9 +186,10 @@ class PDU(object):
 	
 	outletStatusCodes = {1: "OFF", 2: "ON"}
 	
-	def __init__(self, ip, port, community, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
 		self.ip = ip
 		self.port = port
+		self.id = id
 		self.description = description
 		self.SHLCallbackInstance = SHLCallbackInstance
 		self.MonitorPeriod = MonitorPeriod
@@ -261,8 +268,6 @@ class PDU(object):
 					self.frequency = float(unicode(PWRfreq)) / 10.0
 					self.lastError = None
 					
-					shlThreadsLogger.debug("Input frequency on PDU '%s' is %.1f Hz", self.description, self.frequency)
-					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
 					shlThreadsLogger.error("PDU: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
@@ -293,8 +298,6 @@ class PDU(object):
 					name, PWRvoltage = varBinds[0]
 					self.voltage = float(unicode(PWRvoltage))
 					self.lastError = None
-					
-					shlThreadsLogger.debug("Input voltage on PDU '%s' is %.1f V", self.description, self.voltage)
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -394,7 +397,12 @@ class PDU(object):
 						else:
 							self.lastError = str(e)
 						self.status[i] = "UNK"
-						
+			
+			toDataLog = "%.2f,%.2f,%.2f,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1)
+			fh = open('/data/rack%02i.txt' % self.id, 'a+')
+			fh.write('%s\n' % toDataLog)
+			fh.close()
+			
 			# Stop time
 			tStop = time.time()
 			shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -500,8 +508,8 @@ class TrippLite(PDU):
 	Sub-class of the PDU class for TrippLite PDUs.
 	"""
 	
-	def __init__(self, ip, port, community, nOutlets=8, description=None, MonitorPeriod=1.0):
-		super(TrippLite, self).__init__(ip, port, community, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
+		super(TrippLite, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
 		self.oidFrequencyEntry = (1,3,6,1,2,1,33,1,3,3,1,2)
@@ -519,8 +527,8 @@ class APC(PDU):
 	Sub-class of the PDU class for the APC PDU on PASI.
 	"""
 	
-	def __init__(self, ip, port, community, nOutlets=8, description=None, MonitorPeriod=1.0):
-		super(APC, self).__init__(ip, port, community, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
+		super(APC, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
 		self.oidFrequencyEntry = None

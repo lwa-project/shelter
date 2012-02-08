@@ -28,7 +28,8 @@ try:
         import cStringIO as StringIO
 except ImportError:
         import StringIO
-from collections import deque
+
+from MCS import *
 
 from shlCommon import *
 from shlThreads import *
@@ -36,7 +37,7 @@ from shlFunctions import ShippingContainer
 
 __version__ = "0.1"
 __revision__ = "$Rev$"
-__date__ = "$LastChangedBy$"
+__date__ = "$LastChangedDate$"
 __all__ = ['DEFAULTS_FILENAME', 'parseConfigFile', 'MCSCommunicate', '__version__', '__revision__', '__date__', '__all__']
 
 
@@ -180,211 +181,23 @@ def parseConfigFile(filename):
 	return config
 
 
-class MCSCommunicate(object):
+class MCSCommunicate(Communicate):
 	"""
 	Class to deal with the communcating with MCS.
 	"""
 	
-	def __init__(self, SHLInstance, config, opts):
-		self.config = config
-		self.opts = opts
-		self.SHLInstance = SHLInstance
-		
-		# Update the socket configuration
-		self.updateConfig()
-		
-		# Setup the packet queues using deques
-		self.queueIn  = deque()
-		self.queueOut = deque()
-		
-		# Set the logger
-		self.logger = logging.getLogger(__name__)
-		
-	def updateConfig(self, config=None):
-		"""
-		Using the configuration file, update the list of boards.
-		"""
-		
-		# Update the current configuration
-		if config is not None:
-			self.config = config
-		
-	def start(self):
-		"""
-		Start the recieve thread - send will run only when needed.
-		"""
-		
-		# Clear the packet queue
-		self.queueIn  = deque()
-		self.queueOut = deque()
-		
-		# Start the packet processing thread
-		thread.start_new_thread(self.packetProcessor, ())
-		
-		# Setup the various sockets
-		## Receive
-		try:
-			self.socketIn =  socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			self.socketIn.bind(("0.0.0.0", self.config['MESSAGEINPORT']))
-			#self.socketIn.setblocking(0)
-		except socket.error, err:
-			code, e = err
-			self.logger.critical('Cannot bind to listening port %i: %s', self.config['MESSAGEINPORT'], str(e))
-			self.logger.critical('Exiting on previous error')
-			logging.shutdown()
-			sys.exit(1)
-		
-		## Send
-		try:
-			self.socketOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			self.destAddress = (self.config['MESSAGEHOST'], self.config['MESSAGEOUTPORT'])
-			#self.socketIn.setblocking(0)
-		except socket.error, err:
-			code, e = err
-			self.logger.critical('Cannot bind to sending port %i: %s', self.config['MESSAGEOUTPORT'], str(e))
-			self.logger.critical('Exiting on previous error')
-			logging.shutdown()
-			sys.exit(1)
-
-	def stop(self):
-		"""
-		Stop the antenna statistics thread, waiting until it's finished.
-		"""
-		
-		# Clear the packet queue
-		self.queueIn.append('STOP_THREAD')
-		while (len(self.queueIn) + len(self.queueOut)):
-			time.sleep(0.01)
-			
-		# Close the various sockets
-		self.socketIn.close()
-		self.socketOut.close()
-		
-	def receiveCommand(self):
-		"""
-		Recieve and process MCS command over the network and add it to the packet 
-		processing queue.
-		"""
-		
-		data = self.socketIn.recv(MCS_RCV_BYTES)
-		if data:
-			self.queueIn.append(data)
-			
-	def packetProcessor(self):
-		"""
-		Using two deques (one inbound, one outbound), deal with bursty UDP traffic 
-		by having a seperate thread for proccessing commands.
-		"""
-		
-		exitCondition = False
-		
-		while True:
-			while len(self.queueIn) > 0:
-				try:
-					data = self.queueIn.popleft()
-					if data is 'STOP_THREAD':
-						exitCondition = True
-						break
-						
-					sender, status, command, reference, packed_data = self.processCommand(data)
-					self.queueOut.append( (sender, status, command, reference, packed_data) )
-					
-					if len(self.queueOut) > 0:
-						sender, status, command, reference, packed_data = self.queueOut.popleft()
-						
-						success = self.sendResponse(sender, status, command, reference, packed_data)
-						if not success:
-							self.queueOut.appendleft( (sender, status, command, reference, packed_data) )
-							
-				except Exception, e:
-					exc_type, exc_value, exc_traceback = sys.exc_info()
-					logger.error("packetProcessor failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
-						
-					## Grab the full traceback and save it to a string via StringIO
-					fileObject = StringIO.StringIO()
-					traceback.print_tb(exc_traceback, file=fileObject)
-					tbString = fileObject.getvalue()
-					fileObject.close()
-					## Print the traceback to the logger as a series of DEBUG messages
-					for line in tbString.split('\n'):
-						logger.debug("%s", line)
-						
-			if exitCondition:
-				break
-				
-			while len(self.queueOut) > 0:
-				try:
-					sender, status, command, reference, packed_data = self.queueOut.popleft()
-						
-					success = self.sendResponse(sender, status, command, reference, packed_data)
-					if not success:
-						self.queueOut.appendleft( (sender, status, command, reference, packed_data) )
-						time.sleep(0.001)
-						
-				except Exception, e:
-					exc_type, exc_value, exc_traceback = sys.exc_info()
-					logger.error("packetProcessor failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
-						
-					## Grab the full traceback and save it to a string via StringIO
-					fileObject = StringIO.StringIO()
-					traceback.print_tb(exc_traceback, file=fileObject)
-					tbString = fileObject.getvalue()
-					fileObject.close()
-					## Print the traceback to the logger as a series of DEBUG messages
-					for line in tbString.split('\n'):
-						logger.debug("%s", line)
-					
-			time.sleep(0.010)
-			
-	def sendResponse(self, destination, status, command, reference, data):
-		"""
-		Send a response to MCS via UDP.
-		"""
-	
-		if status:
-			response = 'A'
-		else:
-			response = 'R'
-			
-		# Set the sender
-		sender = self.SHLInstance.subSystem
-
-		# Get current time
-		(mjd, mpm) = getTime()
-		
-		# Get the current system status
-		systemStatus = self.SHLInstance.currentState['status']
-
-		# Build the payload
-		payload = destination+sender+command+string.rjust(str(reference),9)
-		payload = payload + string.rjust(str(len(data)+8),4)+string.rjust(str(mjd),6)+string.rjust(str(mpm),9)+' '
-		payload = payload + response + string.rjust(str(systemStatus),7) + data
-	
-		try:
-			bytes_sent = self.socketOut.sendto(payload, self.destAddress)
-			self.logger.debug("mcsSend - Sent to MCS '%s'", payload)
-			return True
-			
-		except socket.error:
-			self.logger.warning("mcsSend - Failed to send response to MCS, retrying")
-			return False
+	def __init__(self, SubSystemInstance, config, opts):
+			super(MCSCommunicate, self).__init__(SubSystemInstance, config, opts)
 		
 	def processCommand(self, data):
 		"""
 		Interperate the data of a UDP packet as a SHL MCS command.
 		"""
 		
-		destination = data[:3]
-		sender      = data[3:6]
-		command     = data[6:9]
-		reference   = int(data[9:18])
-		datalen     = int(data[18:22]) 
-		mjd         = int(data[22:28]) 
-		mpm         = int(data[28:37]) 
-		data        = data[38:38+datalen]
+		destination, sender, command, reference, datalen, mjd, mpm, data = self.parsePacket(data)
 	
 		# check destination and sender
-		if destination in (self.SHLInstance.subSystem, 'ALL'):
+		if destination in (self.SubSystemInstance.subSystem, 'ALL'):
 			# PNG
 			if command == 'PNG':
 				status = True
@@ -397,90 +210,90 @@ class MCSCommunicate(object):
 				
 				## General Info.
 				if data == 'SUMMARY':
-					summary = self.SHLInstance.currentState['status'][:7]
+					summary = self.SubSystemInstance.currentState['status'][:7]
 					self.logger.debug('summary = %s', summary)
 					packed_data = summary
 				elif data == 'INFO':
 					### Trim down as needed
-					if len(self.SHLInstance.currentState['info']) > 256:
-						infoMessage = "%s..." % self.SHLInstance.currentState['info'][:253]
+					if len(self.SubSystemInstance.currentState['info']) > 256:
+						infoMessage = "%s..." % self.SubSystemInstance.currentState['info'][:253]
 					else:
-						infoMessage = self.SHLInstance.currentState['info'][:256]
+						infoMessage = self.SubSystemInstance.currentState['info'][:256]
 						
 					self.logger.debug('info = %s', infoMessage)
 					packed_data = infoMessage
 				elif data == 'LASTLOG':
 					### Trim down as needed
-					if len(self.SHLInstance.currentState['lastLog']) > 256:
-						lastLogEntry = "%s..." % self.SHLInstance.currentState['lastLog'][:253]
+					if len(self.SubSystemInstance.currentState['lastLog']) > 256:
+						lastLogEntry = "%s..." % self.SubSystemInstance.currentState['lastLog'][:253]
 					else:
-						lastLogEntry =  self.SHLInstance.currentState['lastLog'][:256]
+						lastLogEntry =  self.SubSystemInstance.currentState['lastLog'][:256]
 					if len(lastLogEntry) == 0:
 						lastLogEntry = 'no log entry'
 					
 					self.logger.debug('lastlog = %s', lastLogEntry)
 					packed_data = lastLogEntry
 				elif data == 'SUBSYSTEM':
-					self.logger.debug('subsystem = %s', self.SHLInstance.subSystem)
-					packed_data = self.SHLInstance.subSystem
+					self.logger.debug('subsystem = %s', self.SubSystemInstance.subSystem)
+					packed_data = self.SubSystemInstance.subSystem
 				elif data == 'SERIALNO':
-					self.logger.debug('serialno = %s', self.SHLInstance.serialNumber)
-					packed_data = self.SHLInstance.serialNumber
+					self.logger.debug('serialno = %s', self.SubSystemInstance.serialNumber)
+					packed_data = self.SubSystemInstance.serialNumber
 				elif data == 'VERSION':
-					self.logger.debug('version = %s', self.SHLInstance.version)
-					packed_data = self.SHLInstance.version
+					self.logger.debug('version = %s', self.SubSystemInstance.version)
+					packed_data = self.SubSystemInstance.version
 					
 				## PDU State - Number of ports
 				elif data[0:17] == 'PORTS-AVALIABLE-R':
 					rack = int(data[17:])
 					
-					status, count = self.SHLInstance.getOutletCount(rack)
+					status, count = self.SubSystemInstance.getOutletCount(rack)
 					if status:
 						packed_data = str(count)
 					else:
-						packed_data = self.SHLInstance.currentState['lastLog']
+						packed_data = self.SubSystemInstance.currentState['lastLog']
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
 				## PDU State - Current Draw
 				elif data[0:9] == 'CURRENT-R':
 					rack = int(data[9:])
 					
-					status, current = self.SHLInstance.getCurrentDraw(rack)
+					status, current = self.SubSystemInstance.getCurrentDraw(rack)
 					if status:
 						if current is not None:
 							packed_data = str(current)
 						else:
 							packed_data = '0'
 					else:
-						packed_data = self.SHLInstance.currentState['lastLog']
+						packed_data = self.SubSystemInstance.currentState['lastLog']
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
 				## PDU State - Input Voltage
 				elif data[0:9] == 'VOLTAGE-R':
 					rack = int(data[9:])
 					
-					status, voltage = self.SHLInstance.getInputVoltage(rack)
+					status, voltage = self.SubSystemInstance.getInputVoltage(rack)
 					if status:
 						if voltage is not None:
 							packed_data = str(voltage)
 						else:
 							packed_data = '0'
 					else:
-						packed_data = self.SHLInstance.currentState['lastLog']
+						packed_data = self.SubSystemInstance.currentState['lastLog']
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
 				## PDU State - Input Frequency
 				elif data[0:11] == 'FREQUENCY-R':
 					rack = int(data[11:])
 					
-					status, freq = self.SHLInstance.getInputFrequency(rack)
+					status, freq = self.SubSystemInstance.getInputFrequency(rack)
 					if status:
 						if freq is not None:
 							packed_data = str(freq)
 						else:
 							packed_data = '0'
 					else:
-						packed_data = self.SHLInstance.currentState['lastLog']
+						packed_data = self.SubSystemInstance.currentState['lastLog']
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
 				## PDU State - Outlet Status
@@ -489,32 +302,32 @@ class MCSCommunicate(object):
 					rack = int(rack)
 					port = int(port)
 					
-					status, state = self.SHLInstance.getPowerState(rack, port)
+					status, state = self.SubSystemInstance.getPowerState(rack, port)
 					if status:
 						packed_data = str(state)
 					else:
-						packed_data = self.SHLInstance.currentState['lastLog']
+						packed_data = self.SubSystemInstance.currentState['lastLog']
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
 				
 				## Temperature set point
 				elif data == 'SET-POINT':
-					packed_data = '%.1f' % self.SHLInstance.currentState['setPoint']
+					packed_data = '%.1f' % self.SubSystemInstance.currentState['setPoint']
 					self.logger.debug('%s = %s', data, packed_data)
 					
 				## Temperature differential
 				elif data == 'DIFFERENTIAL':
-					packed_data = '%.1f' % self.SHLInstance.currentState['diffPoint']
+					packed_data = '%.1f' % self.SubSystemInstance.currentState['diffPoint']
 					self.logger.debug('%s = %s', data, packed_data)
 					
 				## Current mean shelter temperature
 				elif data == 'TEMPERATURE':
-					status, temp = self.SHLInstance.getMeanTemperature()
+					status, temp = self.SubSystemInstance.getMeanTemperature()
 					
 					if status:
 						packed_data = '%.2f' % temp
 					else:
-						packed_data = self.SHLInstance.currentState['lastLog']
+						packed_data = self.SubSystemInstance.currentState['lastLog']
 					
 					self.logger.debug('%s = exited with status %s', data, str(status))
 					
@@ -535,42 +348,42 @@ class MCSCommunicate(object):
 		
 				# Refresh the configuration for the communicator and ASP
 				self.updateConfig(config)
-				self.SHLInstance.updateConfig(config)
+				self.SubSystemInstance.updateConfig(config)
 				
 				# Go
-				status, exitCode = self.SHLInstance.ini(data)
+				status, exitCode = self.SubSystemInstance.ini(data)
 				if status:
 					packed_data = ''
 				else:
-					packed_data = "0x%02X! %s" % (exitCode, self.SHLInstance.currentState['lastLog'])
+					packed_data = "0x%02X! %s" % (exitCode, self.SubSystemInstance.currentState['lastLog'])
 			
 			# SHT
 			elif command == 'SHT':
-				status, exitCode = self.SHLInstance.sht(mode=data)
+				status, exitCode = self.SubSystemInstance.sht(mode=data)
 				if status:
 					packed_data = ''
 				else:
-					packed_data = "0x%02X! %s" % (exitCode, self.SHLInstance.currentState['lastLog'])
+					packed_data = "0x%02X! %s" % (exitCode, self.SubSystemInstance.currentState['lastLog'])
 					
 			# TMP
 			elif command == 'TMP':
 				setPoint = float(data)
 				
-				status, exitCode = self.SHLInstance.tmp(setPoint)
+				status, exitCode = self.SubSystemInstance.tmp(setPoint)
 				if status:
 					packed_data = ''
 				else:
-					packed_data = "0x%02X! %s" % (exitCode, self.SHLInstance.currentState['lastLog'])
+					packed_data = "0x%02X! %s" % (exitCode, self.SubSystemInstance.currentState['lastLog'])
 					
 			# DIF
 			elif command == 'DIF':
 				diffPoint = float(data)
 				
-				status, exitCode = self.SHLInstance.dif(diffPoint)
+				status, exitCode = self.SubSystemInstance.dif(diffPoint)
 				if status:
 					packed_data = ''
 				else:
-					packed_data = "0x%02X! %s" % (exitCode, self.SHLInstance.currentState['lastLog'])
+					packed_data = "0x%02X! %s" % (exitCode, self.SubSystemInstance.currentState['lastLog'])
 					
 			# PWR
 			elif command == 'PWR':
@@ -578,11 +391,11 @@ class MCSCommunicate(object):
 				port    = int(data[1:3])
 				control = data[3:]
 				
-				status, exitCode = self.SHLInstance.pwr(rack, port, control)
+				status, exitCode = self.SubSystemInstance.pwr(rack, port, control)
 				if status:
 					packed_data = ''
 				else:
-					packed_data = "0x%02X! %s" % (exitCode, self.SHLInstance.currentState['lastLog'])
+					packed_data = "0x%02X! %s" % (exitCode, self.SubSystemInstance.currentState['lastLog'])
 					
 					
 			# 
@@ -654,8 +467,8 @@ def main(args):
 		# Shutdown ASP and close the communications channels
 		tStop = time.time()
 		logger.info('Shutting down SHL, please wait...')
-		MCSInstance.SHLInstance.sht(mode='SCRAM')
-		while MCSInstance.SHLInstance.currentState['info'] != 'System has been shut down':
+		MCSInstance.SubSystemInstance.sht(mode='SCRAM')
+		while MCSInstance.SubSystemInstance.currentState['info'] != 'System has been shut down':
 			time.sleep(1)
 		logger.info('Shutdown completed in %.3f seconds', time.time() - tStop)
 		MCSInstance.stop()

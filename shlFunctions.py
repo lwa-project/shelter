@@ -176,11 +176,11 @@ class ShippingContainer(object):
 				t.stop()
 		else:
 			self.currentState['tempThreads'] = []
-			for k in sorted(THERMOMLIST.keys()):
+			for c,k in enumerate(sorted(THERMOMLIST.keys())):
 				v = THERMOMLIST[k]
 			
 				nT = Thermometer(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
-								description=v['Description'], 
+								c+1, description=v['Description'], 
 								MonitorPeriod=self.config['TEMPMONITORPERIOD'])
 				self.currentState['tempThreads'].append(nT)
 		## PDUs
@@ -189,7 +189,7 @@ class ShippingContainer(object):
 				t.stop()
 		else:
 			self.currentState['pduThreads'] = []
-			for k in sorted(PDULIST.keys()):
+			for c,k in enumerate(sorted(PDULIST.keys())):
 				v = PDULIST[k]
 				
 				### Figure out the PDU type
@@ -199,7 +199,7 @@ class ShippingContainer(object):
 					PDUBaseType = APC
 					
 				nP = PDUBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
-								nOutlets=v['nOutlets'], description=v['Description'], 
+								c+1, nOutlets=v['nOutlets'], description=v['Description'], 
 								MonitorPeriod=self.config['RACKMONITORPERIOD'])
 								
 				self.currentState['pduThreads'].append(nP)
