@@ -23,6 +23,6 @@ if time.time() > lastUpdated + 300:
 
 # Send the update to lwalab
 p = urllib.urlencode({'key': KEY, 'subsystem': SUBSYSTEM, 'data': test})
-f = urllib.urlopen(url, p)
+f = urllib.urlopen(URL, p)
 print f.read()
 
