@@ -202,6 +202,7 @@ class PDU(object):
 		self.nOutlets = nOutlets
 		self.voltage = None
 		self.current = None
+		self.frequency = None
 		self.status = {}
 		for i in xrange(1, self.nOutlets+1):
 			self.status[i] = "UNK"
