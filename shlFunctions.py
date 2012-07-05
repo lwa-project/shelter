@@ -34,7 +34,7 @@ commandExitCodes = {0x00: 'Process accepted without error',
 				0x05: 'Invalid PDU control keyword', 
 				0x06: 'Invalid command arguments', 
 				0x07: 'Blocking operation in progress', 
-				0x08: 'Subsytem already initalized', 
+				0x08: 'Subsystem already initialized', 
 				0x09: 'Subsystem needs to be initialized'}
 
 
@@ -106,16 +106,16 @@ class ShippingContainer(object):
 		
 	def ini(self, data, config=None):
 		"""
-		Initialize SHL (in a seperate thread).
+		Initialize SHL (in a separate thread).
 		"""
 		
-		# Check for other operations in progress that ccould be blocking (INI or SHT)
+		# Check for other operations in progress that could be blocking (INI or SHT)
 		if 'INI' in self.currentState['activeProcess'] or 'SHT' in self.currentState['activeProcess']:
 			shlFunctionsLogger.warning("INI command rejected due to process list %s", ' '.join(self.currentState['activeProcess']))
 			self.currentState['lastLog'] = 'INI: %s - %s is active and blocking' % (commandExitCodes[0x07], self.currentState['activeProcess'])
 			return False, 0x07
 			
-		# Check to see if the system has already been initalized
+		# Check to see if the system has already been initialized
 		if self.currentState['ready']:
 			shlFunctionsLogger.warning("INI command rejected due to system already running")
 			self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x08]
@@ -139,7 +139,7 @@ class ShippingContainer(object):
 			self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x01]
 			return False, 0x01
 			
-		# Validate differenetial
+		# Validate differential
 		if not isHalfIncrements(diffPoint) or diffPoint < self.config['DIFFMIN'] or diffPoint > self.config['DIFFMAX']:
 			shlFunctionsLogger.warning("INI command rejected due to invalid differential")
 			self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x02]
@@ -394,7 +394,7 @@ class ShippingContainer(object):
 		
 	def __pwrProcess(self, rack, port, control):
 		"""
-		Thread base for chaning the power status of an outlet.
+		Thread base for changing the power status of an outlet.
 		"""
 		
 		self.currentState['pduThreads'][rack-1].setStatus(outlet=port, status=control)
@@ -446,7 +446,7 @@ class ShippingContainer(object):
 		
 	def getPowerState(self, rack, port):
 		"""
-		Given a rack, port combo, return the current power state of the outlset as a
+		Given a rack, port combo, return the current power state of the outlets as a
 		two-elements tuple (success, value) where success is a boolean related to if 
 		the state was found.  See the currentState['lastLog'] entry for the reason for 
 		failure if the returned success value is False.
@@ -535,6 +535,24 @@ class ShippingContainer(object):
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getCurrent()
+		
+	def processCriticalTemperature(self):
+		"""
+		Deal with a critical shelter temperature.  We are in error if this happens 
+		and the critical list of ports are powered off.
+		"""
+		
+		currTemp = self.getMeanTemperature()
+		if currTemp >= CRITICAL_TEMP:
+			self.currentState['status'] = 'ERROR'
+			self.currentState['info'] = 'Shelter temperature over %.1 F, shutting down %s' % (CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
+			
+			for rack,port in CRITICAL_LIST:
+				try:
+					self.pwr(rack, port, 'OFF')
+				except:
+					pass
+		return True
 		
 	def processSNMPUnrechable(self, unreachableList):
 		"""

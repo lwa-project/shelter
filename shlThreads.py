@@ -146,6 +146,9 @@ class Thermometer(object):
 			tStop = time.time()
 			shlThreadsLogger.debug('Finished updating temperature in %.3f seconds', tStop - tStart)
 			
+			# Make sure we aren't critical
+			self.SHLCallbackInstance.processCriticalTemperature()
+			
 			# Sleep for a bit
 			sleepCount = 0
 			sleepTime = self.MonitorPeriod - (tStop - tStart)

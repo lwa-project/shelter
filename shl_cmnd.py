@@ -107,8 +107,8 @@ def parseOptions(args):
 
 def parseConfigFile(filename):
 	"""
-	Given a filename of a ASP configuation file, read in the various values
-	and return the requested configuation as a dictionary.
+	Given a filename of a ASP configuration file, read in the various values
+	and return the requested configuration as a dictionary.
 	"""
 	
 	# Deal with logging
@@ -183,7 +183,7 @@ def parseConfigFile(filename):
 
 class MCSCommunicate(Communicate):
 	"""
-	Class to deal with the communcating with MCS.
+	Class to deal with the communicating with MCS.
 	"""
 	
 	def __init__(self, SubSystemInstance, config, opts):
@@ -191,7 +191,7 @@ class MCSCommunicate(Communicate):
 		
 	def processCommand(self, data):
 		"""
-		Interperate the data of a UDP packet as a SHL MCS command.
+		Interpret the data of a UDP packet as a SHL MCS command.
 		"""
 		
 		destination, sender, command, reference, datalen, mjd, mpm, data = self.parsePacket(data)
@@ -244,7 +244,7 @@ class MCSCommunicate(Communicate):
 					packed_data = self.SubSystemInstance.version
 					
 				## PDU State - Number of ports
-				elif data[0:17] == 'PORTS-AVALIABLE-R':
+				elif data[0:17] == 'PORTS-AVAILABLE-R':
 					rack = int(data[17:])
 					
 					status, count = self.SubSystemInstance.getOutletCount(rack)
@@ -413,7 +413,7 @@ class MCSCommunicate(Communicate):
 
 def main(args):
 	"""
-	Main function of asp_cmnd.py.  This sets up the various configuation options 
+	Main function of asp_cmnd.py.  This sets up the various configuration options 
 	and start the UDP command handler.
 	"""
 	

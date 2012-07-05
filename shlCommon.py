@@ -14,7 +14,7 @@ from datetime import datetime
 
 __version__ = "0.1"
 __revision__ = "$Rev$"
-__all__ = ['THERMOMLIST', 'PDULIST', '__version__', '__revision__', '__all__']
+__all__ = ['THERMOMLIST', 'PDULIST', 'CRITICAL_TEMP', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
 
 # Setup the thermometers
 THERMOMLIST = {}
@@ -42,3 +42,7 @@ PDULIST[5] = {'Type': 'TrippLite', 'IP': '172.16.1.115', 'Port': 161,
 PDULIST[6] = {'Type': 'APC', 'IP': '172.16.1.116', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'private', 0), 
 		    'nOutlets': 8, 'Description': "3-Bay - PASI"}
+
+# Define the critical shutdown list
+CRITICAL_TEMP = 90.0			# Degrees F
+CRITICAL_LIST = [(1,1), (1,2)]	# List of (rack, port) combos. to turn off
