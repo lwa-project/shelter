@@ -552,6 +552,9 @@ class ShippingContainer(object):
 					self.pwr(rack, port, 'OFF')
 				except:
 					pass
+				
+			shlFunctionsLogger.critical('Shelter temperature %.2f >= %.2f F, shutting down %s', currTemp, CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
+			
 		return True
 		
 	def processSNMPUnrechable(self, unreachableList):
