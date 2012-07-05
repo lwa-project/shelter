@@ -542,8 +542,8 @@ class ShippingContainer(object):
 		and the critical list of ports are powered off.
 		"""
 		
-		currTemp = self.getMeanTemperature()
-		if currTemp >= CRITICAL_TEMP:
+		good, currTemp = self.getMeanTemperature()
+		if good and currTemp >= CRITICAL_TEMP:
 			self.currentState['status'] = 'ERROR'
 			self.currentState['info'] = 'Shelter temperature %.2f >= %.2f F, shutting down %s' % (currTemp, CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
 			
