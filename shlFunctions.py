@@ -545,7 +545,7 @@ class ShippingContainer(object):
 		currTemp = self.getMeanTemperature()
 		if currTemp >= CRITICAL_TEMP:
 			self.currentState['status'] = 'ERROR'
-			self.currentState['info'] = 'Shelter temperature over %.1 F, shutting down %s' % (CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
+			self.currentState['info'] = 'Shelter temperature over %.2f F, shutting down %s' % (CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
 			
 			for rack,port in CRITICAL_LIST:
 				try:
