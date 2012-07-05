@@ -147,7 +147,8 @@ class Thermometer(object):
 			shlThreadsLogger.debug('Finished updating temperature in %.3f seconds', tStop - tStart)
 			
 			# Make sure we aren't critical
-			self.SHLCallbackInstance.processCriticalTemperature()
+			if self.SHLCallbackInstance is not None:
+				self.SHLCallbackInstance.processCriticalTemperature()
 			
 			# Sleep for a bit
 			sleepCount = 0

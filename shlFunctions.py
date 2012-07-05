@@ -181,7 +181,7 @@ class ShippingContainer(object):
 			
 				nT = Thermometer(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
 								c+1, description=v['Description'], 
-								MonitorPeriod=self.config['TEMPMONITORPERIOD'])
+								MonitorPeriod=self.config['TEMPMONITORPERIOD'], SHLCallbackInstance=self)
 				self.currentState['tempThreads'].append(nT)
 		## PDUs
 		if self.currentState['pduThreads'] is not None:
