@@ -278,7 +278,7 @@ class PDU(object):
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -309,7 +309,7 @@ class PDU(object):
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -343,7 +343,7 @@ class PDU(object):
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -389,7 +389,7 @@ class PDU(object):
 							
 					except Exception, e:
 						exc_type, exc_value, exc_traceback = sys.exc_info()
-						shlThreadsLogger.error("%s: monitorThread failed with: %s at line %i", type(self).__name__, str(e), traceback.tb_lineno(exc_traceback))
+						shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 						
 						## Grab the full traceback and save it to a string via StringIO
 						fileObject = StringIO.StringIO()
