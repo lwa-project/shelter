@@ -21,6 +21,8 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
+from shlCommon import CRITICAL_TEMP
+
 __version__ = "0.1"
 __revision__ = "$Rev$"
 __all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', '__version__', '__revision__', '__all__']
@@ -147,8 +149,9 @@ class Thermometer(object):
 			shlThreadsLogger.debug('Finished updating temperature in %.3f seconds', tStop - tStart)
 			
 			# Make sure we aren't critical
-			if self.SHLCallbackInstance is not None:
-				self.SHLCallbackInstance.processCriticalTemperature()
+			if self.SHLCallbackInstance is not None and self.temp is not None:
+				if 1.8*self.temp  + 32 >= CRITICAL_TEMP:
+					self.SHLCallbackInstance.processCriticalTemperature()
 			
 			# Sleep for a bit
 			sleepCount = 0

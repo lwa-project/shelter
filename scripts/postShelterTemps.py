@@ -16,7 +16,11 @@ test, junk = t.communicate()
 test = test.replace('\n', '')
 
 # Check to see if the log is actually getting updated.  If not, send NaNs
-lastUpdated, junk = test.split(',', 1)
+try:
+	lastUpdated, junk = test.split(',', 1)
+except ValueError:
+	lastUpdated = 0.0
+	junk = 0.0
 lastUpdated = float(lastUpdated)
 if time.time() > lastUpdated + 300:
 	test = "%.2f,NaN" % time.time()
@@ -24,5 +28,4 @@ if time.time() > lastUpdated + 300:
 # Send the update to lwalab
 p = urllib.urlencode({'key': KEY, 'subsystem': SUBSYSTEM, 'data': test})
 f = urllib.urlopen(URL, p)
-print f.read()
 

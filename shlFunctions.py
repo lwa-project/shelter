@@ -542,18 +542,18 @@ class ShippingContainer(object):
 		and the critical list of ports are powered off.
 		"""
 		
-		good, currTemp = self.getMeanTemperature()
-		if good and currTemp >= CRITICAL_TEMP:
-			self.currentState['status'] = 'ERROR'
-			self.currentState['info'] = 'Shelter temperature %.2f >= %.2f F, shutting down %s' % (currTemp, CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
+		self.currentState['status'] = 'ERROR'
+		self.currentState['info'] = 'Shelter temperature %.2f >= %.2f F, shutting down %s' % (currTemp, CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
 			
-			for rack,port in CRITICAL_LIST:
-				try:
+		for rack,port in CRITICAL_LIST:
+			try:
+				good, status = self.getPowerState(rack, port)
+				if status != 'OFF':
 					self.pwr(rack, port, 'OFF')
-				except:
-					pass
+			except:
+				pass
 				
-			shlFunctionsLogger.critical('Shelter temperature %.2f >= %.2f F, shutting down %s', currTemp, CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
+		shlFunctionsLogger.critical('Shelter temperature %.2f >= %.2f F, shutting down %s', currTemp, CRITICAL_TEMP, ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST]))
 			
 		return True
 		
