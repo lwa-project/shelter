@@ -209,6 +209,9 @@ class ShippingContainer(object):
 		self.currentState['diffPoint'] = diffPoint
 		self.currentState['nRacks'] = reduce(lambda x, y: x+y, [int(i) for i in nRacks])
 		self.currentState['rackPresent'] = [int(i) for i in nRacks]
+		## Extend self.currentState['rackPresent'] for racks in shlCommon but not in the INI
+		while len(self.currentState['rackPresent']) > len(self.currentState['pduThreads']):
+			self.currentState['rackPresent'].append(0)
 		
 		# Print out some rack status
 		shlFunctionsLogger.info('-----------------')

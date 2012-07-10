@@ -42,6 +42,12 @@ PDULIST[5] = {'Type': 'TrippLite', 'IP': '172.16.1.115', 'Port': 161,
 PDULIST[6] = {'Type': 'APC', 'IP': '172.16.1.116', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'private', 0), 
 		    'nOutlets': 8, 'Description': "3-Bay - PASI"}
+PDULIST[7] = {'TrippLite', 'IP': '172.16.1.119', 'Port': 161, 
+		    'SecurityModel': ('my-agent', 'public', 0), 
+		    'nOutlets': 3, 'Description': "UPS #1"}
+PDULIST[8] = {'TrippLite', 'IP': '172.16.1.118', 'Port': 161, 
+		    'SecurityModel': ('my-agent', 'public', 0), 
+		    'nOutlets': 3, 'Description': "UPS #2"}
 
 # Define the critical shutdown list
 CRITICAL_TEMP = 90.0			# Degrees F
