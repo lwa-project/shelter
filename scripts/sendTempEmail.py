@@ -15,7 +15,7 @@ UTC = pytz.utc
 MST = pytz.timezone('US/Mountain')
 
 # Critical shelter temperature (F)
-CRITICAL_TEMP = 78.00
+CRITICAL_TEMP = 80.00
 
 # E-mail Users
 TO = ['lwa1staff@panda3.phys.unm.edu',]
