@@ -51,4 +51,4 @@ PDULIST[8] = {'Type': 'TrippLite', 'IP': '172.16.1.118', 'Port': 161,
 
 # Define the critical shutdown list
 CRITICAL_TEMP = 90.0			# Degrees F
-CRITICAL_LIST = [(1,1), (1,2)]	# List of (rack, port) combos. to turn off
+CRITICAL_LIST = []	# List of (rack, port) combos. to turn off
