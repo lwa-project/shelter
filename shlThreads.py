@@ -31,6 +31,10 @@ __all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'TrippLiteUPS', '__version_
 shlThreadsLogger = logging.getLogger('__main__')
 
 
+# Create a semaphore to make sure not too many threads poll all at once
+SNMPLock = threading.Semaphore(2)
+
+
 class Thermometer(object):
 	"""
 	Class for communicating with a network thermometer via SNMP and regularly polling
@@ -49,7 +53,7 @@ class Thermometer(object):
 
 		# Setup the SNMP UDP connection
 		self.community = community
-		self.network = cmdgen.UdpTransportTarget((self.ip, self.port))
+		self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
 
 		# Setup threading
 		self.thread = None
@@ -107,6 +111,8 @@ class Thermometer(object):
 		while self.alive.isSet():
 			tStart = time.time()
 			
+			SNMPLock.acquire()
+			
 			# Read the networked thermometer and store values to temp.
 			# NOTE: self.temp is in Celsius
 			try:
@@ -138,6 +144,8 @@ class Thermometer(object):
 				
 				self.temp = None
 				self.lastError = str(e)
+				
+			SNMPLock.release()
 			
 			toDataLog = '%.2f,%.2f' % (time.time(), self.temp if self.temp is not None else -1)
 			fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
@@ -214,7 +222,7 @@ class PDU(object):
 
 		# Setup the SNMP UDP connection
 		self.community = community
-		self.network = cmdgen.UdpTransportTarget((self.ip, self.port))
+		self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
 		
 		# Setup threading
 		self.thread = None
@@ -263,6 +271,9 @@ class PDU(object):
 
 		while self.alive.isSet():
 			tStart = time.time()
+			
+			SNMPLock.acquire()
+			
 			if self.oidFrequencyEntry is not None:
 				try:
 					# Get the current input frequency
@@ -407,6 +418,8 @@ class PDU(object):
 						else:
 							self.lastError = str(e)
 						self.status[i] = "UNK"
+			
+			SNMPLock.release()
 			
 			toDataLog = "%.2f,%.2f,%.2f,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1)
 			fh = open('/data/rack%02i.txt' % self.id, 'a+')
@@ -595,6 +608,9 @@ class TrippLiteUPS(PDU):
 
 		while self.alive.isSet():
 			tStart = time.time()
+			
+			SNMPLock.acquire()
+			
 			if self.oidFrequencyEntry is not None:
 				try:
 					# Get the current input frequency
@@ -847,6 +863,8 @@ class TrippLiteUPS(PDU):
 						else:
 							self.lastError = str(e)
 						self.status[i] = "UNK"
+			
+			SNMPLock.release()
 			
 			toDataLog = "%.2f,%.2f,%.2f,%.2f,%s,%s,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1, self.upsOutput, self.batteryStatus, self.batteryCharge if self.batteryCharge is not None else -1)
 			fh = open('/data/rack%02i.txt' % self.id, 'a+')
