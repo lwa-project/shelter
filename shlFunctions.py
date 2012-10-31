@@ -195,6 +195,8 @@ class ShippingContainer(object):
 				### Figure out the PDU type
 				if v['Type'] == 'TrippLite':
 					PDUBaseType = TrippLite
+				elif v['Type'] == 'TrippLiteUPS':
+					PDUBaseType = TrippLiteUPS
 				else:
 					PDUBaseType = APC
 					
@@ -538,6 +540,90 @@ class ShippingContainer(object):
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getCurrent()
+		
+	def getBatteryCharge(self, rack):
+		"""
+		Given a rack return the battery charge percentage as a two-element tuple 
+		(success, value) where success is a boolean related to if the battery 
+		charge was found.  See the currentState['lastLog'] entry for the reason for 
+		failure if the returned success value is False.
+		"""
+		
+		# Check the rack number
+		if rack == 0 or rack > self.currentState['nRacks']:
+			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
+			return False, 0
+		if not self.currentState['rackPresent'][rack-1]:
+			self.currentState['lastLog'] = 'Rack #%i not present during INI call' % rack
+			return False, 0
+			
+		# Make sure the monitoring thread is running
+		if not self.currentState['pduThreads'][rack-1].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			return False, 0
+			
+		# Make sure the rack corresponds to a UPS
+		if not self.currentState['pduThreads'][rack-1].isUPS:
+			self.currentState['lastLog'] = 'Rack #%i is not a UPS'
+			return False, 0
+			
+		return True, self.currentState['pduThreads'][rack-1].getBatteryCharge()
+		
+	def getBatteryStatus(self, rack):
+		"""
+		Given a rack return the battery status as a two-element tuple (success, value) 
+		where success is a boolean related to if the battery status was found.  See 
+		the currentState['lastLog'] entry for the reason for failure if the returned 
+		success value is False.
+		"""
+		
+		# Check the rack number
+		if rack == 0 or rack > self.currentState['nRacks']:
+			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
+			return False, 0
+		if not self.currentState['rackPresent'][rack-1]:
+			self.currentState['lastLog'] = 'Rack #%i not present during INI call' % rack
+			return False, 0
+			
+		# Make sure the monitoring thread is running
+		if not self.currentState['pduThreads'][rack-1].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			return False, 0
+			
+		# Make sure the rack corresponds to a UPS
+		if not self.currentState['pduThreads'][rack-1].isUPS:
+			self.currentState['lastLog'] = 'Rack #%i is not a UPS'
+			return False, 0
+			
+		return True, self.currentState['pduThreads'][rack-1].getBatteryStatus()
+		
+	def getOutputSource(self, rack):
+		"""
+		Given a rack return the output power source as a two-element tuple 
+		(success, value) where success is a boolean related to if the output 
+		source was found.  See the currentState['lastLog'] entry for the reason for 
+		failure if the returned success value is False.
+		"""
+		
+		# Check the rack number
+		if rack == 0 or rack > self.currentState['nRacks']:
+			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
+			return False, 0
+		if not self.currentState['rackPresent'][rack-1]:
+			self.currentState['lastLog'] = 'Rack #%i not present during INI call' % rack
+			return False, 0
+			
+		# Make sure the monitoring thread is running
+		if not self.currentState['pduThreads'][rack-1].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			return False, 0
+			
+		# Make sure the rack corresponds to a UPS
+		if not self.currentState['pduThreads'][rack-1].isUPS:
+			self.currentState['lastLog'] = 'Rack #%i is not a UPS'
+			return False, 0
+			
+		return True, self.currentState['pduThreads'][rack-1].getOutputSource()
 		
 	def processCriticalTemperature(self):
 		"""
