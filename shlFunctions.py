@@ -490,7 +490,7 @@ class ShippingContainer(object):
 			
 		# Make sure the monitoring thread is running
 		if not self.currentState['pduThreads'][rack-1].alive.isSet():
-			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running' % rack
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getFrequency()
@@ -513,7 +513,7 @@ class ShippingContainer(object):
 			
 		# Make sure the monitoring thread is running
 		if not self.currentState['pduThreads'][rack-1].alive.isSet():
-			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running' % rack
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getVoltage()
@@ -536,7 +536,7 @@ class ShippingContainer(object):
 			
 		# Make sure the monitoring thread is running
 		if not self.currentState['pduThreads'][rack-1].alive.isSet():
-			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running' % rack
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getCurrent()
@@ -559,12 +559,12 @@ class ShippingContainer(object):
 			
 		# Make sure the monitoring thread is running
 		if not self.currentState['pduThreads'][rack-1].alive.isSet():
-			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running' % rack
 			return False, 0
 			
 		# Make sure the rack corresponds to a UPS
 		if not self.currentState['pduThreads'][rack-1].isUPS:
-			self.currentState['lastLog'] = 'Rack #%i is not a UPS'
+			self.currentState['lastLog'] = 'Rack #%i is not a UPS' % rack
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getBatteryCharge()
@@ -587,12 +587,12 @@ class ShippingContainer(object):
 			
 		# Make sure the monitoring thread is running
 		if not self.currentState['pduThreads'][rack-1].alive.isSet():
-			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running' % rack
 			return False, 0
 			
 		# Make sure the rack corresponds to a UPS
 		if not self.currentState['pduThreads'][rack-1].isUPS:
-			self.currentState['lastLog'] = 'Rack #%i is not a UPS'
+			self.currentState['lastLog'] = 'Rack #%i is not a UPS' % rack
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getBatteryStatus()
@@ -615,12 +615,12 @@ class ShippingContainer(object):
 			
 		# Make sure the monitoring thread is running
 		if not self.currentState['pduThreads'][rack-1].alive.isSet():
-			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running'
+			self.currentState['lastLog'] = 'Monitoring thread for Rack #%i is not running' % rack
 			return False, 0
 			
 		# Make sure the rack corresponds to a UPS
 		if not self.currentState['pduThreads'][rack-1].isUPS:
-			self.currentState['lastLog'] = 'Rack #%i is not a UPS'
+			self.currentState['lastLog'] = 'Rack #%i is not a UPS' % rack
 			return False, 0
 			
 		return True, self.currentState['pduThreads'][rack-1].getOutputSource()
