@@ -310,7 +310,7 @@ class MCSCommunicate(Communicate):
 						
 					self.logger.debug('%s = exited with status %s', data, str(status))
 				## UPS State - Battery Charge
-				elif data[0:11] = 'BATCHARGE-R':
+				elif data[0:11] == 'BATCHARGE-R':
 					rack = int(data[11:])
 					
 					status, charge = self.SubSystemInstance.getBatteryCharge(rack)
@@ -322,7 +322,7 @@ class MCSCommunicate(Communicate):
 					else:
 						packed_data = self.SubSystemInstance.currentState['lastLog']
 				## UPS State - Battery Status
-				elif data[0:11] = 'BATSTATUS-R':
+				elif data[0:11] == 'BATSTATUS-R':
 					rack = int(data[11:])
 					
 					status, stat = self.SubSystemInstance.getBatteryStatus(rack)
@@ -334,7 +334,7 @@ class MCSCommunicate(Communicate):
 					else:
 						packed_data = self.SubSystemInstance.currentState['lastLog']
 				## UPS State - Output Power Source
-				elif data[0:11] = 'OUTSOURCE-R':
+				elif data[0:11] == 'OUTSOURCE-R':
 					rack = int(data[11:])
 					
 					status, source = self.SubSystemInstance.getOutputSource(rack)
