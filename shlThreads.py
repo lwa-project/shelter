@@ -979,7 +979,7 @@ class Weather(object):
 			tStart = time.time()
 
 			try:
-				conn = sqlite3.connect(sys.argv[1])
+				conn = sqlite3.connect(self.database)
 				conn.row_factory = sqlite3.Row
 
 				c = conn.cursor()
@@ -1031,7 +1031,7 @@ class Weather(object):
 
 			# Stop time
 			tStop = time.time()
-			shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
+			shlThreadsLogger.debug('Finished updating weather station data in %.3f seconds', tStop - tStart)
 			
 			# Sleep for a bit
 			sleepCount = 0
