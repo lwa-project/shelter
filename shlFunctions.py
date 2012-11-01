@@ -642,12 +642,12 @@ class ShippingContainer(object):
 		See the currentState['lastLog'] entry for the reason for failure if 
 		the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
+		
 		out = self.currentState['wxThread'].getLastUpdateTime()
 		if out is None:
 			return True, None
@@ -661,13 +661,17 @@ class ShippingContainer(object):
 		See the currentState['lastLog'] entry for the reason for failure if 
 		the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
-		return True, self.currentState['wxThread'].getTemperature(DegreesF=DegreesF)
+			
+		out = self.currentState['wxThread'].getTemperature(DegreesF=DegreesF)
+		if out is None:
+			return True, None
+		else:
+			return True, "%.2f" % out
 
 	def getOutsideHumidity(self):
 		"""
@@ -676,14 +680,18 @@ class ShippingContainer(object):
 		See the currentState['lastLog'] entry for the reason for failure if 
 		the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
-		return True, self.currentState['wxThread'].getPressure()
-
+			
+		out = self.currentState['wxThread'].getPressure()
+		if out is None:
+			return True, None
+		else:
+			return True, "%.2f" % out
+			
 	def getBarometricPressure(self):
 		"""
 		Return the outside humidity as a two-element tuple (success, value)
@@ -691,14 +699,18 @@ class ShippingContainer(object):
 		See the currentState['lastLog'] entry for the reason for failure if 
 		the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
-		return True, self.currentState['wxThread'].getHumidity()
-
+			
+		out = self.currentState['wxThread'].getHumidity()
+		if out is None:
+			return True, None
+		else:
+			return True, "%.2f" % out
+			
 	def getWind(self, MPH=True):
 		"""
 		Return the wind speed and direction as a two-element tuple 
@@ -706,18 +718,18 @@ class ShippingContainer(object):
 		wind was found.  See the currentState['lastLog'] entry for the 
 		reason for failure if the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
+			
 		out = self.currentState['wxThread'].getWind(MPH=MPH)
 		if out[0] is None:
 			return True, None
 		else:
 			return True, "%.1f %s at %i degrees" % (out[0], 'mph' if MPH else 'kph', out[1])
-
+			
 	def getGust(self, MPH=True):
 		"""
 		Return the wind gust speed and direction as a two-element tuple 
@@ -725,18 +737,18 @@ class ShippingContainer(object):
 		wind was found.  See the currentState['lastLog'] entry for the 
 		reason for failure if the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
+			
 		out = self.currentState['wxThread'].getGust(MPH=MPH)
 		if out[0] is None:
 			return True, None
 		else:
 			return True, "%.1f %s at %i degrees" % (out[0], 'mph' if MPH else 'kph', out[1])
-
+			
 	def getRainfallRate(self, Inches=True):
 		"""
 		Return the rainfall rate as a two-element tuple (success, value) 
@@ -744,15 +756,18 @@ class ShippingContainer(object):
 		found.  See the currentState['lastLog'] entry for the reason for 
 		failure if the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
+			
 		out = self.currentState['wxThread'].getPercipitation(Inches=Inches)
-		return True, out[0]
-
+		if out[0] is None:
+			return True, None
+		else:
+			return True, "%.2f" % out[0]
+			
 	def getDailyRainfall(self, Inches=True):
 		"""
 		Return the daily rainfall as a two-element tuple (success, value) 
@@ -760,15 +775,18 @@ class ShippingContainer(object):
 		found.  See the currentState['lastLog'] entry for the reason for 
 		failure if the returned success value is False.
 		"""
-
+		
 		# Make sure the monitoring thread is running
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-
+			
 		out = self.currentState['wxThread'].getPercipitation(Inches=Inches)
-		return True, out[1]
-
+		if out[1] is None:
+			return True, None
+		else:
+			return True, "%.2f" % out[1]
+			
 	def processCriticalTemperature(self):
 		"""
 		Deal with a critical shelter temperature.  We are in error if this happens 

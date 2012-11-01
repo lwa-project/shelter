@@ -390,7 +390,7 @@ class MCSCommunicate(Communicate):
 						packed_data = self.SubSystemInstance.currentState['lastLog']
 				## Weather Station - Wind
 				elif data[0:7] == 'WX-WIND':
-					status, wind = self.SubSystem.getWind()
+					status, wind = self.SubSystemInstance.getWind()
 					if status:
 						if wind is not None:
 							packed_data = str(wind)
@@ -400,7 +400,7 @@ class MCSCommunicate(Communicate):
 						packed_data = self.SubSystemInstance.currentState['lastLog']
 				## Weather Station - Gust
 				elif data[0:7] == 'WX-GUST':
-					status, wind = self.SubSystem.getWind()
+					status, wind = self.SubSystemInstance.getWind()
 					if status:
 						if wind is not None:
 							packed_data = str(wind)
@@ -410,7 +410,7 @@ class MCSCommunicate(Communicate):
 						packed_data = self.SubSystemInstance.currentState['lastLog']
 				## Weather Station - Rainfall Rate
 				elif data[0:16] == 'WX-RAINFALL-RATE':
-					status, rain = self.SubSystem.getRainfallRate()
+					status, rain = self.SubSystemInstance.getRainfallRate()
 					if status:
 						if rain is not None:
 							packed_data = str(rain)
@@ -420,7 +420,7 @@ class MCSCommunicate(Communicate):
 						packed_data = self.SubSystemInstance.currentState['lastLog']
 				## Weather Station - Rainfall Rate
 				elif data[0:16] == 'WX-RAINFALL-DAILY':
-					status, rain = self.SubSystem.getDailyRainfall()
+					status, rain = self.SubSystemInstance.getDailyRainfall()
 					if status:
 						if rain is not None:
 							packed_data = str(rain)
