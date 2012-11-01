@@ -11,8 +11,10 @@ import os
 import sys
 import time
 import logging
+import sqlite3
 import threading
 import traceback
+from datetime import datetime
 try:
         import cStringIO as StringIO
 except ImportError:
@@ -23,9 +25,9 @@ from pysnmp.proto import rfc1902
 
 from shlCommon import CRITICAL_TEMP
 
-__version__ = "0.1"
+__version__ = "0.3"
 __revision__ = "$Rev$"
-__all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'TrippLiteUPS', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'TrippLiteUPS', 'Weather', '__version__', '__revision__', '__all__']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -902,4 +904,239 @@ class TrippLiteUPS(PDU):
 		"""
 		
 		return self.batteryStatus
+
+
+class Weather(object):
+	"""
+	Class for reading in values from the weather station database.
+	"""
+
+	def __init__(self, config, MonitorPeriod=120.0):
+		self.config = config
+		self.MonitorPeriod = MonitorPeriod
+
+		# Update the configuration
+		self.updateConfig()
+
+		# Setup threading
+		self.thread = None
+		self.alive = threading.Event()
+		self.lastError = None
 		
+		# Setup variables
+		self.updatetime = None
+		self.usUnits = False
+		self.pressure = None
+		self.temperature = None
+		self.humidity = None
+		self.windSpeed = None
+		self.windDir = None
+		self.windGust = None
+		self.windGustDir = None
+		self.rain = None
+		self.rainRate = None
+
+	def updateConfig(self, config=None):
+		"""
+		Using the configuration file, update the database file.
+		"""
+		
+		# Update the current configuration
+		if config is not None:
+			self.config = config
+		self.database = self.config['WEATHERDATABASE']
+
+	def start(self):
+		"""
+		Start the monitoring thread.
+		"""
+
+		if self.thread is not None:
+			self.stop()
+			
+		self.thread = threading.Thread(target=self.monitorThread)
+		self.thread.setDaemon(1)
+		self.alive.set()
+		self.thread.start()
+
+	def stop(self):
+		"""
+		Stop the monitor thread, waiting until it's finished.
+		"""
+
+		if self.thread is not None:
+			self.alive.clear()          #clear alive event for thread
+			self.thread.join()          #wait until thread has finished
+			self.thread = None
+			self.lastError = None
+
+	def monitorThread(self):
+		"""
+		Create a monitoring thread for the temperature.
+		"""
+
+		while self.alive.isSet():
+			tStart = time.time()
+
+			try:
+				conn = sqlite3.connect(sys.argv[1])
+				conn.row_factory = sqlite3.Row
+
+				c = conn.cursor()
+				c.execute("SELECT * FROM archive ORDER BY dateTime DESC")
+				row = c.fetchone()
+
+				self.updatetime = int(row['dateTime'])
+				self.usUnits = bool(row['usUnits'])
+				self.pressure = float(row['barometer'])
+				self.temperature = float(row['outTemp'])
+				self.humidity = float(row['outHumidity'])
+				self.windSpeed = float(row['windSpeed'])
+				self.windDir = float(row['windDir'])
+				self.windGust = float(row['windGust'])
+				self.windGustDir = float(row['windGustDir'])
+				self.rain = float(row['rain'])
+				self.rainRate = float(row['rainRate'])
+
+				conn.close()
+
+			except Exception, e:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
+				shlThreadsLogger.error("Weather: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+					
+				## Grab the full traceback and save it to a string via StringIO
+				fileObject = StringIO.StringIO()
+				traceback.print_tb(exc_traceback, file=fileObject)
+				tbString = fileObject.getvalue()
+				fileObject.close()
+				## Print the traceback to the logger as a series of DEBUG messages
+				for line in tbString.split('\n'):
+					shlThreadsLogger.debug("%s", line)
+				
+				if self.lastError is not None:
+					self.lastError = "%s; %s" % (self.lastError, str(e))
+				else:
+					self.lastError = str(e)
+				self.updatetime = None
+				self.usUnits = False
+				self.pressure = None
+				self.temperature = None
+				self.humidity = None
+				self.windSpeed = None
+				self.windDir = None
+				self.windGust = None
+				self.windGustDir = None
+				self.rain = None
+				self.rainRate = None
+
+			# Stop time
+			tStop = time.time()
+			shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
+			
+			# Sleep for a bit
+			sleepCount = 0
+			sleepTime = self.MonitorPeriod - (tStop - tStart)
+			while (self.alive.isSet() and sleepCount < sleepTime):
+				time.sleep(1.0)
+				sleepCount += 1.0
+				
+	def getLastUpdateTime(self):
+		"""
+		Return the time of last update as a datetime object in UTC.
+		"""
+
+		if self.updatetime is None:
+			return None
+			
+		return datetime.utcfromtimestamp(self.updatetime)
+
+	def getTemperature(self, DegreesF=True):
+		"""
+		Return the outside temperature in degrees F.
+		"""
+		
+		if self.temperature is None:
+			return None
+
+		if self.usUnits:
+			f =  self.temperature
+		else:
+			f = 1.8*self.temperature + 32
+
+		if DegreesF:
+			return f
+		else:
+			return (f - 32)/1.8
+
+	def getHumidity(self):
+		"""
+		Return the outside humdity.
+		"""
+
+		return self.humidity
+
+	def getPressure(self):
+		"""
+		Return the barometric pressure.
+		"""
+
+		return self.pressure
+
+	def getWind(self, MPH=True):
+		"""
+		Return a two-element tuple of wind speed and direction.
+		"""
+
+		if self.windSpeed is None or self.windDir is None:
+			return (None, None)
+
+		if self.usUnits:
+			m = self.windSpeed
+		else:
+			m = self.windSpeed / 1.60934
+
+		if MPH:
+			return (m, self.windDir)
+		else:
+			return (m*1.60934, self.windDir)
+
+	def getGust(self, MPH=True):
+		"""
+		Return a two-element tuple of wind gust speed and direction.
+		"""
+
+		if self.windGust is None or self.windGustDir is None:
+			return (None, None)
+
+		if self.usUnits:
+			m = self.windGust
+		else:
+			m = self.windGust / 1.60934
+
+		if MPH:
+			return (m, self.windGustDir)
+		else:
+			return (m*1.60934, self.windGustDir)
+
+	def getPercipitation(self, Inches=True):
+		"""
+		Return a two-element tuple of rainfall rate and total 
+		rainfall.
+		"""
+
+		if self.rainRate is None or self.rain is None:
+			return (None, None)
+
+		if self.usUnits:
+			rri = self.rainRate
+			rfi = self.rain
+		else:
+			rri = self.rainRate / 25.4
+			rfi = self.rain / 25.4
+
+		if Inches:
+			return (rri, rfi)
+		else:
+			return (rri*25.4, rfi*25.4)
+
+			

@@ -18,7 +18,7 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 from shlCommon import *
 from shlThreads import *
 
-__version__ = "0.1"
+__version__ = "0.2"
 __revision__ = "$Rev$"
 __all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer", "__version__", "__revision__", "__all__"]
 
@@ -84,6 +84,7 @@ class ShippingContainer(object):
 		## Monitoring and background threads
 		self.currentState['tempThreads'] = None
 		self.currentState['pduThreads'] = None
+		self.currentState['wxThread'] = None
 		
 		# Update the configuration
 		self.updateConfig()
@@ -205,6 +206,11 @@ class ShippingContainer(object):
 								MonitorPeriod=self.config['RACKMONITORPERIOD'])
 								
 				self.currentState['pduThreads'].append(nP)
+		## Weather station
+		if self.currentState['wxThread'] is not None:
+			self.currentState['wxThread'].stop()
+		else:
+			self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['WEATHERMONITORPERIOD'])
 				
 		# Set configuration values
 		self.currentState['setPoint'] = setPoint
@@ -230,6 +236,7 @@ class ShippingContainer(object):
 		for t,p in zip(self.currentState['pduThreads'], self.currentState['rackPresent']):
 			if p:
 				t.start()
+		self.currentState['wxThread'].start()
 			
 		# Update the current state
 		self.currentState['ready'] = True
@@ -290,6 +297,9 @@ class ShippingContainer(object):
 		if self.currentState['pduThreads'] is not None:
 			for t in self.currentState['pduThreads']:
 				t.stop()
+		## Weather station
+		if self.currentState['wxThread'] is not None:
+			self.currentState['wxThread'].stop()
 			
 		# Update the state
 		self.currentState['status'] = 'SHUTDWN'
@@ -625,6 +635,140 @@ class ShippingContainer(object):
 			
 		return True, self.currentState['pduThreads'][rack-1].getOutputSource()
 		
+	def getWeatherUpdateTime(self):
+		"""
+		Return the update weather update as a two-element tuple (success, value)
+		where success is a boolean related to if the update time was found.  
+		See the currentState['lastLog'] entry for the reason for failure if 
+		the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		out = self.currentState['wxThread'].getLastUpdateTime()
+		if out is None:
+			return True, None
+		else:
+			return True, out.strftime('%Y-%m-%d %H:%M:%S')	
+
+	def getOutsideTemperature(self, DegreesF=True):
+		"""
+		Return the outside temperature as a two-element tuple (success, value)
+		where success is a boolean related to if the temperature was found.  
+		See the currentState['lastLog'] entry for the reason for failure if 
+		the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		return True, self.currentState['wxThread'].getTemperature(DegreesF=DegreesF)
+
+	def getOutsideHumidity(self):
+		"""
+		Return the barometric pressure as a two-element tuple (success, value)
+		where success is a boolean related to if the pressure was found.  
+		See the currentState['lastLog'] entry for the reason for failure if 
+		the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		return True, self.currentState['wxThread'].getPressure()
+
+	def getBarometricPressure(self):
+		"""
+		Return the outside humidity as a two-element tuple (success, value)
+		where success is a boolean related to if the humidity was found.  
+		See the currentState['lastLog'] entry for the reason for failure if 
+		the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		return True, self.currentState['wxThread'].getHumidity()
+
+	def getWind(self, MPH=True):
+		"""
+		Return the wind speed and direction as a two-element tuple 
+		(success, value) where success is a boolean related to if the 
+		wind was found.  See the currentState['lastLog'] entry for the 
+		reason for failure if the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		out = self.currentState['wxThread'].getWind(MPH=MPH)
+		if out[0] is None:
+			return True, None
+		else:
+			return True, "%.1f %s at %i degrees" % (out[0], 'mph' if MPH else 'kph', out[1])
+
+	def getGust(self, MPH=True):
+		"""
+		Return the wind gust speed and direction as a two-element tuple 
+		(success, value) where success is a boolean related to if the 
+		wind was found.  See the currentState['lastLog'] entry for the 
+		reason for failure if the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		out = self.currentState['wxThread'].getGust(MPH=MPH)
+		if out[0] is None:
+			return True, None
+		else:
+			return True, "%.1f %s at %i degrees" % (out[0], 'mph' if MPH else 'kph', out[1])
+
+	def getRainfallRate(self, Inches=True):
+		"""
+		Return the rainfall rate as a two-element tuple (success, value) 
+		where success is a boolean related to if the rainfall rate was 
+		found.  See the currentState['lastLog'] entry for the reason for 
+		failure if the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		out = self.currentState['wxThread'].getPercipitation(Inches=Inches)
+		return True, out[0]
+
+	def getDailyRainfall(self, Inches=True):
+		"""
+		Return the daily rainfall as a two-element tuple (success, value) 
+		where success is a boolean related to if the daily rainfall was 
+		found.  See the currentState['lastLog'] entry for the reason for 
+		failure if the returned success value is False.
+		"""
+
+		# Make sure the monitoring thread is running
+		if not self.currentState['wxThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
+			return False, 0
+
+		out = self.currentState['wxThread'].getPercipitation(Inches=Inches)
+		return True, out[1]
+
 	def processCriticalTemperature(self):
 		"""
 		Deal with a critical shelter temperature.  We are in error if this happens 

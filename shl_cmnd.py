@@ -124,7 +124,9 @@ def parseConfigFile(filename):
 			   'DIFFMIN'                  : float, 
 			   'DIFFMAX'                  : float,
 			   'TEMPMONITORPERIOD'        : float,
-			   'RACKMONITORPERIOD'        : float}
+			   'RACKMONITORPERIOD'        : float,
+			   'WEATHERDATABASE'          : str, 
+			   'WEATHERMONITORPERIOD'     : float}
 	config = {}
 
 	#
@@ -346,6 +348,87 @@ class MCSCommunicate(Communicate):
 					else:
 						packed_data = self.SubSystemInstance.currentState['lastLog']
 				
+				## Weather Station - Last Update
+				elif data[0:14] == 'WX-UPDATED':
+					status, uptd = self.SubSystemInstance.getWeatherUpdateTime()
+					if status:
+						if uptd is not None:
+							packed_data = str(uptd)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Weather Station - Temperature
+				elif data[0:14] == 'WX-TEMPERATURE':
+					status, temp = self.SubSystemInstance.getOutsideTemperature()
+					if status:
+						if temp is not None:
+							packed_data = str(temp)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Weather Station - Humidity
+				elif data[0:11] == 'WX-HUMIDITY':
+					status, humid = self.SubSystemInstance.getOutsideHumidity()
+					if status:
+						if humid is not None:
+							packed_data = str(humid)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Weather Station - Pressure
+				elif data[0:11] == 'WX-PRESSURE':
+					status, press = self.SubSystemInstance.getBarometricPressure()
+					if status:
+						if press is not None:
+							packed_data = str(press)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Weather Station - Wind
+				elif data[0:7] == 'WX-WIND':
+					status, wind = self.SubSystem.getWind()
+					if status:
+						if wind is not None:
+							packed_data = str(wind)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Weather Station - Gust
+				elif data[0:7] == 'WX-GUST':
+					status, wind = self.SubSystem.getWind()
+					if status:
+						if wind is not None:
+							packed_data = str(wind)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Weather Station - Rainfall Rate
+				elif data[0:16] == 'WX-RAINFALL-RATE':
+					status, rain = self.SubSystem.getRainfallRate()
+					if status:
+						if rain is not None:
+							packed_data = str(rain)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Weather Station - Rainfall Rate
+				elif data[0:16] == 'WX-RAINFALL-DAILY':
+					status, rain = self.SubSystem.getDailyRainfall()
+					if status:
+						if rain is not None:
+							packed_data = str(rain)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+
 				## Temperature set point
 				elif data == 'SET-POINT':
 					packed_data = '%.1f' % self.SubSystemInstance.currentState['setPoint']
