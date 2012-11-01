@@ -979,6 +979,12 @@ class Weather(object):
 			tStart = time.time()
 
 			try:
+				# Make sure we don't try near the edge of a minute
+				tNow = int(time.time())
+				while ((tNow % 60) < 10) or ((tNow % 60) > 50):
+					time.sleep(5)
+					tNow = int(time.time())
+				
 				conn = sqlite3.connect(self.database)
 				conn.row_factory = sqlite3.Row
 
