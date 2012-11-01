@@ -418,9 +418,9 @@ class MCSCommunicate(Communicate):
 							packed_data = 'UNK'
 					else:
 						packed_data = self.SubSystemInstance.currentState['lastLog']
-				## Weather Station - Rainfall Rate
-				elif data[0:16] == 'WX-RAINFALL-DAILY':
-					status, rain = self.SubSystemInstance.getDailyRainfall()
+				## Weather Station - Rainfall Total
+				elif data[0:17] == 'WX-RAINFALL-TOTAL':
+					status, rain = self.SubSystemInstance.getTotalRainfall()
 					if status:
 						if rain is not None:
 							packed_data = str(rain)

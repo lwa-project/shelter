@@ -768,10 +768,10 @@ class ShippingContainer(object):
 		else:
 			return True, "%.2f" % out[0]
 			
-	def getDailyRainfall(self, Inches=True):
+	def getTotalRainfall(self, Inches=True):
 		"""
-		Return the daily rainfall as a two-element tuple (success, value) 
-		where success is a boolean related to if the daily rainfall was 
+		Return the total rainfall as a two-element tuple (success, value) 
+		where success is a boolean related to if the total rainfall was 
 		found.  See the currentState['lastLog'] entry for the reason for 
 		failure if the returned success value is False.
 		"""
