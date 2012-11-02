@@ -1021,6 +1021,11 @@ class Weather(object):
 				for line in tbString.split('\n'):
 					shlThreadsLogger.debug("%s", line)
 				
+				try:
+					conn.close()
+				except:
+					pass
+
 				if self.lastError is not None:
 					self.lastError = "%s; %s" % (self.lastError, str(e))
 				else:
