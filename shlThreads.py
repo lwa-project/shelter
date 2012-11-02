@@ -984,9 +984,7 @@ class Weather(object):
 				while ((tNow % 60) < 10) or ((tNow % 60) > 50):
 					time.sleep(5)
 					tNow = int(time.time())
-				while os.system("lsof %s" % self.database) == 0:
-					time.sleep(5)
-								
+				
 				conn = sqlite3.connect(self.database, timeout=15)
 				conn.row_factory = sqlite3.Row
 
