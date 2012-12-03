@@ -41,13 +41,13 @@ for line in output:
 		# Guard against the output power source being None because of failed communications
 		if float(fields[-1]) > 0:
 			powerLoss = True
-			powerLossTime = int(fields[0]) 
+			powerLossTime = float(fields[0]) 
 			powerLossReason = "Output power source is '%s'" % fields[-3]
 		else:
 			sys.stderr.write("Output power power is '%s' but the corresponding log entry is:\n%s\n" % (fields[-3], line))
 	elif float(fields[-1]) < 100:
 		powerLoss = True
-		powerLossTime = int(fields[0])
+		powerLossTime = float(fields[0])
 		powerLossReason = "Battery at %i%%" % float(fields[-1])
 	else:
 		pass
