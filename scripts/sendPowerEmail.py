@@ -46,12 +46,12 @@ for line in output:
 		else:
 			sys.stderr.write("Output power power is '%s' but the corresponding log entry is:\n%s\n" % (fields[-3], line))
 	elif float(fields[-1]) < 100:
-		if float(fields[-1] >= 0:
+		if float(fields[-1]) >= 0:
 			powerLoss = True
 			powerLossTime = float(fields[0])
 			powerLossReason = "Battery at %i%%" % float(fields[-1])
 		else:
-			sys.stderr.write("Battery status is listed as %i%%\n", float(fields[-1]))
+			sys.stderr.write("Battery status is listed as %i%%\n" % float(fields[-1]))
 	else:
 		pass
 
