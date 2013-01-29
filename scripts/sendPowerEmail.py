@@ -24,7 +24,7 @@ FROM = 'lwa.station.1@gmail.com'
 PASS = '1mJy4LWA'
 
 ## Read in the last few log entries from Rack #07
-proc = subprocess.Popen(['tail', '-n15', '/data/rack07.txt'], stdout=subprocess.PIPE)
+proc = subprocess.Popen(['tail', '-n45', '/data/rack07.txt'], stdout=subprocess.PIPE)
 output = proc.communicate()[0]
 output = output.split('\n')
 
@@ -68,6 +68,8 @@ if powerLoss:
 	msg['Subject'] = 'Possible Shelter Power Loss/Brownout'
 	msg['From'] = FROM
 	msg['To'] = ','.join(TO)
+
+	print msg
 	
 	try:
 		server = smtplib.SMTP('smtp.gmail.com', 587)
