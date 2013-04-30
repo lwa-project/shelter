@@ -45,7 +45,7 @@ for line in output:
 			powerLossReason = "Output power source is '%s'" % fields[-3]
 		else:
 			sys.stderr.write("Output power power is '%s' but the corresponding log entry is:\n%s\n" % (fields[-3], line))
-	elif float(fields[-1]) < 100:
+	elif float(fields[-1]) < 99:
 		if float(fields[-1]) >= 0:
 			powerLoss = True
 			powerLossTime = float(fields[0])
