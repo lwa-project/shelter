@@ -43,7 +43,7 @@ def getUPSOnBattery(ipAddress, window=None, verbose=False):
 		proc.logfile = sys.stdout
 		
 	# Go!
-	tNow = datetime.now()
+	tNow = datetime.utcnow()
 	
 	# Login
 	proc.expect('login')
@@ -107,7 +107,8 @@ def main(args):
 	# If there has been a power loss
 	if powerLoss:
 		## Naive time to time to string
-		powerLossTime = MST.localize(powerLossTime)
+		powerLossTime = UTC.localize(powerLossTime)
+		powerLossTime = powerLossTime.astimezone(MST)
 		tNow = powerLossTime.strftime("%B %d, %Y %H:%M:%S %Z")
 		
 		msg = MIMEText("At %s, there was a potential power loss or brownout.\n\nReason for warning: %s" % (tNow, powerLossReason))

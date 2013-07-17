@@ -17,7 +17,7 @@ def main(args):
 	proc = pexpect.spawn('telnet %s' % ipAddress)#, logfile=sys.stdout)
 	
 	# Current time
-	tNow = datetime.now()
+	tNow = datetime.utcnow()
 
 	# Login
 	proc.expect('login')
@@ -49,7 +49,7 @@ def main(args):
 	# Print the event log
 	eventLog = eventLog.split('\n')
 	
-	print "# Date [MT]         Age [s]"
+	print "# Date [UTC]        Age [s]"
 	for line in eventLog:
 		if line.find('Battery') != -1:
 			mtch = logRE.search(line)
