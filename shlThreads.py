@@ -278,35 +278,35 @@ class PDU(object):
 			
 			SNMPLock.acquire()
 			
-			try:
-				
-				# Get the system firmware
-				errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
-				
-				# Check for SNMP errors
-				if errorIndication:
-					raise RuntimeError("SNMP error indication: %s" % errorIndication)
-				if errorStatus:
-					raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-						
-				name, self.firmwareVersion = varBinds[0]
-	
-			except Exception, e:
-				exc_type, exc_value, exc_traceback = sys.exc_info()
-				shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
-				
-				## Grab the full traceback and save it to a string via StringIO
-				fileObject = StringIO.StringIO()
-				traceback.print_tb(exc_traceback, file=fileObject)
-				tbString = fileObject.getvalue()
-				fileObject.close()
-				## Print the traceback to the logger as a series of DEBUG messages
-				for line in tbString.split('\n'):
-					shlThreadsLogger.debug("%s", line)
-				
-				self.lastError = str(e)
-				self.firmwareVersion = None
-			
+			if self.oidFirmwareEntry is not None:
+				try:
+					# Get the system firmware
+					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
+					
+					# Check for SNMP errors
+					if errorIndication:
+						raise RuntimeError("SNMP error indication: %s" % errorIndication)
+					if errorStatus:
+						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+							
+					name, self.firmwareVersion = varBinds[0]
+		
+				except Exception, e:
+					exc_type, exc_value, exc_traceback = sys.exc_info()
+					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					
+					## Grab the full traceback and save it to a string via StringIO
+					fileObject = StringIO.StringIO()
+					traceback.print_tb(exc_traceback, file=fileObject)
+					tbString = fileObject.getvalue()
+					fileObject.close()
+					## Print the traceback to the logger as a series of DEBUG messages
+					for line in tbString.split('\n'):
+						shlThreadsLogger.debug("%s", line)
+					
+					self.lastError = str(e)
+					self.firmwareVersion = None
+					
 			if self.oidFrequencyEntry is not None:
 				try:
 					# Get the current input frequency
@@ -598,6 +598,7 @@ class APC(PDU):
 		super(APC, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
+		self.oidFirmwareEntry = None
 		self.oidFrequencyEntry = None
 		self.oidVoltageEntry = None
 		self.oidCurrentEntry = None
@@ -655,36 +656,36 @@ class TrippLiteUPS(PDU):
 			tStart = time.time()
 			
 			SNMPLock.acquire()
-
-			try:
-				
-				# Get the system firmware
-				errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
-				
-				# Check for SNMP errors
-				if errorIndication:
-					raise RuntimeError("SNMP error indication: %s" % errorIndication)
-				if errorStatus:
-					raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-						
-				name, self.firmwareVersion = varBinds[0]
-	
-			except Exception, e:
-				exc_type, exc_value, exc_traceback = sys.exc_info()
-				shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
-				
-				## Grab the full traceback and save it to a string via StringIO
-				fileObject = StringIO.StringIO()
-				traceback.print_tb(exc_traceback, file=fileObject)
-				tbString = fileObject.getvalue()
-				fileObject.close()
-				## Print the traceback to the logger as a series of DEBUG messages
-				for line in tbString.split('\n'):
-					shlThreadsLogger.debug("%s", line)
-				
-				self.lastError = str(e)
-				self.firmwareVersion = None
 			
+			if self.oidFirmwareEntry is not None:
+				try:
+					# Get the system firmware
+					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
+					
+					# Check for SNMP errors
+					if errorIndication:
+						raise RuntimeError("SNMP error indication: %s" % errorIndication)
+					if errorStatus:
+						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+							
+					name, self.firmwareVersion = varBinds[0]
+		
+				except Exception, e:
+					exc_type, exc_value, exc_traceback = sys.exc_info()
+					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					
+					## Grab the full traceback and save it to a string via StringIO
+					fileObject = StringIO.StringIO()
+					traceback.print_tb(exc_traceback, file=fileObject)
+					tbString = fileObject.getvalue()
+					fileObject.close()
+					## Print the traceback to the logger as a series of DEBUG messages
+					for line in tbString.split('\n'):
+						shlThreadsLogger.debug("%s", line)
+					
+					self.lastError = str(e)
+					self.firmwareVersion = None
+					
 			if self.oidFrequencyEntry is not None:
 				try:
 					# Get the current input frequency
