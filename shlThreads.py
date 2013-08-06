@@ -197,6 +197,7 @@ class PDU(object):
 	
 	isUPS = False
 	
+	oidFirmwareEntry = None
 	oidFrequencyEntry = None
 	oidVoltageEntry = None
 	oidCurrentEntry = None
@@ -218,6 +219,7 @@ class PDU(object):
 		self.voltage = None
 		self.current = None
 		self.frequency = None
+		self.firmwareVersion = None
 		self.status = {}
 		for i in xrange(1, self.nOutlets+1):
 			self.status[i] = "UNK"
@@ -275,6 +277,35 @@ class PDU(object):
 			tStart = time.time()
 			
 			SNMPLock.acquire()
+			
+			try:
+				
+				# Get the system firmware
+				errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
+				
+				# Check for SNMP errors
+				if errorIndication:
+					raise RuntimeError("SNMP error indication: %s" % errorIndication)
+				if errorStatus:
+					raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+						
+				name, self.firmwareVersion = varBinds[0]
+	
+			except Exception, e:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
+				shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+				
+				## Grab the full traceback and save it to a string via StringIO
+				fileObject = StringIO.StringIO()
+				traceback.print_tb(exc_traceback, file=fileObject)
+				tbString = fileObject.getvalue()
+				fileObject.close()
+				## Print the traceback to the logger as a series of DEBUG messages
+				for line in tbString.split('\n'):
+					shlThreadsLogger.debug("%s", line)
+				
+				self.lastError = str(e)
+				self.firmwareVersion = None
 			
 			if self.oidFrequencyEntry is not None:
 				try:
@@ -353,7 +384,10 @@ class PDU(object):
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
 							
 					name, PWRcurrent = varBinds[0]
-					self.current = float(unicode(PWRcurrent)) / 10
+					if self.firmwareVersion == '12.04.0053':
+						self.current = float(unicode(PWRcurrent))
+					else:
+						self.current = float(unicode(PWRcurrent)) / 10
 					self.lastError = None
 					
 				except Exception, e:
@@ -459,6 +493,13 @@ class PDU(object):
 		"""
 		
 		return self.current
+		
+	def getFirmwareVersion(self):
+		"""
+		Return the firmware version information or None if it is unknown.
+		"""
+		
+		return self.firmwareVersion
 	
 	def getStatus(self, outlet=None):
 		"""
@@ -537,9 +578,10 @@ class TrippLite(PDU):
 		super(TrippLite, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
-		self.oidFrequencyEntry = (1,3,6,1,2,1,33,1,3,3,1,2)
-		self.oidVoltageEntry = (1,3,6,1,2,1,33,1,3,3,1,3)
-		self.oidCurrentEntry = (1,3,6,1,2,1,33,1,4,4,1,3,1)
+		self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,4,0)
+		self.oidFrequencyEntry = (1,3,6,1,2,1,33,1,4,2,0)
+		self.oidVoltageEntry =   (1,3,6,1,2,1,33,1,4,4,1,2,1)
+		self.oidCurrentEntry =   (1,3,6,1,2,1,33,1,4,4,1,3,1)
 		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,2,)
 		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,4,)
 		
@@ -582,6 +624,7 @@ class TrippLiteUPS(PDU):
 		self.isUPS = True
 		
 		# Setup the OID values
+		self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,4,0)
 		self.oidFrequencyEntry = (1,3,6,1,2,1,33,1,3,3,1,2,1)
 		self.oidVoltageEntry = (1,3,6,1,2,1,33,1,3,3,1,3,1)
 		self.oidCurrentEntry = (1,3,6,1,2,1,33,1,4,4,1,3,1)
@@ -612,6 +655,35 @@ class TrippLiteUPS(PDU):
 			tStart = time.time()
 			
 			SNMPLock.acquire()
+
+			try:
+				
+				# Get the system firmware
+				errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
+				
+				# Check for SNMP errors
+				if errorIndication:
+					raise RuntimeError("SNMP error indication: %s" % errorIndication)
+				if errorStatus:
+					raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+						
+				name, self.firmwareVersion = varBinds[0]
+	
+			except Exception, e:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
+				shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+				
+				## Grab the full traceback and save it to a string via StringIO
+				fileObject = StringIO.StringIO()
+				traceback.print_tb(exc_traceback, file=fileObject)
+				tbString = fileObject.getvalue()
+				fileObject.close()
+				## Print the traceback to the logger as a series of DEBUG messages
+				for line in tbString.split('\n'):
+					shlThreadsLogger.debug("%s", line)
+				
+				self.lastError = str(e)
+				self.firmwareVersion = None
 			
 			if self.oidFrequencyEntry is not None:
 				try:
@@ -690,7 +762,10 @@ class TrippLiteUPS(PDU):
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
 							
 					name, PWRcurrent = varBinds[0]
-					self.current = float(unicode(PWRcurrent)) / 10
+					if self.firmwareVersion == '12.04.0053':
+						self.current = float(unicode(PWRcurrent))
+					else:
+						self.current = float(unicode(PWRcurrent)) / 10
 					self.lastError = None
 					
 				except Exception, e:
