@@ -6,7 +6,7 @@ import urllib
 import subprocess
 
 
-URL = "http://lwalab.phys.unm.edu/OpScreen/test.php"
+URL = "http://lwalab.phys.unm.edu/OpScreen/update.php"
 KEY = "c0843461abe746a4608dd9c897f9b261"
 SUBSYSTEM = "SHL"
 
