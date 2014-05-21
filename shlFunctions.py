@@ -198,6 +198,8 @@ class ShippingContainer(object):
 					PDUBaseType = TrippLite
 				elif v['Type'] == 'TrippLiteUPS':
 					PDUBaseType = TrippLiteUPS
+				elif v['Type'] == 'Raritan':
+					PDUBaseType = Raritan
 				else:
 					PDUBaseType = APC
 					

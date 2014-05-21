@@ -27,7 +27,7 @@ from shlCommon import CRITICAL_TEMP
 
 __version__ = "0.3"
 __revision__ = "$Rev$"
-__all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'TrippLiteUPS', 'Weather', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'Weather', '__version__', '__revision__', '__all__']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -607,6 +607,26 @@ class APC(PDU):
 		
 		# Setup the status codes
 		self.outletStatusCodes = {1: "ON", 2: "OFF"}
+
+
+class Raritan(PDU):
+	"""
+	Sub-class of the PDU class for the new Raritan PDU on DP.
+	"""
+	
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
+		super(Raritan, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+		
+		# Setup the OID values
+		self.oidFirmwareEntry = (1,3,6,1,4,1,13742,6,3,2,3,1,6,1,1,1)
+		self.oidFrequencyEntry = None
+		self.oidVoltageEntry = (1,3,6,1,4,1,13742,6,5,2,3,1,4,1,1,4)
+		self.oidCurrentEntry = (1,3,6,1,4,1,13742,6,5,2,3,1,4,1,1,1)
+		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,13742,6,4,1,2,1,2,1,)
+		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,13742,6,4,1,2,1,2,1,)
+		
+		# Setup the status codes
+		self.outletStatusCodes = {1: "ON", 0: "OFF"}
 
 
 class TrippLiteUPS(PDU):
