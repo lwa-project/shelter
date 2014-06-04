@@ -12,9 +12,9 @@ $LastChangedDate$
 import math
 from datetime import datetime
 
-__version__ = "0.1"
+__version__ = "0.2"
 __revision__ = "$Rev$"
-__all__ = ['THERMOMLIST', 'PDULIST', 'CRITICAL_TEMP', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
+__all__ = ['THERMOMLIST', 'PDULIST', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
 
 # Setup the thermometers
 THERMOMLIST = {}
@@ -52,6 +52,10 @@ PDULIST[7] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.119', 'Port': 161,
 PDULIST[8] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.118', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'public', 0), 
 		    'nOutlets': 3, 'Description': "UPS #2"}
+
+# Define lightning detection server parameters
+LIGHTNING_IP = "224.168.2.9"
+LIGHTNING_PORT = 7163
 
 # Define the critical shutdown list
 CRITICAL_TEMP = 90.0			# Degrees F

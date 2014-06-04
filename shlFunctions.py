@@ -85,6 +85,7 @@ class ShippingContainer(object):
 		self.currentState['tempThreads'] = None
 		self.currentState['pduThreads'] = None
 		self.currentState['wxThread'] = None
+		self.currentState['strikeThread'] = None
 		
 		# Update the configuration
 		self.updateConfig()
@@ -213,7 +214,12 @@ class ShippingContainer(object):
 			self.currentState['wxThread'].stop()
 		else:
 			self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['WEATHERMONITORPERIOD'])
-				
+		## Lightning monitor
+		if self.currentState['strikeThread'] is not None:
+			self.currentState['strikeThread'].stop()
+		else:
+			self.currentState['strikeThread'] = Lightning(self.config)
+			
 		# Set configuration values
 		self.currentState['setPoint'] = setPoint
 		self.currentState['diffPoint'] = diffPoint
@@ -239,7 +245,8 @@ class ShippingContainer(object):
 			if p:
 				t.start()
 		self.currentState['wxThread'].start()
-			
+		self.currentState['strikeThread'].start()
+		
 		# Update the current state
 		self.currentState['ready'] = True
 		self.currentState['status'] = 'NORMAL'
@@ -302,6 +309,9 @@ class ShippingContainer(object):
 		## Weather station
 		if self.currentState['wxThread'] is not None:
 			self.currentState['wxThread'].stop()
+		## Lightning monitor
+		if self.currentState['strikeThread'] is not None:
+			self.currentState['strikeThread'].stop()
 			
 		# Update the state
 		self.currentState['status'] = 'SHUTDWN'
@@ -788,6 +798,26 @@ class ShippingContainer(object):
 			return True, None
 		else:
 			return True, "%.2f" % out[1]
+			
+	def getLightningStrikeCount(self, radius=15, interval=10):
+		"""
+		Returns the number of lightning strikes seen within the specified 
+		radius in km and time interval in minutes as a two-element tuple 
+		(success, value) where success is a boolean related to if the number
+		of strikes was found.  See the currentState['lastLog'] entry for 
+		the reason for failure if the returned success value is False.
+		"""
+		
+		# Make sure the monitoring thread is running
+		if not self.currentState['strikeThread'].alive.isSet():
+			self.currentState['lastLog'] = 'Monitoring thread for the lightning monitor is not running'
+			return False, 0
+			
+		out = self.currentState['strikeThread'].getStrikeCount(radius=radius, interval=interval)
+		if out is None:
+			return True, None
+		else:
+			return True, out
 			
 	def processCriticalTemperature(self):
 		"""

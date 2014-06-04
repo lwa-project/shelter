@@ -8,13 +8,15 @@ $LastChangedDate$
 """
 
 import os
+import re
 import sys
 import time
+import socket
 import logging
 import sqlite3
 import threading
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 try:
         import cStringIO as StringIO
 except ImportError:
@@ -23,11 +25,11 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
-from shlCommon import CRITICAL_TEMP
+from shlCommon import LIGHTNING_IP,LIGHTNING_PORT,CRITICAL_TEMP
 
-__version__ = "0.3"
+__version__ = "0.4"
 __revision__ = "$Rev$"
-__all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'Weather', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -1246,4 +1248,167 @@ class Weather(object):
 		else:
 			return (rri*25.4, rfi*25.4)
 
+
+class Lightning(object):
+	"""
+	Class for interfacing with the lightning detector via UDP.
+	"""
+
+	def __init__(self, config):
+		self.config = config
+		self.aging = 2700
+		self.address = LIGHTNING_IP
+		self.port = LIGHTNING_PORT
+
+		# Update the configuration
+		self.updateConfig()
+
+		# Setup threading
+		self.thread = None
+		self.alive = threading.Event()
+		self.lastError = None
+		
+		# Setup variables
+		self.lock = threading.Lock()
+		self.strikes = {}
+
+	def updateConfig(self, config=None):
+		"""
+		Using the configuration file, update the database file.
+		"""
+		
+		# Update the current configuration
+		if config is not None:
+			self.config = config
+		self.database = self.config['WEATHERDATABASE']
+
+	def start(self):
+		"""
+		Start the monitoring thread.
+		"""
+
+		if self.thread is not None:
+			self.stop()
 			
+		self.thread = threading.Thread(target=self.monitorThread)
+		self.thread.setDaemon(1)
+		self.alive.set()
+		self.thread.start()
+
+	def stop(self):
+		"""
+		Stop the monitor thread, waiting until it's finished.
+		"""
+
+		if self.thread is not None:
+			self.alive.clear()          #clear alive event for thread
+			self.thread.join()          #wait until thread has finished
+			self.thread = None
+			self.lastError = None
+
+	def monitorThread(self):
+		"""
+		Create a monitoring thread for the temperature.
+		"""
+		
+		dataRE = re.compile(r'^\[(?P<date>.*)\] (?P<type>[A-Z]*): (?P<data>.*)$')
+		
+		#create a UDP socket
+		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+		#allow multiple sockets to use the same PORT number
+		sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+		#Bind to the port that we know will receive multicast data
+		sock.bind(("0.0.0.0", self.port))
+		#tell the kernel that we are a multicast socket
+		sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+		#Tell the kernel that we want to add ourselves to a multicast group
+		#The address for the multicast group is the third param
+		status = sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+				socket.inet_aton(self.address) + socket.inet_aton("0.0.0.0"))
+		sock.setblocking(1)
+		
+		tCull = time.time()
+		while self.alive.isSet():
+			try:
+				tNow = time.time()
+				data, addr = sock.recvfrom(1024)
+				
+				# RegEx matching for message date, type, and content
+				mtch = dataRE.match(data)
+				t = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
+				
+				# If we have a lightning strike, figure out it if is close
+				# enough to warrant saving the strike info.
+				if mtch.group('type') == 'LIGHTNING':
+					dist, junk = mtch.group('data').split(None, 1)
+					dist = float(dist)
+					
+					self.lock.acquire()
+					try:
+						self.strikes[t] = dist
+						e = None
+					except Exception, e:
+						pass
+					finally:
+						self.lock.release()
+						if e is not None:
+							raise e
+							
+				# Cull the list of old strikes every two minutes
+				if (time.time() - tCull) > 120:
+					pruneTime = t
+					self.lock.acquire()
+					try:
+						for k in self.strikes.keys():
+							if pruneTime - k > timedelta(seconds=self.ageing):
+								del self.strikes[k]
+					except Exception, e:
+						pass
+					finally:
+						self.lock.release()
+						if e is not None:
+							raise e
+					tCull = time.time()
+					
+			except Exception, e:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
+				shlThreadsLogger.error("Lightning: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+					
+				## Grab the full traceback and save it to a string via StringIO
+				fileObject = StringIO.StringIO()
+				traceback.print_tb(exc_traceback, file=fileObject)
+				tbString = fileObject.getvalue()
+				fileObject.close()
+				## Print the traceback to the logger as a series of DEBUG messages
+				for line in tbString.split('\n'):
+					shlThreadsLogger.debug("%s", line)
+					
+				if self.lastError is not None:
+					self.lastError = "%s; %s" % (self.lastError, str(e))
+				else:
+					self.lastError = str(e)
+					
+		sock.close()
+		
+	def getStrikeCount(self, radius=15, interval=10):
+		"""
+		Return the number of lightning strikes detected without the 
+		specified radius in km and the spcified time interval in minutes.
+		"""
+		
+		tNow = datetime.utcnow()
+		tWindow = tNow - timedelta(minutes=int(interval))
+		counter = 0
+		
+		self.lock.acquire()
+		try:
+			for k in self.strikes.keys():
+				if k >= tWindow:
+					if self.strike[k] <= radius:
+						counter += 1
+		except:
+			counter = None
+		finally:
+			self.lock.release()
+			
+		return counter

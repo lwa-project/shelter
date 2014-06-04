@@ -428,7 +428,38 @@ class MCSCommunicate(Communicate):
 							packed_data = 'UNK'
 					else:
 						packed_data = self.SubSystemInstance.currentState['lastLog']
-
+						
+				## Lightning - detection radius
+				elif data[0:16] == 'LIGHTNING-RADIUS':
+					status, radius = True, 15.0
+					if status:
+						if radius is not None:
+							packed_data = str(radius)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Lightning - strikes within the last 10 minutes within the detection radius
+				elif data[:15] == 'LIGHTNING-10MIN':
+					status, count = self.SubSystemInstance.getLightningStrikeCount(radius=15, interval=10)
+					if status:
+						if count is not None:
+							packed_data = str(count)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+				## Lightning - strikes within the last 30 minutes within the detection radius
+				elif data[:15] == 'LIGHTNING-30MIN':
+					status, count = self.SubSystemInstance.getLightningStrikeCount(radius=15, interval=30)
+					if status:
+						if count is not None:
+							packed_data = str(count)
+						else:
+							packed_data = 'UNK'
+					else:
+						packed_data = self.SubSystemInstance.currentState['lastLog']
+						
 				## Temperature set point
 				elif data == 'SET-POINT':
 					packed_data = '%.1f' % self.SubSystemInstance.currentState['setPoint']
