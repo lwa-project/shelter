@@ -1357,6 +1357,7 @@ class Lightning(object):
 				# Cull the list of old strikes every two minutes
 				if (time.time() - tCull) > 120:
 					pruneTime = t
+					e = None
 					self.lock.acquire()
 					try:
 						for k in self.strikes.keys():
