@@ -1271,7 +1271,8 @@ class Lightning(object):
 		# Setup variables
 		self.lock = threading.Lock()
 		self.strikes = {}
-
+		self.aging = 45*60
+		
 	def updateConfig(self, config=None):
 		"""
 		Using the configuration file, update the database file.
@@ -1361,7 +1362,7 @@ class Lightning(object):
 					self.lock.acquire()
 					try:
 						for k in self.strikes.keys():
-							if pruneTime - k > timedelta(seconds=self.ageing):
+							if pruneTime - k > timedelta(seconds=self.aging):
 								del self.strikes[k]
 					except Exception, e:
 						pass
