@@ -1271,7 +1271,7 @@ class Lightning(object):
 		# Setup variables
 		self.lock = threading.Lock()
 		self.strikes = {}
-		self.aging = 45*60
+		self.aging = 32*60
 		
 	def updateConfig(self, config=None):
 		"""
@@ -1281,8 +1281,7 @@ class Lightning(object):
 		# Update the current configuration
 		if config is not None:
 			self.config = config
-		self.database = self.config['WEATHERDATABASE']
-
+			
 	def start(self):
 		"""
 		Start the monitoring thread.
@@ -1406,9 +1405,21 @@ class Lightning(object):
 		try:
 			for k in self.strikes.keys():
 				if k >= tWindow:
-					if self.strike[k] <= radius:
+					if self.strikes[k] <= radius:
 						counter += 1
-		except:
+		except Exception, e:
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			shlThreadsLogger.error("Lightning: getStrikeCount failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+				
+			## Grab the full traceback and save it to a string via StringIO
+			fileObject = StringIO.StringIO()
+			traceback.print_tb(exc_traceback, file=fileObject)
+			tbString = fileObject.getvalue()
+			fileObject.close()
+			## Print the traceback to the logger as a series of DEBUG messages
+			for line in tbString.split('\n'):
+				shlThreadsLogger.debug("%s", line)
+				
 			counter = None
 		finally:
 			self.lock.release()
