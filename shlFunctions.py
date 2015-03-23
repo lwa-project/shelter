@@ -64,7 +64,7 @@ class ShippingContainer(object):
 		
 		# SHL system information
 		self.subSystem = 'SHL'
-		self.serialNumber = '2'
+		self.serialNumber = self.config['SERIALNUMBER']
 		self.version = str(__version__)
 		
 		# SHL system state
@@ -244,7 +244,8 @@ class ShippingContainer(object):
 		for t,p in zip(self.currentState['pduThreads'], self.currentState['rackPresent']):
 			if p:
 				t.start()
-		self.currentState['wxThread'].start()
+		if self.config['WEATHERMONITORPERIOD'] > 0:
+			self.currentState['wxThread'].start()
 		self.currentState['strikeThread'].start()
 		
 		# Update the current state
@@ -659,13 +660,13 @@ class ShippingContainer(object):
 		if not self.currentState['wxThread'].alive.isSet():
 			self.currentState['lastLog'] = 'Monitoring thread for the weather station is not running'
 			return False, 0
-		
+			
 		out = self.currentState['wxThread'].getLastUpdateTime()
 		if out is None:
 			return True, None
 		else:
 			return True, out.strftime('%Y-%m-%d %H:%M:%S')	
-
+			
 	def getOutsideTemperature(self, DegreesF=True):
 		"""
 		Return the outside temperature as a two-element tuple (success, value)
@@ -684,7 +685,7 @@ class ShippingContainer(object):
 			return True, None
 		else:
 			return True, "%.2f" % out
-
+			
 	def getOutsideHumidity(self):
 		"""
 		Return the barometric pressure as a two-element tuple (success, value)

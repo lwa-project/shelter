@@ -116,7 +116,8 @@ def parseConfigFile(filename):
 	logger.info("Parsing config file '%s'", filename)
 
 	# List of the required parameters and their coercion functions
-	coerceMap = {'MESSAGEHOST'              : str,
+	coerceMap = {'SERIALNUMBER'             : str,
+			   'MESSAGEHOST'              : str,
 			   'MESSAGEOUTPORT'           : int,
 			   'MESSAGEINPORT'            : int, 
 			   'TEMPMIN'                  : float, 
