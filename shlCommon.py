@@ -30,13 +30,13 @@ PDULIST[1] = {'Type': 'TrippLite', 'IP': '172.16.1.113', 'Port': 161,
 PDULIST[2] = {'Type': 'TrippLite', 'IP': '172.16.1.114', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'public', 0), 
 		    'nOutlets': 8, 'Description': "DP - 120VAC"}
-PDULIST[3] = {'Type': 'TrippLite', 'IP': '172.16.1.117', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'public', 0), 
-		    'nOutlets': 8, 'Description': "DP - 240VAC"}
-### Entry for the new Raritan PDU
-##PDULIST[3] = {'Type': 'Raritan', 'IP': '172.16.1.117', 'Port': 161, 
-##		    'SecurityModel': ('my-agent', 'private', 0), 
+### Entry for the old TrippLite PDU
+##PDULIST[3] = {'Type': 'TrippLite', 'IP': '172.16.1.117', 'Port': 161, 
+##		    'SecurityModel': ('my-agent', 'public', 0), 
 ##		    'nOutlets': 8, 'Description': "DP - 240VAC"}
+PDULIST[3] = {'Type': 'Raritan', 'IP': '172.16.1.117', 'Port': 161, 
+		    'SecurityModel': ('my-agent', 'private', 0), 
+		    'nOutlets': 8, 'Description': "DP - 240VAC"}
 PDULIST[4] = {'Type': 'TrippLite', 'IP': '172.16.1.112', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'public', 0), 
 		    'nOutlets': 8, 'Description': "3-Bay - 120VAC - #1"}
