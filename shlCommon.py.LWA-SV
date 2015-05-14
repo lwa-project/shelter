@@ -18,40 +18,27 @@ __all__ = ['THERMOMLIST', 'PDULIST', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING
 
 # Setup the thermometers
 THERMOMLIST = {}
-THERMOMLIST[1] = {'Type': 'Comet', 'IP': '172.16.1.111', 'Port': 161, 
+THERMOMLIST[1] = {'Type': 'HWg', 'IP': '172.16.1.111', 'Port': 161, 
 			   'SecurityModel': ('arbitrary', 'public', 0), 
-			   'nSensors': 1, 'Description': "Shelter #1"}
+			   'nSensors': 2, 'Description': "Shelter #1 and #2"}
 
 # Setup the PDUs
 PDULIST = {}
-PDULIST[1] = {'Type': 'TrippLite', 'IP': '172.16.1.113', 'Port': 161, 
+PDULIST[1] = {'Type': 'Raritan', 'IP': '172.16.1.113', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'public', 0), 
 		    'nOutlets': 8, 'Description': "ASP"}
-PDULIST[2] = {'Type': 'TrippLite', 'IP': '172.16.1.114', 'Port': 161, 
+PDULIST[2] = {'Type': 'Raritan', 'IP': '172.16.1.114', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'public', 0), 
-		    'nOutlets': 8, 'Description': "DP - 120VAC"}
-### Entry for the old TrippLite PDU
-##PDULIST[3] = {'Type': 'TrippLite', 'IP': '172.16.1.117', 'Port': 161, 
-##		    'SecurityModel': ('my-agent', 'public', 0), 
-##		    'nOutlets': 8, 'Description': "DP - 240VAC"}
+		    'nOutlets': 8, 'Description': "ADP - 120VAC"}
 PDULIST[3] = {'Type': 'Raritan', 'IP': '172.16.1.117', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 8, 'Description': "DP - 240VAC"}
-PDULIST[4] = {'Type': 'TrippLite', 'IP': '172.16.1.112', 'Port': 161, 
+		    'nOutlets': 8, 'Description': "ADP - 240VAC"}
+PDULIST[4] = {'Type': 'Raritan', 'IP': '172.16.1.112', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'public', 0), 
-		    'nOutlets': 8, 'Description': "3-Bay - 120VAC - #1"}
-PDULIST[5] = {'Type': 'TrippLite', 'IP': '172.16.1.115', 'Port': 161, 
+		    'nOutlets': 8, 'Description': "2-Bay - 120VAC - #1"}
+PDULIST[5] = {'Type': 'Raritan', 'IP': '172.16.1.115', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'public', 0), 
-		    'nOutlets': 8, 'Description': "3-Bay - 120VAC - #2"}
-PDULIST[6] = {'Type': 'APC', 'IP': '172.16.1.116', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 8, 'Description': "3-Bay - PASI"}
-PDULIST[7] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.119', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'public', 0), 
-		    'nOutlets': 3, 'Description': "UPS #1"}
-PDULIST[8] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.118', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'public', 0), 
-		    'nOutlets': 3, 'Description': "UPS #2"}
+		    'nOutlets': 8, 'Description': "2-Bay - 120VAC - #2"}
 
 # Define lightning detection server parameters
 LIGHTNING_IP = "224.168.2.9"
