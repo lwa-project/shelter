@@ -18,9 +18,9 @@ __all__ = ['THERMOMLIST', 'PDULIST', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING
 
 # Setup the thermometers
 THERMOMLIST = {}
-THERMOMLIST[1] = {'IP': '172.16.1.111', 'Port': 161, 
+THERMOMLIST[1] = {'Type': 'Comet', 'IP': '172.16.1.111', 'Port': 161, 
 			   'SecurityModel': ('arbitrary', 'public', 0), 
-			   'Description': "Shelter #1"}
+			   'nSensors': 1, 'Description': "Shelter #1"}
 
 # Setup the PDUs
 PDULIST = {}

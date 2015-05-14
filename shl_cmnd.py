@@ -487,7 +487,7 @@ class MCSCommunicate(Communicate):
 					packed_data = 'Unknown MIB entry: %s' % data
 					
 					self.logger.debug('%s = exited with status %s', data, str(status))
-			
+					
 			#
 			# Control Commands
 			#

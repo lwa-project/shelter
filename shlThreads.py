@@ -27,9 +27,9 @@ from pysnmp.proto import rfc1902
 
 from shlCommon import LIGHTNING_IP,LIGHTNING_PORT,CRITICAL_TEMP
 
-__version__ = "0.4"
+__version__ = "0.5"
 __revision__ = "$Rev$"
-__all__ = ['Thermometer', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -42,30 +42,35 @@ SNMPLock = threading.Semaphore(2)
 class Thermometer(object):
 	"""
 	Class for communicating with a network thermometer via SNMP and regularly polling
-	the temperature.  The temperature value is stored in the "temp" attribute.
+	the temperature.  The temperature value is stored in the "temp" attribute and this
+	class supports up to four sensors per device.
 	"""
-
-	oidTemperatureEntry = (1,3,6,1,4,1,22626,1,5,2,1,2,0)
-
-	def __init__(self, ip, port, community, id, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+	
+	oidTemperatureEntry0 = None
+	oidTemperatureEntry1 = None
+	oidTemperatureEntry2 = None
+	oidTemperatureEntry3 = None
+	
+	def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
 		self.ip = ip
 		self.port = port
 		self.id = id
 		self.description = description
 		self.SHLCallbackInstance = SHLCallbackInstance
 		self.MonitorPeriod = MonitorPeriod
-
+		
+		# Setup the sensors
+		self.nSensors = nSensors
+		self.temp = [None for i in xrange(self.nSensors)]
+		
 		# Setup the SNMP UDP connection
 		self.community = community
 		self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
-
+		
 		# Setup threading
 		self.thread = None
 		self.alive = threading.Event()
 		self.lastError = None
-		
-		# Setup temperature
-		self.temp = None
 		
 	def __str__(self):
 		t = self.getTemperature(DegreesF=True)
@@ -117,73 +122,126 @@ class Thermometer(object):
 			
 			SNMPLock.acquire()
 			
-			# Read the networked thermometer and store values to temp.
+			# Read the networked thermometers and store values to temp.
 			# NOTE: self.temp is in Celsius
-			try:
-				errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidTemperatureEntry)
-				
-				# Check for SNMP errors
-				if errorIndication:
-					raise RuntimeError("SNMP error indication: %s" % errorIndication)
-				if errorStatus:
-					raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-				
-				name, value = varBinds[0]
-				
-				self.temp = float(unicode(value))
-				self.lastError = None
-				
-			except Exception, e:
-				exc_type, exc_value, exc_traceback = sys.exc_info()
-				shlThreadsLogger.error("%s: monitorThread failed with: %s at line %i", type(self).__name__, str(e), traceback.tb_lineno(exc_traceback))
-				
-				## Grab the full traceback and save it to a string via StringIO
-				fileObject = StringIO.StringIO()
-				traceback.print_tb(exc_traceback, file=fileObject)
-				tbString = fileObject.getvalue()
-				fileObject.close()
-				## Print the traceback to the logger as a series of DEBUG messages
-				for line in tbString.split('\n'):
-					shlThreadsLogger.debug("%s", line)
-				
-				self.temp = None
-				self.lastError = str(e)
-				
+			for s,oidEntry in enumerate((self.oidTemperatureEntry0,self.oidTemperatureEntry1,self.oidTemperatureEntry2,self.oidTemperatureEntry3)):
+				if s >= self.nSensors:
+					break
+					
+				if oidEntry is not None:
+					try:
+						errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidEntry)
+						
+						# Check for SNMP errors
+						if errorIndication:
+							raise RuntimeError("SNMP error indication: %s" % errorIndication)
+						if errorStatus:
+							raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+						
+						name, value = varBinds[0]
+						
+						self.temp[s] = float(unicode(value))
+						self.lastError = None
+						
+					except Exception, e:
+						exc_type, exc_value, exc_traceback = sys.exc_info()
+						shlThreadsLogger.error("%s: monitorThread failed with: %s at line %i", type(self).__name__, str(e), traceback.tb_lineno(exc_traceback))
+						
+						## Grab the full traceback and save it to a string via StringIO
+						fileObject = StringIO.StringIO()
+						traceback.print_tb(exc_traceback, file=fileObject)
+						tbString = fileObject.getvalue()
+						fileObject.close()
+						## Print the traceback to the logger as a series of DEBUG messages
+						for line in tbString.split('\n'):
+							shlThreadsLogger.debug("%s", line)
+						
+						self.temp[s] = None
+						self.lastError = str(e)
+						
 			SNMPLock.release()
 			
-			toDataLog = '%.2f,%.2f' % (time.time(), self.temp if self.temp is not None else -1)
+			toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in xrange(self.nSensors)]))
 			fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
 			fh.write('%s\n' % toDataLog)
 			fh.close()
-				
+			
 			# Stop time
 			tStop = time.time()
 			shlThreadsLogger.debug('Finished updating temperature in %.3f seconds', tStop - tStart)
 			
 			# Make sure we aren't critical
-			if self.SHLCallbackInstance is not None and self.temp is not None:
-				if 1.8*self.temp  + 32 >= CRITICAL_TEMP:
+			temps = [value for value in self.temp if value is not None]
+			if self.SHLCallbackInstance is not None and len(temps) != 0:
+				if 1.8*max(temps)  + 32 >= CRITICAL_TEMP:
 					self.SHLCallbackInstance.processCriticalTemperature()
-			
+					
 			# Sleep for a bit
 			sleepCount = 0
 			sleepTime = self.MonitorPeriod - (tStop - tStart)
 			while (self.alive.isSet() and sleepCount < sleepTime):
 				time.sleep(0.2)
 				sleepCount += 0.2
-
-	def getTemperature(self, DegreesF=True):
+				
+	def getTemperature(self, sensor=0, DegreesF=True):
 		"""
-		Convenience function to get the temperature.
+		Convenience function to get the temperature.  The 'sensor' keyword 
+		controls which sensor to poll if multple sensors are supported.  
+		This is a zero-based index and, by default, the first sensor is 
+		returned.
 		"""
-
-		if self.temp is None:
+		
+		if self.temp[sensor] is None:
 			return None
 
 		if DegreesF:
-			return 1.8*self.temp + 32
+			return 1.8*self.temp[sensor] + 32
 		else:
-			return self.temp
+			return self.temp[sensor]
+			
+	def getAllTemperatures(self, DegreesF=True):
+		"""
+		Similar to getTemperature() but returns a list with values for all 
+		sensors.
+		"""
+		
+		output = []
+		for value in self.temp:
+			if value is None:
+				output.append( None )
+				
+			if DegreesF:
+				output.append( 1.8*value + 32 )
+			else:
+				output.append( value )
+		return output
+
+
+class Comet(Thermometer):
+	"""
+	Class for communicating with a network thermometer via SNMP and regularly polling
+	the temperature.  The temperature value is stored in the "temp" attribute.
+	"""
+	
+	def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+		super(Comet, self).__init__(ip, port, community, id, nSensors=1, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+		
+		# Setup the OID values
+		self.oidTemperatureEntry0 = (1,3,6,1,4,1,22626,1,5,2,1,2,0)
+
+
+class HWg(Thermometer):
+	"""
+	Class for communicating with a network thermometer via SNMP and regularly polling
+	the temperature.  The temperature value is stored in the "temp" attribute.
+	"""
+	
+	def __init__(self, ip, port, community, id, nSensors=2, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+		super(HWg, self).__init__(ip, port, community, id, nSensors=nSensors, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+		
+		# Setup the OID values
+		self.oidTemperatureEntry0 = (1,3,6,1,4,1,21796,4,1,3,1,4,1)
+		self.oidTemperatureEntry1 = (1,3,6,1,4,1,21796,4,1,3,1,4,2)
 
 
 class PDU(object):
@@ -963,7 +1021,7 @@ class TrippLiteUPS(PDU):
 						else:
 							self.lastError = str(e)
 						self.status[i] = "UNK"
-			
+						
 			SNMPLock.release()
 			
 			toDataLog = "%.2f,%.2f,%.2f,%.2f,%s,%s,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1, self.upsOutput, self.batteryStatus, self.batteryCharge if self.batteryCharge is not None else -1)

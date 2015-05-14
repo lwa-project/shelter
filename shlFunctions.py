@@ -180,9 +180,15 @@ class ShippingContainer(object):
 			self.currentState['tempThreads'] = []
 			for c,k in enumerate(sorted(THERMOMLIST.keys())):
 				v = THERMOMLIST[k]
-			
-				nT = Thermometer(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
-								c+1, description=v['Description'], 
+				
+				### Figure out the thermometer type
+				if v['Type'] == 'Comet':
+					ThermoBaseType = Comet
+				else:
+					ThermoBaseType = HWg
+					
+				nT = ThermoBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
+								c+1, nSensors=v['nSensors'], description=v['Description'], 
 								MonitorPeriod=self.config['TEMPMONITORPERIOD'], SHLCallbackInstance=self)
 				self.currentState['tempThreads'].append(nT)
 		## PDUs
@@ -449,7 +455,7 @@ class ShippingContainer(object):
 		if i == 0:
 			self.currentState['lastLog'] = 'No temperature monitoring threads are running'
 			return False, 0
-		
+			
 		meanTemp /= float(i)
 		
 		return True, meanTemp
