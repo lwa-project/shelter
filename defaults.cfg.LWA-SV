@@ -26,6 +26,5 @@ RackMonitorPeriod      20.0
 
 # Weather sqlite3 database file and update period (s)
 WeatherDatabase        None
-WeatherMonitorPeriod   0.0
-
+WeatherMonitorPeriod   60.0
 
