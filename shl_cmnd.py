@@ -114,7 +114,10 @@ def parseConfigFile(filename):
 	# Deal with logging
 	logger = logging.getLogger(__name__)
 	logger.info("Parsing config file '%s'", filename)
-
+	
+	# Special float class to deal with values that can be zero
+	def float0(x):
+		return float(x)
 	# List of the required parameters and their coercion functions
 	coerceMap = {'SERIALNUMBER'             : str,
 			   'MESSAGEHOST'              : str,
@@ -127,7 +130,7 @@ def parseConfigFile(filename):
 			   'TEMPMONITORPERIOD'        : float,
 			   'RACKMONITORPERIOD'        : float,
 			   'WEATHERDATABASE'          : str, 
-			   'WEATHERMONITORPERIOD'     : float}
+			   'WEATHERMONITORPERIOD'     : float0}
 	config = {}
 
 	#
