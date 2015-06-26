@@ -27,7 +27,7 @@ from pysnmp.proto import rfc1902
 
 from shlCommon import LIGHTNING_IP,LIGHTNING_PORT,CRITICAL_TEMP
 
-__version__ = "0.5"
+__version__ = "0.6"
 __revision__ = "$Rev$"
 __all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
 
@@ -1065,6 +1065,11 @@ class TrippLiteUPS(PDU):
 class APCUPS(TrippLiteUPS):
 	"""
 	Sub-class of the TrippLiteUPS class for the APC UPS on ADP.
+	
+	MIB sources:
+	  http://www.simpleweb.org/ietf/mibs/modules/IETF/txt/UPS-MIB
+	  http://www.oidview.com/mibs/0/UPS-MIB.html
+	  http://www.oidview.com/mibs/318/PowerNet-MIB.html
 	"""
 	
 	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
@@ -1083,7 +1088,7 @@ class APCUPS(TrippLiteUPS):
 		
 		# Setup the status codes
 		self.outletStatusCodes = {1: "ON", 2: "OFF"}
-	
+
 
 class Weather(object):
 	"""

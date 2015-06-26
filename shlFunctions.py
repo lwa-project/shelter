@@ -404,7 +404,7 @@ class ShippingContainer(object):
 			
 		# Validate the rack,port,control combo
 		## Rack
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			shlFunctionsLogger.warning("PWR command rejected due to invalid rack number")
 			self.currentState['lastLog'] = 'PWR: %s - rack' % commandExitCodes[0x03]
 			return False, 0x03
@@ -471,7 +471,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 0
 		if not self.currentState['rackPresent'][rack-1]:
@@ -489,7 +489,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 'UNK'
 		if not self.currentState['rackPresent'][rack-1]:
@@ -512,7 +512,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 0
 		if not self.currentState['rackPresent'][rack-1]:
@@ -535,7 +535,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 0
 		if not self.currentState['rackPresent'][rack-1]:
@@ -558,7 +558,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 0
 		if not self.currentState['rackPresent'][rack-1]:
@@ -581,7 +581,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 0
 		if not self.currentState['rackPresent'][rack-1]:
@@ -609,7 +609,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 0
 		if not self.currentState['rackPresent'][rack-1]:
@@ -637,7 +637,7 @@ class ShippingContainer(object):
 		"""
 		
 		# Check the rack number
-		if rack == 0 or rack > self.currentState['nRacks']:
+		if rack == 0 or rack > len(self.currentState['rackPresent']):
 			self.currentState['lastLog'] = 'Invalid rack number %i' % rack
 			return False, 0
 		if not self.currentState['rackPresent'][rack-1]:
