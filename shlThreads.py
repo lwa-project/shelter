@@ -1078,8 +1078,8 @@ class APCUPS(TrippLiteUPS):
 		self.oidUPSOutputEntry = (1,3,6,1,2,1,33,1,4,1,0)
 		self.oidBatteryChargeEntry = (1,3,6,1,2,1,33,1,2,4,0)
 		self.oidBatteryStatusEntry = (1,3,6,1,2,1,33,1,2,1,0)
-		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,2,)
-		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,4,)
+		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
+		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
 		
 		# Setup the status codes
 		self.outletStatusCodes = {1: "ON", 2: "OFF"}
