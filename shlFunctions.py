@@ -207,8 +207,10 @@ class ShippingContainer(object):
 					PDUBaseType = TrippLiteUPS
 				elif v['Type'] == 'Raritan':
 					PDUBaseType = Raritan
-				else:
+				elif v['Type'] == 'APC':
 					PDUBaseType = APC
+				else:
+					PDUBaseType = APCUPS
 					
 				nP = PDUBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
 								c+1, nOutlets=v['nOutlets'], description=v['Description'], 
