@@ -1071,15 +1071,15 @@ class APCUPS(TrippLiteUPS):
 		super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
-		self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,4,0)
+		self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,3,0)
 		self.oidFrequencyEntry = (1,3,6,1,2,1,33,1,3,3,1,2,1)
 		self.oidVoltageEntry = (1,3,6,1,2,1,33,1,3,3,1,3,1)
 		self.oidCurrentEntry = (1,3,6,1,2,1,33,1,4,4,1,3,1)
 		self.oidUPSOutputEntry = (1,3,6,1,2,1,33,1,4,1,0)
 		self.oidBatteryChargeEntry = (1,3,6,1,2,1,33,1,2,4,0)
 		self.oidBatteryStatusEntry = (1,3,6,1,2,1,33,1,2,1,0)
-		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
-		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
+		self.oidOutletStatusBaseEntry =  (1,3,6,1,4,1,318,1,1,1,12,1,2,1,3,)
+		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,318,1,1,1,12,3,2,1,3,)
 		
 		# Setup the status codes
 		self.outletStatusCodes = {1: "ON", 2: "OFF"}
