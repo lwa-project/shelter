@@ -29,7 +29,7 @@ from shlCommon import LIGHTNING_IP,LIGHTNING_PORT,CRITICAL_TEMP
 
 __version__ = "0.5"
 __revision__ = "$Rev$"
-__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -1061,6 +1061,29 @@ class TrippLiteUPS(PDU):
 		
 		return self.batteryStatus
 
+
+class APCUPS(TrippLiteUPS):
+	"""
+	Sub-class of the TrippLiteUPS class for the APC UPS on ADP.
+	"""
+	
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
+		super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+		
+		# Setup the OID values
+		self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,4,0)
+		self.oidFrequencyEntry = (1,3,6,1,2,1,33,1,3,3,1,2,1)
+		self.oidVoltageEntry = (1,3,6,1,2,1,33,1,3,3,1,3,1)
+		self.oidCurrentEntry = (1,3,6,1,2,1,33,1,4,4,1,3,1)
+		self.oidUPSOutputEntry = (1,3,6,1,2,1,33,1,4,1,0)
+		self.oidBatteryChargeEntry = (1,3,6,1,2,1,33,1,2,4,0)
+		self.oidBatteryStatusEntry = (1,3,6,1,2,1,33,1,2,1,0)
+		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,2,)
+		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,4,)
+		
+		# Setup the status codes
+		self.outletStatusCodes = {1: "ON", 2: "OFF"}
+	
 
 class Weather(object):
 	"""
