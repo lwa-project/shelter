@@ -1,0 +1,41 @@
+# SHL runtime log
+/lwa/runtime/runtime.log {
+	daily
+	rotate 21
+	compress
+	delaycompress
+	ifempty
+	copytruncate
+}
+
+# SHL MCS startup log
+/lwa/runtime/start {
+	weekly
+	rotate 4
+	compress
+	delaycompress
+	ifempty
+	copytruncate
+}
+
+# Shelter temperature
+/data/thermometer*.txt {
+	weekly
+	rotate 52
+	compress
+	delaycompress
+	ifempty
+	copytruncate
+	dateext
+}
+
+# PDU voltage, current, and frequency
+/data/rack*.txt {
+	daily
+	rotate 21
+	compress
+	delaycompress
+	ifempty
+	copytruncate
+}
+
