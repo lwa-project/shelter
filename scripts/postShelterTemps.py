@@ -4,10 +4,12 @@
 import time
 import urllib
 import subprocess
+from socket import gethostname
 
 
 URL = "http://lwalab.phys.unm.edu/OpScreen/update.php"
 KEY = "c0843461abe746a4608dd9c897f9b261"
+SITE = gethostname().split("-",1)[0]
 SUBSYSTEM = "SHL"
 
 # Get the last line of the log file
@@ -26,6 +28,6 @@ if time.time() > lastUpdated + 300:
 	test = "%.2f,NaN" % time.time()
 
 # Send the update to lwalab
-p = urllib.urlencode({'key': KEY, 'subsystem': SUBSYSTEM, 'data': test})
+p = urllib.urlencode({'key': KEY, 'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
 f = urllib.urlopen(URL, p)
 
