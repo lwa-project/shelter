@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import pytz
 import time
 from datetime import datetime
@@ -15,67 +14,142 @@ from email.mime.text import MIMEText
 UTC = pytz.utc
 MST = pytz.timezone('US/Mountain')
 
+# Time (min) after a warning e-mail is sent for an "all-clear"
+CLEAR_TIME = 15
 
 # E-mail Users
-TO = ['lwa1ops@phys.unm.edu',]
+TO = ['lwa1staff@panda3.phys.unm.edu',]
 
 # SMTP user and password
 FROM = 'lwa.station.1@gmail.com'
 PASS = '1mJy4LWA'
 
-## Read in the last few log entries from Rack #07
-proc = subprocess.Popen(['tail', '-n45', '/data/rack07.txt'], stdout=subprocess.PIPE)
-output = proc.communicate()[0]
-output = output.split('\n')
+# State directory
+STATE_DIR = '/home/lwa1shelter/.state/'
 
-## Check for brownouts and power loss:
-powerLoss = False
-powerLossTime = 0
-powerLossReason = None
-for line in output:
-	if len(line) == 0:
-		continue
+# Data directory
+DATA_DIR = '/data/'
 
-	fields = line.split(',')
-	if fields[-3] != 'Normal':
-		# Guard against the output power source being None because of failed communications
-		if float(fields[-1]) >= 0:
-			powerLoss = True
-			powerLossTime = float(fields[0]) 
-			powerLossReason = "Output power source is '%s'" % fields[-3]
-		else:
-			sys.stderr.write("Output power power is '%s' but the corresponding log entry is:\n%s\n" % (fields[-3], line))
-	elif float(fields[-1]) < 99:
-		if float(fields[-1]) >= 0:
-			powerLoss = True
-			powerLossTime = float(fields[0])
-			powerLossReason = "Battery at %i%%" % float(fields[-1])
-		else:
-			sys.stderr.write("Battery status is listed as %i%%\n" % float(fields[-1]))
-	else:
-		pass
 
-# If there has been a power loss
-if powerLoss:
-	## Timestamp to time
-	powerLossTime = datetime.utcfromtimestamp(powerLossTime)
-	powerLossTime = UTC.localize(powerLossTime)
-	powerLossTime = powerLossTime.astimezone(MST)
-
-	tNow = powerLossTime.strftime("%B %d, %Y %H:%M:%S %Z")
+def getLast(filename, N):
+	"""
+	Function that takes in a filename and returns the last N lines of the file.
+	"""
 	
-	msg = MIMEText("At %s, there was a potential power loss or brownout.\n\nReason for warning: %s" % (tNow, powerLossReason))
+	proc = subprocess.Popen(['tail', '-n%i' % int(N), filename], stdout=subprocess.PIPE)
+	output, error = proc.communicate()
+	output = output.split('\n')[:-1]
+	
+	return output
+
+
+# Parse the various files and see if there is anything to report
+failureCount = 0
+failureTime = []
+failureType = []
+for filename in ('rack01.txt', 'rack02.txt', 'rack03.txt', 'rack05.txt', 'rack07.txt'):
+	if not os.path.exists( os.path.join(DATA_DIR, filename) ):
+		continue
+		
+	## Get the last 48 lines (about six minutes of logs)
+	lines = getLast(os.path.join(DATA_DIR, filename), 48)
+	for line in lines:
+		### 
+		fields = line.split(',')
+		shlTime, junkF, shlVolt, junkC = [float(f) for f in fields[:4]]
+		if len(fields) == 7:
+			shlInput, shlCharge = fields[4], float(fields[6])
+		else:
+			shlInput, shlCharge = 'Normal', 100.0
+			
+		### Is it recent?
+		if shlTime < time.time() - 300:
+			continue
+			
+		### Does it have the hallmarks of a failure?
+		if shlVolt < 100.0:
+			failureCount += 1
+			failureTime.append( shlTime )
+			failureType.append( '%s input voltage at %i VAC' % (filename, shlVolt) )
+			break
+			
+		elif shlInput != 'Normal':
+			failureCount += 1
+			failureTime.append( shlTime )
+			failureType.append( '%s input source is \'%s\'' % (filename, shlInput) )
+			break
+			
+		elif shlCharge < 100.0:
+			failureCount += 1
+			failureTime.append( shlTime )
+			failureType.append( '%s battery charge at %i%%' % (filename, shlCharge) )
+			break
+			
+# If there are enough signs, send out an e-mail
+if failureCount >= 2:
+	shlTime = datetime.utcfromtimestamp(shlTime)
+	shlTime = UTC.localize(shlTime)
+	shlTime = shlTime.astimezone(MST)
+	tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
+	
+	text = ""
+	for tm,ty in zip(failureTime, failureType):
+		## Timestamp to time
+		tm = datetime.utcfromtimestamp(tm)
+		tm = UTC.localize(tm)
+		tm = shlTime.astimezone(MST)
+		
+		text = "%s  * %s - %s\n" % (text, tm, ty)
+		
+	msg = MIMEText("At %s there were %i indications of a power loss or bronwout in the last five minutes.\n\nThe indicators are:\n%s" % (tNow, failureCount, text))
 	msg['Subject'] = 'Possible Shelter Power Loss/Brownout'
 	msg['From'] = FROM
 	msg['To'] = ','.join(TO)
-
-	print msg
 	
+	if not os.path.exists(os.path.join(STATE_DIR, 'inFailure')):
+		# If the holding file does not exist, send out the e-mail
+		try:
+			server = smtplib.SMTP('smtp.gmail.com', 587)
+			server.starttls()
+			server.login(FROM, PASS)
+			server.sendmail(FROM, TO, msg.as_string())
+			server.close()
+		except Exception, e:
+			print str(e)
+			
+	# Touch the file to update the modification time.  This is used to track
+	# when the warning condition is cleared.
 	try:
-		server = smtplib.SMTP('smtp.gmail.com', 587)
-		server.starttls()
-		server.login(FROM, PASS)
-		server.sendmail(FROM, TO, msg.as_string())
-		server.close()
+		fh = open(os.path.join(STATE_DIR, 'inFailure'), 'w')
+		fh.write('%s\n' % tNow)
+		fh.close()
 	except Exception, e:
 		print str(e)
+		
+else:
+	if os.path.exists(os.path.join(STATE_DIR, 'inFailure')):
+		# Check the age of the holding file to see if we have entered the "all-clear"
+		age = time.time() - os.path.getmtime(os.path.join(STATE_DIR, 'inFailure'))
+		
+		if age >= CLEAR_TIME*60:
+			shlTime = datetime.utcfromtimestamp(shlTime)
+        		shlTime = UTC.localize(shlTime)
+        		shlTime = shlTime.astimezone(MST)
+			tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
+			
+			msg = MIMEText("At %s, the shelter power loss/bronwout indicators have cleared.  All monitored log files are normal.\n" % (tNow,))
+			msg['Subject'] = 'Possible Shelter Power Loss/Brownout - Cleared'
+			msg['From'] = FROM
+			msg['To'] = ','.join(TO)
+			
+			try:
+				server = smtplib.SMTP('smtp.gmail.com', 587)
+				server.starttls()
+				server.login(FROM, PASS)
+				server.sendmail(FROM, TO, msg.as_string())
+				server.close()
+				
+				os.unlink(os.path.join(STATE_DIR, 'inFailure'))
+			except Exception, e:
+				print str(e)
+				
