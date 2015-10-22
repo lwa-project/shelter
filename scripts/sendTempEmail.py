@@ -32,7 +32,7 @@ if SITE == 'lwa1':
 	FROM = 'lwa.station.1@gmail.com'
 	PASS = '1mJy4LWA'
 elif SITE == 'lwasv':
-	FROM = 'lwa.station.1@gmail.com'
+	FROM = 'lwa.station.sv@gmail.com'
 	PASS = '1mJy4LWA'
 else:
 	raise RuntimeError("Unknown site '%s'" % SITE)
