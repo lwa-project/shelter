@@ -63,7 +63,7 @@ def getLast(filename, N):
 
 ## Read in the shelter temperature
 output = getLast(os.path.join(DATA_DIR, 'thermometer01.txt'), 1)
-output = output.split(',')
+output = output[0].split(',')
 shlTime = float(output[0])
 shlTemp = max([float(v) for v in output[1:]])
 
