@@ -83,6 +83,7 @@ if shlTemp >= CRITICAL_TEMP:
 	msg['Subject'] = '%s - Shelter Temperature Warning' % (SITE.upper(),)
 	msg['From'] = FROM
 	msg['To'] = ','.join(TO)
+	msg.add_header('reply-to', TO[0])
 	
 	if not os.path.exists(os.path.join(STATE_DIR, 'inTemperatureWarning')):
 		# If the holding file does not exist, send out the e-mail
@@ -115,6 +116,7 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTempe
 		msg['Subject'] = '%s - Shelter Temperature Warning - Cleared' % (SITE.upper(),)
 		msg['From'] = FROM
 		msg['To'] = ','.join(TO)
+		msg.add_header('reply-to', TO[0])
 
 		try:
 			server = smtplib.SMTP('smtp.gmail.com', 587)

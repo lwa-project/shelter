@@ -96,7 +96,7 @@ for filename in filesToCheck:
 			failureType.append( '%s input voltage at %i VAC' % (filename, shlVolt) )
 			break
 			
-		elif shlInput != 'Normal':
+		elif shlInput not in ('Normal', 'None'):
 			failureCount += 1
 			failureTime.append( shlTime )
 			failureType.append( '%s input source is \'%s\'' % (filename, shlInput) )
@@ -128,6 +128,7 @@ if failureCount >= 2:
 	msg['Subject'] = '%s - Possible Shelter Power Loss/Brownout' % (SITE.upper(),)
 	msg['From'] = FROM
 	msg['To'] = ','.join(TO)
+	msg.add_header('reply-to', TO[0])
 	
 	if not os.path.exists(os.path.join(STATE_DIR, 'inPowerFailure')):
 		# If the holding file does not exist, send out the e-mail
@@ -164,6 +165,7 @@ else:
 			msg['Subject'] = '%s - Possible Shelter Power Loss/Brownout - Cleared' % (SITE.upper(),)
 			msg['From'] = FROM
 			msg['To'] = ','.join(TO)
+			msg.add_header('reply-to', TO[0])
 			
 			try:
 				server = smtplib.SMTP('smtp.gmail.com', 587)
