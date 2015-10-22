@@ -4,8 +4,9 @@
 import os
 import pytz
 import time
-from datetime import datetime
 import subprocess
+from datetime import datetime
+from socket import gethostname
 
 import smtplib
 from email.mime.text import MIMEText
@@ -14,6 +15,9 @@ from email.mime.text import MIMEText
 UTC = pytz.utc
 MST = pytz.timezone('US/Mountain')
 
+# Site
+SITE = gethostname().split('-', 1)[0]
+
 # Critical shelter temperature (F)
 CRITICAL_TEMP = 80.00
 
@@ -21,19 +25,47 @@ CRITICAL_TEMP = 80.00
 CLEAR_TIME = 30
 
 # E-mail Users
-TO = ['lwa1staff@panda3.phys.unm.edu',]
+TO = ['lwa1ops@phys.unm.edu',]
 
 # SMTP user and password
-FROM = 'lwa.station.1@gmail.com'
-PASS = '1mJy4LWA'
+if SITE == 'lwa1':
+	FROM = 'lwa.station.1@gmail.com'
+	PASS = '1mJy4LWA'
+elif SITE == 'lwasv':
+	FROM = 'lwa.station.1@gmail.com'
+	PASS = '1mJy4LWA'
+else:
+	raise RuntimeError("Unknown site '%s'" % SITE)
+
+# State directory
+STATE_DIR = '/home/ops/.shl-state/'
+if not os.path.exists(STATE_DIR):
+	os.mkdir(STATE_DIR)
+else:
+	if not os.path.isdir(STATE_DIR):
+		raise RuntimeError("'%s' is not a directory" % STATE_DIR)
+
+# Data directory
+DATA_DIR = '/data/'
+
+
+def getLast(filename, N):
+	"""
+	Function that takes in a filename and returns the last N lines of the file.
+	"""
+	
+	proc = subprocess.Popen(['tail', '-n%i' % int(N), filename], stdout=subprocess.PIPE)
+	output, error = proc.communicate()
+	output = output.split('\n')[:-1]
+	
+	return output
+
 
 ## Read in the shelter temperature
-proc = subprocess.Popen(['tail', '-n1', '/data/thermometer01.txt'], stdout=subprocess.PIPE)
-output = proc.communicate()[0]
-output = output.split('\n')[0]
-output = output.split(',', 1)
+output = getLast(os.path.join(DATA_DIR, 'thermometer01.txt'), 1)
+output = output.split(',')
 shlTime = float(output[0])
-shlTemp = float(output[1])
+shlTemp = max([float(v) for v in output[1:]])
 
 ## Timestamp to time
 shlTime = datetime.utcfromtimestamp(shlTime)
@@ -47,12 +79,12 @@ shlTemp = shlTemp*9./5. + 32.
 if shlTemp >= CRITICAL_TEMP:
 	tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
 	
-	msg = MIMEText("At %s, the shelter temperature reached %.2f F\n\nWarning temperature value set to %.2f F\n" % (tNow, shlTemp, CRITICAL_TEMP))
-	msg['Subject'] = 'Shelter Temperature Warning'
+	msg = MIMEText("At %s the shelter temperature reached %.2f F.\n\nWarning temperature value set to %.2f F.\n" % (tNow, shlTemp, CRITICAL_TEMP))
+	msg['Subject'] = '%s - Shelter Temperature Warning' % (SITE.upper(),)
 	msg['From'] = FROM
 	msg['To'] = ','.join(TO)
 	
-	if not os.path.exists('/tmp/inWarning'):
+	if not os.path.exists(os.path.join(STATE_DIR, 'inTemperatureWarning')):
 		# If the holding file does not exist, send out the e-mail
 		try:
 			server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -66,21 +98,21 @@ if shlTemp >= CRITICAL_TEMP:
 	# Touch the file to update the modification time.  This is used to track
 	# when the warning condition is cleared.
 	try:
-		fh = open('/tmp/inWarning', 'w')
+		fh = open(os.path.join(STATE_DIR, 'inTemperatureWarning'), 'w')
 		fh.write('%s\n' % tNow)
 		fh.close()
 	except Exception, e:
 		print str(e)
 
-elif shlTemp < CRITICAL_TEMP and os.path.exists('/tmp/inWarning'):
+elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTemperatureWarning')):
 	# Check the age of the holding file to see if we have entered the "all-clear"
-	age = time.time() - os.path.getmtime('/tmp/inWarning')
+	age = time.time() - os.path.getmtime(os.path.join(STATE_DIR, 'inTemperatureWarning'))
 	
 	if age >= CLEAR_TIME*60:
 		tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
 		
-		msg = MIMEText("At %s, the shelter temperature warning was cleared.\n\nWarning temperature value set to %.2f F\n" % (tNow, CRITICAL_TEMP))
-		msg['Subject'] = 'Shelter Temperature Warning Cleared'
+		msg = MIMEText("At %s the shelter temperature warning was cleared.\n\nWarning temperature value set to %.2f F.\n" % (tNow, CRITICAL_TEMP))
+		msg['Subject'] = '%s - Shelter Temperature Warning - Cleared' % (SITE.upper(),)
 		msg['From'] = FROM
 		msg['To'] = ','.join(TO)
 
@@ -91,7 +123,7 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists('/tmp/inWarning'):
 			server.sendmail(FROM, TO, msg.as_string())
 			server.close()
 
-			os.unlink('/tmp/inWarning')
+			os.unlink(os.path.join(STATE_DIR, 'inTemperatureWarning'))
 		except Exception, e:
 			print str(e)
 
