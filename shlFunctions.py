@@ -855,14 +855,14 @@ class ShippingContainer(object):
 			if self.currentState['status'] in ('NORMAL', 'WARNING'):
 				## Escalation
 				self.currentState['status'] = 'WARNING'
-				self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f', currTemp
+				self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f' % currTemp
 				
 				shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
 				
 			elif self.currentState['status'] == 'ERROR' and self.currentState['info'][:12] == 'TEMPERATURE!':
 				## Descalation
 				self.currentState['status'] = 'WARNING'
-				self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f', currTemp
+				self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f' % currTemp
 				
 				shlFunctionsLogger.info('Shelter temperature critical condition cleared')
 				shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
@@ -887,7 +887,7 @@ class ShippingContainer(object):
 				except Exception as e:
 					shlFunctionsLogger.error('Cannot power off rack %i, port %i: %s', rack, port, str(e))
 					
-			shlFunctionsLogger.critical('Shelter temperature at %.2, shutting down critical ports: %s', currTemp, criticalPortList)
+			shlFunctionsLogger.critical('Shelter temperature at %.2f, shutting down critical ports: %s', currTemp, criticalPortList)
 			
 		return True
 		
@@ -904,10 +904,12 @@ class ShippingContainer(object):
 		
 		# Count the recently updated (<= 5 minutes since the last failure) entries
 		nUnreachable = 0
+		unreachable = []
 		for device in self.currentState['snmpUnreachable']:
 			age = tNow - self.currentState['snmpUnreachable'][device]
 			if age <= 300:
 				nUnreachable += 1
+				unreachable.append( device )
 				
 		# If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
 		if nUnreachable == 0:
@@ -920,6 +922,6 @@ class ShippingContainer(object):
 		else:
 			if self.currentState['status'] in ('NORMAL', 'WARNING'):
 				self.currentState['status'] = 'WARNING'
-				self.currentState['info'] = 'SUMMARY! %i Devices unreachable via SNMP' % nUnreachable
+				self.currentState['info'] = 'SUMMARY! %i Devices unreachable via SNMP: %s' % (nUnreachable, ', '.join(unreachable))
 				
 			return True
