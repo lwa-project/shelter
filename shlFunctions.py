@@ -329,6 +329,8 @@ class ShippingContainer(object):
 		self.currentState['status'] = 'SHUTDWN'
 		self.currentState['info'] = 'System has been shut down'
 		self.currentState['lastLog'] = 'System has been shut down'
+		## Reset the SNMP unreacable list
+		self.currentState['snmpUnreachable'] = {}
 		
 		shlFunctionsLogger.info("Finished the SHT process in %.3f s", time.time() - tStart)
 		self.currentState['activeProcess'].remove('SHT')
