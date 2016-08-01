@@ -25,7 +25,7 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
-from shlCommon import LIGHTNING_IP,LIGHTNING_PORT,CRITICAL_TEMP
+from shlCommon import LIGHTNING_IP,LIGHTNING_PORT
 
 __version__ = "0.6"
 __revision__ = "$Rev$"
@@ -87,12 +87,12 @@ class Thermometer(object):
 			output += "current temperature is %.1f F" % t
 			
 		return output
-
+		
 	def start(self):
 		"""
 		Start the monitoring thread.
 		"""
-
+		
 		if self.thread is not None:
 			self.stop()
 			
@@ -100,23 +100,23 @@ class Thermometer(object):
 		self.thread.setDaemon(1)
 		self.alive.set()
 		self.thread.start()
-
+		
 	def stop(self):
 		"""
 		Stop the monitor thread, waiting until it's finished.
 		"""
-
+		
 		if self.thread is not None:
 			self.alive.clear()          #clear alive event for thread
 			self.thread.join()          #wait until thread has finished
 			self.thread = None
 			self.lastError = None
-
+			
 	def monitorThread(self):
 		"""
 		Create a monitoring thread for the temperature.
 		"""
-
+		
 		while self.alive.isSet():
 			tStart = time.time()
 			
@@ -124,20 +124,24 @@ class Thermometer(object):
 			
 			# Read the networked thermometers and store values to temp.
 			# NOTE: self.temp is in Celsius
+			nAttemps = 0
+			nFailures = 0
 			for s,oidEntry in enumerate((self.oidTemperatureEntry0,self.oidTemperatureEntry1,self.oidTemperatureEntry2,self.oidTemperatureEntry3)):
 				if s >= self.nSensors:
 					break
 					
 				if oidEntry is not None:
 					try:
+						nAttempts += 1
 						errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidEntry)
 						
 						# Check for SNMP errors
 						if errorIndication:
+							nFailures += 1
 							raise RuntimeError("SNMP error indication: %s" % errorIndication)
 						if errorStatus:
 							raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-						
+							
 						name, value = varBinds[0]
 						
 						self.temp[s] = float(unicode(value))
@@ -155,27 +159,32 @@ class Thermometer(object):
 						## Print the traceback to the logger as a series of DEBUG messages
 						for line in tbString.split('\n'):
 							shlThreadsLogger.debug("%s", line)
-						
+							
 						self.temp[s] = None
 						self.lastError = str(e)
 						
 			SNMPLock.release()
 			
+			# Log the data
 			toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in xrange(self.nSensors)]))
 			fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
 			fh.write('%s\n' % toDataLog)
 			fh.close()
 			
+			# Make sure we aren't critical
+			temps = [value for value in self.temp if value is not None]
+			if self.SHLCallbackInstance is not None and len(temps) != 0:
+				maxTemp = 1.8*max(temps) + 32
+				self.SHLCallbackInstance.processShelterTemperature(maxTemp)
+				
+			# Make sure the device is reachable
+			if self.SHLCallbackInstance is not None and nFailures > 0:
+				self.SHLCallbackInstance.processSNMPUnrechable('%s-%s' % (type(self).__name__, str(self.id)))
+				
 			# Stop time
 			tStop = time.time()
 			shlThreadsLogger.debug('Finished updating temperature in %.3f seconds', tStop - tStart)
 			
-			# Make sure we aren't critical
-			temps = [value for value in self.temp if value is not None]
-			if self.SHLCallbackInstance is not None and len(temps) != 0:
-				if 1.8*max(temps)  + 32 >= CRITICAL_TEMP:
-					self.SHLCallbackInstance.processCriticalTemperature()
-					
 			# Sleep for a bit
 			sleepCount = 0
 			sleepTime = self.MonitorPeriod - (tStop - tStart)
@@ -283,7 +292,7 @@ class PDU(object):
 		self.status = {}
 		for i in xrange(1, self.nOutlets+1):
 			self.status[i] = "UNK"
-
+			
 		# Setup the SNMP UDP connection
 		self.community = community
 		self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
@@ -301,12 +310,12 @@ class PDU(object):
 			return "PDU at IP %s:  outlet status: %s, current: %s" % (self.ip, sString, cString)
 		else:
 			return "PDU '%s' at IP %s:  outlet status: %s, current: %s" % (self.description, self.ip, sString, cString)
-
+			
 	def start(self):
 		"""
 		Start the monitoring thread.
 		"""
-
+		
 		if self.thread is not None:
 			self.stop()
 			
@@ -314,46 +323,50 @@ class PDU(object):
 		self.thread.setDaemon(1)
 		self.alive.set()
 		self.thread.start()
-
+		
 	def stop(self):
 		"""
 		Stop the monitor thread, waiting until it's finished.
 		"""
-
+		
 		if self.thread is not None:
 			self.alive.clear()          #clear alive event for thread
 			self.thread.join()          #wait until thread has finished
 			self.thread = None
 			self.lastError = None
-
+			
 	def monitorThread(self):
 		"""
 		Create a monitoring thread for the current and outlet states.  Current 
 		is stored in the "current" attribute and the outlets in the "status"
 		attribute.
 		"""
-
+		
 		while self.alive.isSet():
 			tStart = time.time()
 			
 			SNMPLock.acquire()
 			
+			nAttempts = 0
+			nFailures = 0
 			if self.oidFirmwareEntry is not None:
 				try:
 					# Get the system firmware
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, self.firmwareVersion = varBinds[0]
-		
+					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -363,28 +376,30 @@ class PDU(object):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					self.lastError = str(e)
 					self.firmwareVersion = None
 					
 			if self.oidFrequencyEntry is not None:
 				try:
 					# Get the current input frequency
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFrequencyEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, PWRfreq = varBinds[0]
 					self.frequency = float(unicode(PWRfreq)) / 10.0
 					self.lastError = None
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -394,28 +409,30 @@ class PDU(object):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					self.frequency = None
 					self.lastError = str(e)
-			
+					
 			if self.oidVoltageEntry is not None:
 				try:
 					# Get the current input voltage
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidVoltageEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, PWRvoltage = varBinds[0]
 					self.voltage = float(unicode(PWRvoltage))
 					self.lastError = None
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -425,24 +442,26 @@ class PDU(object):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					if self.lastError is not None:
 						self.lastError = "%s; %s" % (self.lastError, str(e))
 					else:
 						self.lastError = str(e)
 					self.voltage = None
-			
+					
 			if self.oidCurrentEntry is not None:
 				try:
 					# Get the current draw of outlet #(i+1)
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidCurrentEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, PWRcurrent = varBinds[0]
 					if self.firmwareVersion == '12.04.0053':
 						self.current = float(unicode(PWRcurrent))
@@ -452,7 +471,7 @@ class PDU(object):
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -462,13 +481,13 @@ class PDU(object):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					if self.lastError is not None:
 						self.lastError = "%s; %s" % (self.lastError, str(e))
 					else:
 						self.lastError = str(e)
 					self.current = None
-			
+					
 			if self.oidOutletStatusBaseEntry is not None:
 				for i in xrange(1, self.nOutlets+1):
 					# Get the status of outlet #(i+1).
@@ -478,14 +497,16 @@ class PDU(object):
 					oidOutletStatusEntry = self.oidOutletStatusBaseEntry+(i,)
 					
 					try:
+						nAttempts += 1
 						errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidOutletStatusEntry)
 						
 						# Check for SNMP errors
 						if errorIndication:
+							nFailures += 1
 							raise RuntimeError("SNMP error indication: %s" % errorIndication)
 						if errorStatus:
 							raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-						
+							
 						name, PortStatus = varBinds[0]
 						PortStatus = int(unicode(PortStatus))
 						
@@ -508,13 +529,13 @@ class PDU(object):
 						## Print the traceback to the logger as a series of DEBUG messages
 						for line in tbString.split('\n'):
 							shlThreadsLogger.debug("%s", line)
-						
+							
 						if self.lastError is not None:
 							self.lastError = "%s; %s" % (self.lastError, str(e))
 						else:
 							self.lastError = str(e)
 						self.status[i] = "UNK"
-			
+						
 			SNMPLock.release()
 			
 			toDataLog = "%.2f,%.2f,%.2f,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1)
@@ -522,6 +543,10 @@ class PDU(object):
 			fh.write('%s\n' % toDataLog)
 			fh.close()
 			
+			# Make sure the device is reachable
+			if self.SHLCallbackInstance is not None and nFailures > 0:
+				self.SHLCallbackInstance.processSNMPUnrechable('%s-%s' % (type(self).__name__, str(self.id)))
+				
 			# Stop time
 			tStop = time.time()
 			shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -532,21 +557,21 @@ class PDU(object):
 			while (self.alive.isSet() and sleepCount < sleepTime):
 				time.sleep(0.2)
 				sleepCount += 0.2
-
+				
 	def getFrequency(self):
 		"""
 		Return the input frequency of the DPU in Hz or None if it is unknown.
 		"""
 		
 		return self.frequency
-
+		
 	def getVoltage(self):
 		"""
 		Return the input voltage of the PDU in volts AC or None if it is unknown.
 		"""
 		
 		return self.voltage
-
+		
 	def getCurrent(self):
 		"""
 		Return the current associated with the PDU in amps or None if it is unknown.
@@ -560,18 +585,18 @@ class PDU(object):
 		"""
 		
 		return self.firmwareVersion
-	
+		
 	def getStatus(self, outlet=None):
 		"""
 		Return the status associated with a particular outlet or, if outlet
 		is None, a list of all outlets.
 		"""
-
+		
 		if outlet is None:
 			return [self.status[k] for k in sorted(self.status.keys())]
 		else:
 			return self.status[outlet]
-	
+			
 	def setStatus(self, outlet=None, status=None):
 		"""
 		Change the status of an outlet to a new value or, if outlet is None,
@@ -625,7 +650,7 @@ class PDU(object):
 						shlThreadsLogger.debug("%s", line)
 						
 					return False
-				
+					
 				return True
 
 
@@ -731,28 +756,32 @@ class TrippLiteUPS(PDU):
 		is stored in the "current" attribute and the outlets in the "status"
 		attribute.
 		"""
-
+		
 		while self.alive.isSet():
 			tStart = time.time()
 			
 			SNMPLock.acquire()
 			
+			nAttempts = 0
+			nFailures = 0
 			if self.oidFirmwareEntry is not None:
 				try:
 					# Get the system firmware
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, self.firmwareVersion = varBinds[0]
-		
+					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -762,28 +791,30 @@ class TrippLiteUPS(PDU):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					self.lastError = str(e)
 					self.firmwareVersion = None
 					
 			if self.oidFrequencyEntry is not None:
 				try:
 					# Get the current input frequency
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFrequencyEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, PWRfreq = varBinds[0]
 					self.frequency = float(unicode(PWRfreq)) / 10.0
 					self.lastError = None
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -793,28 +824,30 @@ class TrippLiteUPS(PDU):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					self.frequency = None
 					self.lastError = str(e)
-			
+					
 			if self.oidVoltageEntry is not None:
 				try:
 					# Get the current input voltage
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidVoltageEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, PWRvoltage = varBinds[0]
 					self.voltage = float(unicode(PWRvoltage))
 					self.lastError = None
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -824,24 +857,26 @@ class TrippLiteUPS(PDU):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					if self.lastError is not None:
 						self.lastError = "%s; %s" % (self.lastError, str(e))
 					else:
 						self.lastError = str(e)
 					self.voltage = None
-			
+					
 			if self.oidCurrentEntry is not None:
 				try:
 					# Get the current draw of outlet #(i+1)
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidCurrentEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, PWRcurrent = varBinds[0]
 					if self.firmwareVersion == '12.04.0053':
 						self.current = float(unicode(PWRcurrent))
@@ -851,7 +886,7 @@ class TrippLiteUPS(PDU):
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -861,7 +896,7 @@ class TrippLiteUPS(PDU):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					if self.lastError is not None:
 						self.lastError = "%s; %s" % (self.lastError, str(e))
 					else:
@@ -871,14 +906,16 @@ class TrippLiteUPS(PDU):
 			if self.oidUPSOutputEntry is not None:
 				try:
 					# Get the current draw of outlet #(i+1)
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidUPSOutputEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, UPSoutput = varBinds[0]
 					try:
 						self.upsOutput = self.upsOutputCodes[int(unicode(UPSoutput))]
@@ -888,7 +925,7 @@ class TrippLiteUPS(PDU):
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -898,7 +935,7 @@ class TrippLiteUPS(PDU):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					if self.lastError is not None:
 						self.lastError = "%s; %s" % (self.lastError, str(e))
 					else:
@@ -908,21 +945,23 @@ class TrippLiteUPS(PDU):
 			if self.oidBatteryChargeEntry is not None:
 				try:
 					# Get the current draw of outlet #(i+1)
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidBatteryChargeEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, BTYcharge = varBinds[0]
 					self.batteryCharge = float(unicode(BTYcharge))
 					self.lastError = None
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -932,7 +971,7 @@ class TrippLiteUPS(PDU):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					if self.lastError is not None:
 						self.lastError = "%s; %s" % (self.lastError, str(e))
 					else:
@@ -942,14 +981,16 @@ class TrippLiteUPS(PDU):
 			if self.oidBatteryStatusEntry is not None:
 				try:
 					# Get the current draw of outlet #(i+1)
+					nAttempts += 1
 					errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidBatteryStatusEntry)
 					
 					# Check for SNMP errors
 					if errorIndication:
+						nFailures += 1
 						raise RuntimeError("SNMP error indication: %s" % errorIndication)
 					if errorStatus:
 						raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-							
+						
 					name, BTYstatus = varBinds[0]
 					try:
 						self.batteryStatus = self.batteryStatusCodes[int(unicode(BTYstatus))]
@@ -959,7 +1000,7 @@ class TrippLiteUPS(PDU):
 					
 				except Exception, e:
 					exc_type, exc_value, exc_traceback = sys.exc_info()
-					shlThreadsLogger.error("PDU %s: monitorThread failed with: %s at line %i", str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+					shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
 					
 					## Grab the full traceback and save it to a string via StringIO
 					fileObject = StringIO.StringIO()
@@ -969,13 +1010,13 @@ class TrippLiteUPS(PDU):
 					## Print the traceback to the logger as a series of DEBUG messages
 					for line in tbString.split('\n'):
 						shlThreadsLogger.debug("%s", line)
-					
+						
 					if self.lastError is not None:
 						self.lastError = "%s; %s" % (self.lastError, str(e))
 					else:
 						self.lastError = str(e)
 					self.batteryStatus = None
-			
+					
 			if self.oidOutletStatusBaseEntry is not None:
 				for i in xrange(1, self.nOutlets+1):
 					# Get the status of outlet #(i+1).
@@ -985,14 +1026,16 @@ class TrippLiteUPS(PDU):
 					oidOutletStatusEntry = self.oidOutletStatusBaseEntry+(i,)
 					
 					try:
+						nAttempts += 1
 						errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidOutletStatusEntry)
 						
 						# Check for SNMP errors
 						if errorIndication:
+							nFailures += 1
 							raise RuntimeError("SNMP error indication: %s" % errorIndication)
 						if errorStatus:
 							raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-						
+							
 						name, PortStatus = varBinds[0]
 						PortStatus = int(unicode(PortStatus))
 						
@@ -1015,7 +1058,7 @@ class TrippLiteUPS(PDU):
 						## Print the traceback to the logger as a series of DEBUG messages
 						for line in tbString.split('\n'):
 							shlThreadsLogger.debug("%s", line)
-						
+							
 						if self.lastError is not None:
 							self.lastError = "%s; %s" % (self.lastError, str(e))
 						else:
@@ -1028,6 +1071,10 @@ class TrippLiteUPS(PDU):
 			fh = open('/data/rack%02i.txt' % self.id, 'a+')
 			fh.write('%s\n' % toDataLog)
 			fh.close()
+			
+			# Make sure the device is reachable
+			if self.SHLCallbackInstance is not None and nFailures > 0:
+				self.SHLCallbackInstance.processSNMPUnrechable('%s-%s' % (type(self).__name__, str(self.id)))
 			
 			# Stop time
 			tStop = time.time()
@@ -1098,10 +1145,10 @@ class Weather(object):
 	def __init__(self, config, MonitorPeriod=120.0):
 		self.config = config
 		self.MonitorPeriod = MonitorPeriod
-
+		
 		# Update the configuration
 		self.updateConfig()
-
+		
 		# Setup threading
 		self.thread = None
 		self.alive = threading.Event()
@@ -1119,7 +1166,7 @@ class Weather(object):
 		self.windGustDir = None
 		self.rain = None
 		self.rainRate = None
-
+		
 	def updateConfig(self, config=None):
 		"""
 		Using the configuration file, update the database file.
@@ -1129,12 +1176,12 @@ class Weather(object):
 		if config is not None:
 			self.config = config
 		self.database = self.config['WEATHERDATABASE']
-
+		
 	def start(self):
 		"""
 		Start the monitoring thread.
 		"""
-
+		
 		if self.thread is not None:
 			self.stop()
 			
@@ -1142,40 +1189,40 @@ class Weather(object):
 		self.thread.setDaemon(1)
 		self.alive.set()
 		self.thread.start()
-
+		
 	def stop(self):
 		"""
 		Stop the monitor thread, waiting until it's finished.
 		"""
-
+		
 		if self.thread is not None:
 			self.alive.clear()          #clear alive event for thread
 			self.thread.join()          #wait until thread has finished
 			self.thread = None
 			self.lastError = None
-
+			
 	def monitorThread(self):
 		"""
 		Create a monitoring thread for the temperature.
 		"""
-
+		
 		while self.alive.isSet():
 			tStart = time.time()
-
+			
 			try:
 				# Make sure we don't try near the edge of a minute
 				tNow = int(time.time())
 				while ((tNow % 60) < 10) or ((tNow % 60) > 50):
 					time.sleep(5)
 					tNow = int(time.time())
-				
+					
 				conn = sqlite3.connect(self.database, timeout=15)
 				conn.row_factory = sqlite3.Row
-
+				
 				c = conn.cursor()
 				c.execute("SELECT * FROM archive ORDER BY dateTime DESC")
 				row = c.fetchone()
-
+				
 				self.updatetime = int(row['dateTime'])
 				self.usUnits = bool(row['usUnits'])
 				self.pressure = float(row['barometer'])
@@ -1187,13 +1234,13 @@ class Weather(object):
 				self.windGustDir = float(row['windGustDir'])
 				self.rain = float(row['rain'])
 				self.rainRate = float(row['rainRate'])
-
+				
 				conn.close()
-
+				
 			except Exception, e:
 				exc_type, exc_value, exc_traceback = sys.exc_info()
 				shlThreadsLogger.error("Weather: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
-					
+				
 				## Grab the full traceback and save it to a string via StringIO
 				fileObject = StringIO.StringIO()
 				traceback.print_tb(exc_traceback, file=fileObject)
@@ -1202,12 +1249,12 @@ class Weather(object):
 				## Print the traceback to the logger as a series of DEBUG messages
 				for line in tbString.split('\n'):
 					shlThreadsLogger.debug("%s", line)
-				
+					
 				try:
 					conn.close()
 				except:
 					pass
-
+					
 				if self.lastError is not None:
 					self.lastError = "%s; %s" % (self.lastError, str(e))
 				else:
@@ -1223,7 +1270,7 @@ class Weather(object):
 				self.windGustDir = None
 				self.rain = None
 				self.rainRate = None
-
+				
 			# Stop time
 			tStop = time.time()
 			shlThreadsLogger.debug('Finished updating weather station data in %.3f seconds', tStop - tStart)
@@ -1239,12 +1286,12 @@ class Weather(object):
 		"""
 		Return the time of last update as a datetime object in UTC.
 		"""
-
+		
 		if self.updatetime is None:
 			return None
 			
 		return datetime.utcfromtimestamp(self.updatetime)
-
+		
 	def getTemperature(self, DegreesF=True):
 		"""
 		Return the outside temperature in degrees F.
@@ -1252,83 +1299,83 @@ class Weather(object):
 		
 		if self.temperature is None:
 			return None
-
+			
 		if self.usUnits:
 			f =  self.temperature
 		else:
 			f = 1.8*self.temperature + 32
-
+			
 		if DegreesF:
 			return f
 		else:
 			return (f - 32)/1.8
-
+			
 	def getHumidity(self):
 		"""
 		Return the outside humdity.
 		"""
-
+		
 		return self.humidity
-
+		
 	def getPressure(self):
 		"""
 		Return the barometric pressure.
 		"""
-
+		
 		return self.pressure
-
+		
 	def getWind(self, MPH=True):
 		"""
 		Return a two-element tuple of wind speed and direction.
 		"""
-
+		
 		if self.windSpeed is None or self.windDir is None:
 			return (None, None)
-
+			
 		if self.usUnits:
 			m = self.windSpeed
 		else:
 			m = self.windSpeed / 1.60934
-
+			
 		if MPH:
 			return (m, self.windDir)
 		else:
 			return (m*1.60934, self.windDir)
-
+			
 	def getGust(self, MPH=True):
 		"""
 		Return a two-element tuple of wind gust speed and direction.
 		"""
-
+		
 		if self.windGust is None or self.windGustDir is None:
 			return (None, None)
-
+			
 		if self.usUnits:
 			m = self.windGust
 		else:
 			m = self.windGust / 1.60934
-
+			
 		if MPH:
 			return (m, self.windGustDir)
 		else:
 			return (m*1.60934, self.windGustDir)
-
+			
 	def getPercipitation(self, Inches=True):
 		"""
 		Return a two-element tuple of rainfall rate and total 
 		rainfall.
 		"""
-
+		
 		if self.rainRate is None or self.rain is None:
 			return (None, None)
-
+			
 		if self.usUnits:
 			rri = self.rainRate
 			rfi = self.rain
 		else:
 			rri = self.rainRate / 25.4
 			rfi = self.rain / 25.4
-
+			
 		if Inches:
 			return (rri, rfi)
 		else:
@@ -1339,16 +1386,16 @@ class Lightning(object):
 	"""
 	Class for interfacing with the lightning detector via UDP.
 	"""
-
+	
 	def __init__(self, config):
 		self.config = config
 		self.aging = 2700
 		self.address = LIGHTNING_IP
 		self.port = LIGHTNING_PORT
-
+		
 		# Update the configuration
 		self.updateConfig()
-
+		
 		# Setup threading
 		self.thread = None
 		self.alive = threading.Event()
@@ -1372,7 +1419,7 @@ class Lightning(object):
 		"""
 		Start the monitoring thread.
 		"""
-
+		
 		if self.thread is not None:
 			self.stop()
 			
@@ -1380,18 +1427,18 @@ class Lightning(object):
 		self.thread.setDaemon(1)
 		self.alive.set()
 		self.thread.start()
-
+		
 	def stop(self):
 		"""
 		Stop the monitor thread, waiting until it's finished.
 		"""
-
+		
 		if self.thread is not None:
 			self.alive.clear()          #clear alive event for thread
 			self.thread.join()          #wait until thread has finished
 			self.thread = None
 			self.lastError = None
-
+			
 	def monitorThread(self):
 		"""
 		Create a monitoring thread for the temperature.
@@ -1460,7 +1507,7 @@ class Lightning(object):
 			except Exception, e:
 				exc_type, exc_value, exc_traceback = sys.exc_info()
 				shlThreadsLogger.error("Lightning: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
-					
+				
 				## Grab the full traceback and save it to a string via StringIO
 				fileObject = StringIO.StringIO()
 				traceback.print_tb(exc_traceback, file=fileObject)
@@ -1496,7 +1543,7 @@ class Lightning(object):
 		except Exception, e:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
 			shlThreadsLogger.error("Lightning: getStrikeCount failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
-				
+			
 			## Grab the full traceback and save it to a string via StringIO
 			fileObject = StringIO.StringIO()
 			traceback.print_tb(exc_traceback, file=fileObject)

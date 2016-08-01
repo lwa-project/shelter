@@ -58,5 +58,6 @@ LIGHTNING_IP = "224.168.2.9"
 LIGHTNING_PORT = 7163
 
 # Define the critical shutdown list
+WARNING_TEMP = 80.0			# Degrees F
 CRITICAL_TEMP = 90.0			# Degrees F
 CRITICAL_LIST = []	# List of (rack, port) combos. to turn off

@@ -80,6 +80,7 @@ class ShippingContainer(object):
 		self.currentState['diffPoint'] = 0
 		self.currentState['nRacks'] = 0
 		self.currentState['rackPresent'] = []
+		self.currentState['snmpUnreachable'] = {}
 		
 		## Monitoring and background threads
 		self.currentState['tempThreads'] = None
@@ -236,6 +237,8 @@ class ShippingContainer(object):
 		## Extend self.currentState['rackPresent'] for racks in shlCommon but not in the INI
 		while len(self.currentState['pduThreads']) > len(self.currentState['rackPresent']):
 			self.currentState['rackPresent'].append(0)
+		## Reset the SNMP unreacable list
+		self.currentState['snmpUnreachable'] = {}
 		
 		# Print out some rack status
 		shlFunctionsLogger.info('-----------------')
@@ -828,38 +831,86 @@ class ShippingContainer(object):
 		else:
 			return True, out
 			
-	def processCriticalTemperature(self):
+	def processShelterTemperature(self, currTemp):
 		"""
-		Deal with a critical shelter temperature.  We are in error if this happens 
-		and the critical list of ports are powered off.
+		Figure out what to do about the shelter temperature.  If things look really bad, take action.
 		"""
 		
-		criticalPortList = ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST])
-		if len(CRITICAL_LIST) == 0:
-			criticalPortList = 'None listed'
-		
-		self.currentState['status'] = 'ERROR'
-		self.currentState['info'] = 'Shelter temperature %.2f >= %.2f F, shutting down critical ports: %s' % (currTemp, CRITICAL_TEMP, criticalPortList)
-			
-		for rack,port in CRITICAL_LIST:
-			try:
-				good, status = self.getPowerState(rack, port)
-				if status != 'OFF':
-					self.pwr(rack, port, 'OFF')
-			except:
-				pass
+		if currTemp < WARNING_TEMP:
+			# Everything is OK
+			if self.currentState['status'] == 'WARNING':
+				## From WARNING
+				self.currentState['info'] = 'Warning condition cleared, system operating normally'
 				
-		shlFunctionsLogger.critical('Shelter temperature %.2f >= %.2f F, shutting down critical ports: %s', currTemp, CRITICAL_TEMP, criticalPortList)
+				shlFunctionsLogger.info('Shelter temperature warning condition cleared')
+				
+			elif self.currentState['status'] == 'ERROR' and self.currentState['info'][:12] == 'TEMPERATURE!':
+				## From ERROR
+				self.currentState['info'] = 'Error condition cleared, system operating normally'
+				
+				shlFunctionsLogger.info('Shelter temperature critical condition cleared')
+				
+		elif currTemp < CRITICAL_TEMP:
+			# We are in warning
+			if self.currentState['status'] in ('NORMAL', 'WARNING'):
+				## Escalation
+				self.currentState['status'] = 'WARNING'
+				self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f', currTemp
+				
+				shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
+				
+			elif self.currentState['status'] == 'ERROR' and self.currentState['info'][:12] == 'TEMPERATURE!':
+				## Descalation
+				self.currentState['status'] = 'WARNING'
+				self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f', currTemp
+				
+				shlFunctionsLogger.info('Shelter temperature critical condition cleared')
+				shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
+				
+		else:
+			# We are critical, take action
+			## Find out what ports we need to shut down
+			criticalPortList = ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST])
+			if len(CRITICAL_LIST) == 0:
+				criticalPortList = 'None listed'
+				
+			## Change the system state
+			self.currentState['status'] = 'ERROR'
+			self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f, shutting down critical ports: %s' % (currTemp, criticalPortList)
+			
+			## Try to shut off the ports
+			for rack,port in CRITICAL_LIST:
+				try:
+					good, status = self.getPowerState(rack, port)
+					if status != 'OFF':
+						self.pwr(rack, port, 'OFF')
+				except Exception as e:
+					shlFunctionsLogger.error('Cannot power off rack %i, port %i: %s', rack, port, str(e))
+					
+			shlFunctionsLogger.critical('Shelter temperature at %.2, shutting down critical ports: %s', currTemp, criticalPortList)
 			
 		return True
 		
-	def processSNMPUnrechable(self, unreachableList):
+	def processSNMPUnrechable(self, unreachableDevice):
 		"""
-		Deal with unreachable devices.
+		Deal with an unreachable device.
 		"""
 		
+		# Get the current time
+		tNow = time.time()
+		
+		# Update the unreachable device list
+		self.currentState['snmpUnreachable'][unreachableDevice] = tNow
+		
+		# Count the recently updated (<= 5 minutes since the last failure) entries
+		nUnreachable = 0
+		for device in self.currentState['snmpUnreachable']:
+			age = tNow - self.currentState['snmpUnreachable'][device]
+			if age <= 300:
+				nUnreachable += 1
+				
 		# If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
-		if len(unreachableList) == 0:
+		if nUnreachable == 0:
 			if self.currentState['status'] == 'WARNING':
 				self.currentState['status'] = 'NORMAL'
 				self.currentState['info'] = 'Warning condition cleared, system operating normally'
@@ -869,7 +920,6 @@ class ShippingContainer(object):
 		else:
 			if self.currentState['status'] in ('NORMAL', 'WARNING'):
 				self.currentState['status'] = 'WARNING'
-				self.currentState['info'] = 'SUMMARY! %i Devices unreachable via SNMP' % len(unreachableList)
+				self.currentState['info'] = 'SUMMARY! %i Devices unreachable via SNMP' % nUnreachable
 				
 			return True
-			
