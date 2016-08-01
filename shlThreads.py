@@ -124,7 +124,7 @@ class Thermometer(object):
 			
 			# Read the networked thermometers and store values to temp.
 			# NOTE: self.temp is in Celsius
-			nAttemps = 0
+			nAttempts = 0
 			nFailures = 0
 			for s,oidEntry in enumerate((self.oidTemperatureEntry0,self.oidTemperatureEntry1,self.oidTemperatureEntry2,self.oidTemperatureEntry3)):
 				if s >= self.nSensors:
