@@ -215,7 +215,7 @@ class ShippingContainer(object):
 					
 				nP = PDUBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
 								c+1, nOutlets=v['nOutlets'], description=v['Description'], 
-								MonitorPeriod=self.config['RACKMONITORPERIOD'])
+								MonitorPeriod=self.config['RACKMONITORPERIOD'], SHLCallbackInstance=self)
 								
 				self.currentState['pduThreads'].append(nP)
 		## Weather station
