@@ -14,7 +14,7 @@ from datetime import datetime
 
 __version__ = "0.2"
 __revision__ = "$Rev$"
-__all__ = ['THERMOMLIST', 'PDULIST', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
+__all__ = ['THERMOMLIST', 'PDULIST', 'WARNING_TEMP', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
 
 # Setup the thermometers
 THERMOMLIST = {}
