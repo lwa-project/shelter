@@ -659,8 +659,8 @@ class TrippLite(PDU):
 	Sub-class of the PDU class for TrippLite PDUs.
 	"""
 	
-	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
-		super(TrippLite, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+		super(TrippLite, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description,  SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
 		self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,4,0)
@@ -679,8 +679,8 @@ class APC(PDU):
 	Sub-class of the PDU class for the APC PDU on PASI.
 	"""
 	
-	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
-		super(APC, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+		super(APC, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
 		self.oidFirmwareEntry = None
@@ -699,8 +699,8 @@ class Raritan(PDU):
 	Sub-class of the PDU class for the new Raritan PDU on DP.
 	"""
 	
-	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
-		super(Raritan, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+		super(Raritan, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
 		self.oidFirmwareEntry = (1,3,6,1,4,1,13742,6,3,2,3,1,6,1,1,1)
@@ -723,8 +723,8 @@ class TrippLiteUPS(PDU):
 	  http://www.simpleweb.org/ietf/mibs/modules/IETF/txt/UPS-MIB
 	"""
 	
-	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
-		super(TrippLiteUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+		super(TrippLiteUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
 		
 		# This is a UPS
 		self.isUPS = True
@@ -1119,8 +1119,8 @@ class APCUPS(TrippLiteUPS):
 	  http://www.oidview.com/mibs/318/PowerNet-MIB.html
 	"""
 	
-	def __init__(self, ip, port, community, id, nOutlets=8, description=None, MonitorPeriod=1.0):
-		super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, MonitorPeriod=MonitorPeriod)
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+		super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=None, MonitorPeriod=MonitorPeriod)
 		
 		# Setup the OID values
 		self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,3,0)
@@ -1142,8 +1142,9 @@ class Weather(object):
 	Class for reading in values from the weather station database.
 	"""
 
-	def __init__(self, config, MonitorPeriod=120.0):
+	def __init__(self, config, SHLCallbackInstance=None, MonitorPeriod=120.0):
 		self.config = config
+		self.SHLCallbackInstance = SHLCallbackInstance
 		self.MonitorPeriod = MonitorPeriod
 		
 		# Update the configuration
@@ -1387,8 +1388,10 @@ class Lightning(object):
 	Class for interfacing with the lightning detector via UDP.
 	"""
 	
-	def __init__(self, config):
+	def __init__(self, config, SHLCallbackInstance=None):
 		self.config = config
+		self.SHLCallbackInstance = SHLCallbackInstance
+		
 		self.aging = 2700
 		self.address = LIGHTNING_IP
 		self.port = LIGHTNING_PORT
