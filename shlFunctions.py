@@ -938,7 +938,7 @@ class ShippingContainer(object):
 				
 			## Make sure to check back later to see if this is still a problem
 			if self.scheduler.empty():
-				self.scheduler.enter(300, 1, self.processSNMPUnreachable, (None,))
+				self.scheduler.enter(360, 1, self.processSNMPUnreachable, (None,))
 				self.scheduler.run()
 				
 			return True
