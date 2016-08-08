@@ -10,6 +10,7 @@ $LastChangedDate$
 
 import os
 import time
+import sched
 import logging
 import threading
 
@@ -87,6 +88,9 @@ class ShippingContainer(object):
 		self.currentState['pduThreads'] = None
 		self.currentState['wxThread'] = None
 		self.currentState['strikeThread'] = None
+		
+		## Scheduler for clearning the SNMP unreachable list
+		self.scheduler = sched.scheduler(time.time, time.sleep)
 		
 		# Update the configuration
 		self.updateConfig()
@@ -309,6 +313,10 @@ class ShippingContainer(object):
 		self.currentState['activeProcess'].append('SHT')
 		self.currentState['ready'] = False
 		
+		# Stop the scheduler
+		for entry in self.scheduler.queue:
+			self.scheduler.cancel(entry)
+			
 		# Stop all threads.
 		## Temperature
 		if self.currentState['tempThreads'] is not None:
@@ -842,6 +850,7 @@ class ShippingContainer(object):
 			# Everything is OK
 			if self.currentState['status'] == 'WARNING':
 				## From WARNING
+				self.currentState['status'] = 'NORMAL'
 				self.currentState['info'] = 'Warning condition cleared, system operating normally'
 				
 				shlFunctionsLogger.info('Shelter temperature warning condition cleared')
@@ -902,8 +911,9 @@ class ShippingContainer(object):
 		tNow = time.time()
 		
 		# Update the unreachable device list
-		self.currentState['snmpUnreachable'][unreachableDevice] = tNow
-		
+		if unreachableDevice is not None:
+			self.currentState['snmpUnreachable'][unreachableDevice] = tNow
+			
 		# Count the recently updated (<= 5 minutes since the last failure) entries
 		nUnreachable = 0
 		unreachable = []
@@ -925,5 +935,10 @@ class ShippingContainer(object):
 			if self.currentState['status'] in ('NORMAL', 'WARNING'):
 				self.currentState['status'] = 'WARNING'
 				self.currentState['info'] = 'SUMMARY! %i Devices unreachable via SNMP: %s' % (nUnreachable, ', '.join(unreachable))
+				
+			## Make sure to check back later to see if this is still a problem
+			if self.scheduler.empty():
+				self.scheduler.enter(300, 1, self.processSNMPUnreachable, (None,))
+				self.scheduler.run()
 				
 			return True
