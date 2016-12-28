@@ -27,6 +27,10 @@ __all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer", "__versi
 shlFunctionsLogger = logging.getLogger('__main__')
 
 
+# Create a semaphore to make sure not too many threads process the unreachable list at a time
+ListLock = threading.Semaphore()
+
+
 commandExitCodes = {0x00: 'Process accepted without error', 
 				0x01: 'Invalid temperature set point', 
 				0x02: 'Invalid temperature differential', 
@@ -912,7 +916,10 @@ class ShippingContainer(object):
 		
 		# Update the unreachable device list
 		if unreachableDevice is not None:
+			ListLock.acquire()
 			self.currentState['snmpUnreachable'][unreachableDevice] = tNow
+			ListLock.release()
+			shlFunctionsLogger.warning('Updated SNMP unreachable list - add %s', unreachableDevice)
 			
 		# Count the recently updated (<= 5 minutes since the last failure) entries
 		nUnreachable = 0
@@ -922,7 +929,11 @@ class ShippingContainer(object):
 			if age <= 300:
 				nUnreachable += 1
 				unreachable.append( device )
-				
+				shlFunctionsLogger.info('Updated SNMP unreachable list - remove %s', device)
+		ListLock.acquire()
+		self.currentState['snmpUnreachable'] = unreachable
+		ListLock.release()
+			
 		# If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
 		if nUnreachable == 0:
 			if self.currentState['status'] == 'WARNING':
