@@ -179,7 +179,7 @@ class Thermometer(object):
 				
 			# Make sure the device is reachable
 			if self.SHLCallbackInstance is not None and nFailures > 0:
-				self.SHLCallbackInstance.processSNMPUnrechable('%s-%s' % (type(self).__name__, str(self.id)))
+				self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
 				
 			# Stop time
 			tStop = time.time()
@@ -545,7 +545,7 @@ class PDU(object):
 			
 			# Make sure the device is reachable
 			if self.SHLCallbackInstance is not None and nFailures > 0:
-				self.SHLCallbackInstance.processSNMPUnrechable('%s-%s' % (type(self).__name__, str(self.id)))
+				self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
 				
 			# Stop time
 			tStop = time.time()
@@ -1074,7 +1074,7 @@ class TrippLiteUPS(PDU):
 			
 			# Make sure the device is reachable
 			if self.SHLCallbackInstance is not None and nFailures > 0:
-				self.SHLCallbackInstance.processSNMPUnrechable('%s-%s' % (type(self).__name__, str(self.id)))
+				self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
 			
 			# Stop time
 			tStop = time.time()

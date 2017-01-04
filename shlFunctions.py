@@ -906,7 +906,7 @@ class ShippingContainer(object):
 			
 		return True
 		
-	def processSNMPUnrechable(self, unreachableDevice):
+	def processSNMPUnreachable(self, unreachableDevice):
 		"""
 		Deal with an unreachable device.
 		"""
@@ -923,15 +923,17 @@ class ShippingContainer(object):
 			
 		# Count the recently updated (<= 5 minutes since the last failure) entries
 		nUnreachable = 0
-		unreachable = []
+		unreachable = {}
 		for device in self.currentState['snmpUnreachable']:
 			age = tNow - self.currentState['snmpUnreachable'][device]
 			if age <= 300:
 				nUnreachable += 1
-				unreachable.append( device )
+				unreachable[device] = self.currentState['snmpUnreachable'][device]
+			else:
 				shlFunctionsLogger.info('Updated SNMP unreachable list - remove %s', device)
 		ListLock.acquire()
 		self.currentState['snmpUnreachable'] = unreachable
+		shlFunctionsLogger.debug('Unreachable list now contains %i entries', len(self.currentState['snmpUnreachable']))
 		ListLock.release()
 			
 		# If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
@@ -951,5 +953,6 @@ class ShippingContainer(object):
 			if self.scheduler.empty():
 				self.scheduler.enter(360, 1, self.processSNMPUnreachable, (None,))
 				self.scheduler.run()
+				shlFunctionsLogger.debug('Scheduling another call of \'processSNMPUnreachable\' for six minutes from now')
 				
 			return True
