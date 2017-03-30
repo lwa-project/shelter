@@ -29,7 +29,7 @@ from shlCommon import LIGHTNING_IP,LIGHTNING_PORT
 
 __version__ = "0.6"
 __revision__ = "$Rev$"
-__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -712,6 +712,40 @@ class Raritan(PDU):
 		
 		# Setup the status codes
 		self.outletStatusCodes = {1: "ON", 0: "OFF"}
+
+
+class Dominion(PDU):
+	"""
+	Sub-class of the PDU class for the new Raritan PDU on DP.
+	"""
+	
+	def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+		super(Dominion, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+		
+		# Setup the OID values
+		self.oidFirmwareEntry = (1,3,6,1,4,1,13742,4,1,1,1)
+		self.oidFrequencyEntry = None
+		self.oidVoltageEntry = (1,3,6,1,4,1,13742,4,1,20,2,1,8)
+		self.oidCurrentEntry = (1,3,6,1,4,1,13742,4,1,20,2,1,7)
+		self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,13742,4,1,2,2,1,3,)
+		self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,13742,4,1,2,2,1,3,)
+		
+		# Setup the status codes
+		self.outletStatusCodes = {1: "ON", 0: "OFF"}
+		
+	def getVoltage(self):
+		"""
+		Return the input voltage of the PDU in volts AC or None if it is unknown.
+		"""
+		
+		return self.voltage / 1000.0
+		
+	def getCurrent(self):
+		"""
+		Return the current associated with the PDU in amps or None if it is unknown.
+		"""
+		
+		return self.current / 100.0
 
 
 class TrippLiteUPS(PDU):

@@ -39,6 +39,9 @@ PDULIST[4] = {'Type': 'APCUPS', 'IP': '172.16.1.116', 'Port': 161,
 PDULIST[5] = {'Type': 'APCUPS', 'IP': '172.16.1.117', 'Port': 161, 
 		    'SecurityModel': ('my-agent', 'private', 0), 
 		    'nOutlets': 3, 'Description': "2-Bay - 240VAC - UPS"}
+PDULIST[6] = {'Type': 'Dominion', 'IP': '172.16.1.118', 'Port': 161, 
+		    'SecurityModel': ('my-agent', 'private', 0), 
+		    'nOutlets': 8, 'Description': "2-Bay - 240VAC - #1"}
 
 # Define lightning detection server parameters
 LIGHTNING_IP = "224.168.2.9"
