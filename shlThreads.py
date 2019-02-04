@@ -29,7 +29,7 @@ from shlCommon import LIGHTNING_IP,LIGHTNING_PORT, OUTAGE_IP, OUTAGE_PORT
 
 __version__ = "0.6"
 __revision__ = "$Rev$"
-__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage', '__version__', '__revision__', '__all__']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -1727,7 +1727,7 @@ class Outages(object):
                         
                 elif mtch.group('type') == 'CLEAR':
                     if mtch.group('data').find('120V') != -1:
-                        local_events.append((120,t,'clear')
+                        local_events.append((120,t,'clear'))
                     else:
                         local_events.append((240,t,'clear'))
                         
