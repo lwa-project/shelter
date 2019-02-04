@@ -1620,7 +1620,7 @@ class Lightning(object):
         return counter
 
 
-class Outages(object):
+class Outage(object):
     """
     Class for interfacing with the line voltage monitor via UDP.
     """
