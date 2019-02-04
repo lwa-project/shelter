@@ -12,40 +12,44 @@ $LastChangedDate$
 import math
 from datetime import datetime
 
-__version__ = "0.2"
+__version__ = "0.3"
 __revision__ = "$Rev$"
-__all__ = ['THERMOMLIST', 'PDULIST', 'WARNING_TEMP', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
+__all__ = ['THERMOMLIST', 'PDULIST', 'WARNING_TEMP', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'OUTAGE_IP', 'OUTAGE_PORT', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
 
 # Setup the thermometers
 THERMOMLIST = {}
 THERMOMLIST[1] = {'Type': 'HWg', 'IP': '172.16.1.111', 'Port': 161, 
-			   'SecurityModel': ('arbitrary', 'public', 0), 
-			   'nSensors': 2, 'Description': "Shelter #1 and #2"}
+            'SecurityModel': ('arbitrary', 'public', 0), 
+            'nSensors': 2, 'Description': "Shelter #1 and #2"}
 
 # Setup the PDUs
 PDULIST = {}
 PDULIST[1] = {'Type': 'Raritan', 'IP': '172.16.1.113', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 8, 'Description': "ASP"}
+            'SecurityModel': ('my-agent', 'private', 0), 
+            'nOutlets': 8, 'Description': "ASP"}
 PDULIST[2] = {'Type': 'Raritan', 'IP': '172.16.1.114', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 8, 'Description': "ADP - 240VAC - #1"}
+            'SecurityModel': ('my-agent', 'private', 0), 
+            'nOutlets': 8, 'Description': "ADP - 240VAC - #1"}
 PDULIST[3] = {'Type': 'Raritan', 'IP': '172.16.1.115', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 8, 'Description': "ADP - 240VAC - #2"}
+            'SecurityModel': ('my-agent', 'private', 0), 
+            'nOutlets': 8, 'Description': "ADP - 240VAC - #2"}
 PDULIST[4] = {'Type': 'APCUPS', 'IP': '172.16.1.116', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 3, 'Description': "ADP - 240VAC - UPS"}
+            'SecurityModel': ('my-agent', 'private', 0), 
+            'nOutlets': 3, 'Description': "ADP - 240VAC - UPS"}
 PDULIST[5] = {'Type': 'APCUPS', 'IP': '172.16.1.117', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 3, 'Description': "2-Bay - 240VAC - UPS"}
+            'SecurityModel': ('my-agent', 'private', 0), 
+            'nOutlets': 3, 'Description': "2-Bay - 240VAC - UPS"}
 PDULIST[6] = {'Type': 'Dominion', 'IP': '172.16.1.118', 'Port': 161, 
-		    'SecurityModel': ('my-agent', 'private', 0), 
-		    'nOutlets': 8, 'Description': "2-Bay - 240VAC - #1"}
+            'SecurityModel': ('my-agent', 'private', 0), 
+            'nOutlets': 8, 'Description': "2-Bay - 240VAC - #1"}
 
 # Define lightning detection server parameters
 LIGHTNING_IP = "224.168.2.9"
 LIGHTNING_PORT = 7163
+
+# Define the line monitor server parameters
+OUTAGE_IP = "224.168.2.10"
+OUTAGE_PORT = 7165
 
 # Define the critical shutdown list
 WARNING_TEMP = 80.0			# Degrees F
