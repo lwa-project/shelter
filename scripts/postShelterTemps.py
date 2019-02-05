@@ -7,7 +7,7 @@ import subprocess
 from socket import gethostname
 
 
-URL = "http://lwalab.phys.unm.edu/OpScreen/update.php"
+URL = "https://lwalab.phys.unm.edu/OpScreen/update.php"
 KEY = "c0843461abe746a4608dd9c897f9b261"
 SITE = gethostname().split("-",1)[0]
 SUBSYSTEM = "SHL"
@@ -19,13 +19,15 @@ test = test.replace('\n', '')
 
 # Check to see if the log is actually getting updated.  If not, send NaNs
 try:
-	lastUpdated, junk = test.split(',', 1)
+    lastUpdated, junk = test.split(',', 1)
 except ValueError:
-	lastUpdated = 0.0
-	junk = 0.0
+    lastUpdated = 0.0
+    junk = 0.0
 lastUpdated = float(lastUpdated)
 if time.time() > lastUpdated + 300:
-	test = "%.2f,NaN" % time.time()
+    test = "%.2f,NaN" % time.time()
+    if SITE == 'lwasv':
+        test += ',NaN'
 
 # Send the update to lwalab
 p = urllib.urlencode({'key': KEY, 'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
