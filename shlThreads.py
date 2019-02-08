@@ -1732,8 +1732,8 @@ class Outage(object):
                         local_events.append((240,t,'clear'))
                         
                 self.lock.acquire()
-                for v,t,c in local_events:
-                    try:
+                try:
+                    for v,t,c in local_events:
                         if v == 120:
                             if c == 'clear':
                                 self.events_120 = {}
@@ -1744,14 +1744,14 @@ class Outage(object):
                                 self.events_240 = {}
                             else:
                                 self.events_240[t] = c
-                        e = None
-                    except Exception as e:
-                        pass
-                    finally:
-                        self.lock.release()
-                        if e is not None:
-                            raise e
-                            
+                    e = None
+                except Exception as e:
+                    pass
+                finally:
+                    self.lock.release()
+                    if e is not None:
+                        raise e
+                        
                 # Cull the list of old strikes every two minutes
                 if (time.time() - tCull) > 120:
                     pruneTime = t

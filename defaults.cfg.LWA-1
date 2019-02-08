@@ -25,7 +25,7 @@ TempMonitorPeriod      60.0
 RackMonitorPeriod      20.0
 
 # Weather sqlite3 database file and update period (s)
-WeatherDatabase        /usr/local/var/wview/archive/wview-archive.sdb
+WeatherDatabase        /var/wview/archive/wview-archive.sdb
 WeatherMonitorPeriod   300.0
 
 

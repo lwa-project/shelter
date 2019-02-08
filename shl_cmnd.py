@@ -465,7 +465,7 @@ class MCSCommunicate(Communicate):
                         packed_data = self.SubSystemInstance.currentState['lastLog']
                         
                 ## Line voltage - flicker
-                elif data[:15] == 'POWER-FLICKER':
+                elif data == 'POWER-FLICKER':
                     status, flicker = self.SubSystemInstance.getPowerFlicker(interval=10)
                     if status:
                         if flicker is not None:
@@ -475,7 +475,7 @@ class MCSCommunicate(Communicate):
                     else:
                         packed_data = self.SubSystemInstance.currentState['lastLog']
                 ## Line voltage - flicker
-                elif data[:15] == 'POWER-OUTAGE':
+                elif data == 'POWER-OUTAGE':
                     status, outage = self.SubSystemInstance.getPowerOutage(interval=10)
                     if status:
                         if outage is not None:
