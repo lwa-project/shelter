@@ -1499,13 +1499,14 @@ class Lightning(object):
             self.thread = None
             self.lastError = None
             
-    def monitorThread(self):
+    def _connect(self, sock=None, timeout=60):
         """
-        Create a monitoring thread for lightning.
+        Create the UDP socket used for recieving notifications.
         """
         
-        dataRE = re.compile(r'^\[(?P<date>.*)\] (?P<type>[A-Z]*): (?P<data>.*)$')
-        
+        if sock is not None:
+            sock.close()
+            
         #create a UDP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         #allow multiple sockets to use the same PORT number
@@ -1518,14 +1519,32 @@ class Lightning(object):
         #The address for the multicast group is the third param
         status = sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
                 socket.inet_aton(self.address) + socket.inet_aton("0.0.0.0"))
-        sock.setblocking(1)
+        # Set the timeout
+        sock.settimeout(timeout)
+        
+        return sock
+        
+    def monitorThread(self):
+        """
+        Create a monitoring thread for lightning.
+        """
+        
+        dataRE = re.compile(r'^\[(?P<date>.*)\] (?P<type>[A-Z]*): (?P<data>.*)$')
+        
+        #create a UDP socket
+        sock = self._connect()
         
         tCull = time.time()
         while self.alive.isSet():
             try:
                 tNow = time.time()
-                data, addr = sock.recvfrom(1024)
-                
+                try:
+                    data, addr = sock.recvfrom(1024)
+                except socket.timeout:
+                    shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
+                    sock = self._connect(sock)
+                    continue
+                    
                 # RegEx matching for message date, type, and content
                 mtch = dataRE.match(data)
                 t = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
@@ -1679,13 +1698,14 @@ class Outage(object):
             self.thread = None
             self.lastError = None
             
-    def monitorThread(self):
+    def _connect(self, sock=None, timeout=60):
         """
-        Create a monitoring thread for the power.
+        Create the UDP socket used for recieving notifications.
         """
         
-        dataRE = re.compile(r'^\[(?P<date>.*)\] (?P<type>[A-Z0-9]*): (?P<data>.*)$')
-        
+        if sock is not None:
+            sock.close()
+            
         #create a UDP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         #allow multiple sockets to use the same PORT number
@@ -1697,15 +1717,33 @@ class Outage(object):
         #Tell the kernel that we want to add ourselves to a multicast group
         #The address for the multicast group is the third param
         status = sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
-                socket.inet_aton(self.address) + socket.inet_aton("0.0.0.0"))
-        sock.setblocking(1)
+                                 socket.inet_aton(self.address) + socket.inet_aton("0.0.0.0"))
+        # Set the timeout
+        sock.settimeout(timeout)
+        
+        return sock
+        
+    def monitorThread(self):
+        """
+        Create a monitoring thread for the power.
+        """
+        
+        dataRE = re.compile(r'^\[(?P<date>.*)\] (?P<type>[A-Z0-9]*): (?P<data>.*)$')
+        
+        #create a UDP socket
+        sock = self._connect()
         
         tCull = time.time()
         while self.alive.isSet():
             try:
                 tNow = time.time()
-                data, addr = sock.recvfrom(1024)
-                
+                try:
+                    data, addr = sock.recvfrom(1024)
+                except socket.timeout:
+                    shlThreadsLogger.warning('Outage: monitorThread timeout on socket, re-trying')
+                    sock = self._connect(sock)
+                    continue
+                    
                 # RegEx matching for message date, type, and content
                 mtch = dataRE.match(data)
                 t = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
@@ -1715,20 +1753,26 @@ class Outage(object):
                 local_events = []
                 if mtch.group('type') == 'FLICKER':
                     if mtch.group('data').find('120V') != -1:
+                        shlThreadsLogger.info('Outage: monitorThread - flicker - 120VAC')
                         local_events.append((120,t,'flicker'))
                     else:
+                        shlThreadsLogger.info('Outage: monitorThread - flicker - 240VAC')
                         local_events.append((240,t,'flicker'))
                         
                 elif mtch.group('type') == 'OUTAGE':
                     if mtch.group('data').find('120V') != -1:
+                        shlThreadsLogger.info('Outage: monitorThread - outage - 120VAC')
                         local_events.append((120,t,'outage'))
                     else:
+                        shlThreadsLogger.info('Outage: monitorThread - outage - 240VAC')
                         local_events.append((240,t,'outage'))
                         
                 elif mtch.group('type') == 'CLEAR':
                     if mtch.group('data').find('120V') != -1:
+                        shlThreadsLogger.info('Outage: monitorThread - clear - 120 VAC')
                         local_events.append((120,t,'clear'))
                     else:
+                        shlThreadsLogger.info('Outage: monitorThread - clear - 240 VAC')
                         local_events.append((240,t,'clear'))
                         
                 self.lock.acquire()
