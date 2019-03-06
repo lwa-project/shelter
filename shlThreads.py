@@ -25,7 +25,7 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
-from shlCommon import LIGHTNING_IP,LIGHTNING_PORT, OUTAGE_IP, OUTAGE_PORT
+from shlCommon import LIGHTNING_IP, LIGHTNING_PORT, OUTAGE_IP, OUTAGE_PORT
 
 __version__ = "0.6"
 __revision__ = "$Rev$"
@@ -76,7 +76,7 @@ class Thermometer(object):
         t = self.getTemperature(DegreesF=True)
         
         output = ''
-        if description is None:
+        if self.description is None:
             output = "Thermometer at IP %s: " % self.ip
         else:
             output = "Thermometer '%s' at IP %s: " % (self.description, self.ip)
@@ -306,7 +306,7 @@ class PDU(object):
         sString = ','.join(self.status)
         cString = "%.1f Amps" % self.current if self.current is not None else "Unknown"
         
-        if description is None:
+        if self.description is None:
             return "PDU at IP %s:  outlet status: %s, current: %s" % (self.ip, sString, cString)
         else:
             return "PDU '%s' at IP %s:  outlet status: %s, current: %s" % (self.description, self.ip, sString, cString)
