@@ -39,6 +39,12 @@ shlThreadsLogger = logging.getLogger('__main__')
 SNMPLock = threading.Semaphore(2)
 
 
+# State directory
+STATE_DIR = os.path.join(os.path.dirname(__file__), '.shl-state')
+if not os.path.exists(STATE_DIR):
+    os.mkdir(STATE_DIR)
+
+
 class Thermometer(object):
     """
     Class for communicating with a network thermometer via SNMP and regularly polling
@@ -1682,6 +1688,30 @@ class Outage(object):
         if self.thread is not None:
             self.stop()
             
+        # Check for some state
+        ## 120 VAC
+        try:
+            fh = open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'r')
+            t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
+            fh.close()
+            
+            self.events_120[t] = 'outage'
+            
+            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
+        except Exception as e:
+            pass
+        ### 240 VAC
+        try:
+            fh = open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'r')
+            t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
+            fh.close()
+            
+            self.events_240[t] = 'outage'
+            
+            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
+        except Exception as e:
+            pass
+            
         self.thread = threading.Thread(target=self.monitorThread)
         self.thread.setDaemon(1)
         self.alive.set()
@@ -1836,18 +1866,43 @@ class Outage(object):
                     if mtch.group('data').find('120V') != -1:
                         shlThreadsLogger.info('Outage: monitorThread - outage - 120VAC')
                         local_events.append((120,t,'outage'))
+                        
+                        try:
+                            fh = open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'w')
+                            fh.write(mtch.group('date'))
+                            fh.close()
+                        except (OSError, IOError) as e:
+                            shlThreadsLogger.warning("Outage: monitorThread 120VAC save state failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+                            
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - outage - 240VAC')
                         local_events.append((240,t,'outage'))
                         
+                        try:
+                            fh = open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'w')
+                            fh.write(mtch.group('date'))
+                            fh.close()
+                        except (OSError, IOError) as e:
+                            shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+                            
                 elif mtch.group('type') == 'CLEAR':
                     if mtch.group('data').find('120V') != -1:
                         shlThreadsLogger.info('Outage: monitorThread - clear - 120VAC')
                         local_events.append((120,t,'clear'))
+                        
+                        try:
+                            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
+                        except OSError:
+                            pass
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - clear - 240VAC')
                         local_events.append((240,t,'clear'))
                         
+                        try:
+                            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
+                        except OSError:
+                            pass
+                            
                 self.lock.acquire()
                 try:
                     for v,t,c in local_events:
@@ -1888,21 +1943,17 @@ class Outage(object):
                     
         sock.close()
         
-    def getFlicker(self, interval=10):
-        tNow = datetime.utcnow()
-        tWindow = tNow - timedelta(minutes=int(interval))
+    def getFlicker(self):
         flicker = False
         
         self.lock.acquire()
         try:
             for k in self.events_120.keys():
                 if self.events_120[k] == 'flicker':
-                    if k >= tWindow:
-                        flicker = True
+                    flicker = True
             for k in self.events_240.keys():
                 if self.events_240[k] == 'flicker':
-                    if k >= tWindow:
-                        flicker = True
+                    flicker = True
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             shlThreadsLogger.error("Outage: getFlicker failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
@@ -1922,21 +1973,17 @@ class Outage(object):
             
         return flicker
         
-    def getOutage(self, interval=10):
-        tNow = datetime.utcnow()
-        tWindow = tNow - timedelta(minutes=int(interval))
+    def getOutage(self):
         outage = False
         
         self.lock.acquire()
         try:
             for k in self.events_120.keys():
                 if self.events_120[k] == 'outage':
-                    if k >= tWindow:
-                        outage = True
+                    outage = True
             for k in self.events_240.keys():
                 if self.events_240[k] == 'outage':
-                    if k >= tWindow:
-                        outage = True
+                    outage = True
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             shlThreadsLogger.error("Outage: getOutage failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))

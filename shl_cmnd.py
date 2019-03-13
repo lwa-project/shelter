@@ -466,7 +466,7 @@ class MCSCommunicate(Communicate):
                         
                 ## Line voltage - flicker
                 elif data == 'POWER-FLICKER':
-                    status, flicker = self.SubSystemInstance.getPowerFlicker(interval=10)
+                    status, flicker = self.SubSystemInstance.getPowerFlicker()
                     if status:
                         if flicker is not None:
                             packed_data = str(flicker)
@@ -476,7 +476,7 @@ class MCSCommunicate(Communicate):
                         packed_data = self.SubSystemInstance.currentState['lastLog']
                 ## Line voltage - flicker
                 elif data == 'POWER-OUTAGE':
-                    status, outage = self.SubSystemInstance.getPowerOutage(interval=10)
+                    status, outage = self.SubSystemInstance.getPowerOutage()
                     if status:
                         if outage is not None:
                             packed_data = str(outage)
@@ -634,7 +634,10 @@ def main(args):
     # Setup the communications channels
     mcsComms = MCSCommunicate(lwaSHL, config, opts)
     mcsComms.start()
-
+    
+    # Initialize shelter
+    lwaSHL.ini("72&1.0&%s" % ''.join(['1' for i in PDULIST]))
+    
     # Setup handler for SIGTERM so that we aren't left in a funny state
     def HandleSignalExit(signum, frame, logger=logger, MCSInstance=mcsComms):
         logger.info('Exiting on signal %i', signum)

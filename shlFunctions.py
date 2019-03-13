@@ -857,13 +857,13 @@ class ShippingContainer(object):
         else:
             return True, out
             
-    def getPowerFlicker(self, interval=10):
+    def getPowerFlicker(self):
         """
         Returns whether or not a power flicker has occured within the 
-        specified time interval in minutes as a two-element tuple 
-        (success, value) where success is a boolean related to whether or not 
-        a flicker was detected.  See the currentState['lastLog'] entry for 
-        the reason for failure if the returned success value is False.
+        outage polling interval as a two-element tuple (success, value) 
+        where success is a boolean related to whether or not a flicker was 
+        detected.  See the currentState['lastLog'] entry for the reason 
+        for failure if the returned success value is False.
         """
         
         # Make sure the monitoring thread is running
@@ -871,19 +871,19 @@ class ShippingContainer(object):
             self.currentState['lastLog'] = 'Monitoring thread for the line voltage monitor is not running'
             return False, 0
             
-        out = self.currentState['outageThread'].getFlicker(interval=interval)
+        out = self.currentState['outageThread'].getFlicker()
         if out is None:
             return True, None
         else:
             return True, out
             
-    def getPowerOutage(self, interval=10):
+    def getPowerOutage(self):
         """
         Returns whether or not a power outage has occured within the 
-        specified time interval in minutes as a two-element tuple 
-        (success, value) where success is a boolean related to whether or not 
-        an outage was detected.  See the currentState['lastLog'] entry for 
-        the reason for failure if the returned success value is False.
+        outage polling interval as a two-element tuple (success, value) 
+        where success is a boolean related to whether or not an outage was 
+        detected.  See the currentState['lastLog'] entry for the reason 
+        for failure if the returned success value is False.
         """
         
         # Make sure the monitoring thread is running
@@ -891,7 +891,7 @@ class ShippingContainer(object):
             self.currentState['lastLog'] = 'Monitoring thread for the line voltage monitor is not running'
             return False, 0
             
-        out = self.currentState['outageThread'].getOutage(interval=interval)
+        out = self.currentState['outageThread'].getOutage()
         if out is None:
             return True, None
         else:
