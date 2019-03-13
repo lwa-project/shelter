@@ -1734,7 +1734,13 @@ class Outage(object):
         ageLimit = timedelta(seconds=int(self.aging))
         
         try:
-            ## Remove expired (cleared) entries in the 120VAC list
+            ## Remove expired flicker entries in the 120VAC list
+            for k in self.events_120.keys():
+                if self.events_120[k] == 'flicker':
+                    if tNow - k >= ageLimit:
+                        del self.events_120[k]
+                        
+            ## Remove expired (cleared) outage entries in the 120VAC list
             while True:
                 ### Find a clear event that is at least five minutes old
                 clear_time = None
@@ -1746,12 +1752,18 @@ class Outage(object):
                 ### Purge events that match that clear event
                 if clear_time is not None:
                     for k in self.events_120.keys():
-                        if k <= clear_time:
+                        if k <= clear_time and self.events_120[k] == 'outage':
                             del self.events_120.keys[k]
                 else:
                     break
                     
-            ## Remove expired (cleared) entries in the 240VAC list
+            ## Remove expired flicker entries in the 240VAC list
+            for k in self.events_240.keys():
+                if self.events_240[k] == 'flicker':
+                    if tNow - k >= ageLimit:
+                        del self.events_240[k]
+                        
+            ## Remove expired (cleared) outage entries in the 240VAC list
             while True:
                 ### Find a clear event that is at least five minutes old
                 clear_time = None
@@ -1763,7 +1775,7 @@ class Outage(object):
                 ### Purge events that match that clear event
                 if clear_time is not None:
                     for k in self.events_240.keys():
-                        if k <= clear_time:
+                        if k <= clear_time and self.events_240[k] == 'outage':
                             del self.events_240.keys[k]
                 else:
                     break
