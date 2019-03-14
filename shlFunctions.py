@@ -990,7 +990,7 @@ class ShippingContainer(object):
             
         # If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
         if nUnreachable == 0:
-            if self.currentState['status'] == 'WARNING':
+            if self.currentState['status'] == 'WARNING' and self.currentState['info'].startswith('SUMMARY!'):
                 self.currentState['status'] = 'NORMAL'
                 self.currentState['info'] = 'Warning condition cleared, system operating normally'
             return False
@@ -1009,6 +1009,23 @@ class ShippingContainer(object):
                 
             return True
             
+    def processPowerFlicker(self, flicker):
+        """
+        Deal with power flickers.
+        """
+        
+        if flicker:
+            if self.currentState['status'] in ('NORMAL', 'WARNING'):
+                self.currentState['status'] = 'WARNING'
+                self.currentState['info'] = 'POWER-FLICKER! Flicker in the shelter power'
+            return True
+            
+        else:
+            if self.currentState['status'] == 'WARNING' and self.currentState['info'].startswith('POWER-FLICKER!'):
+                self.currentState['status'] = 'NORMAL'
+                self.currentState['info'] = 'Warning condition cleared, system operating normally'
+            return False
+            
     def processPowerOutage(self, outage):
         """
         Deal with power outages.
@@ -1016,7 +1033,7 @@ class ShippingContainer(object):
         
         if outage:
             self.currentState['status'] = 'ERROR'
-            self.currentState['info'] = 'POWER-OUTAGE!  Shelter power outage'
+            self.currentState['info'] = 'POWER-OUTAGE! Shelter power outage'
             return True
             
         else:

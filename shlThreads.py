@@ -1788,6 +1788,9 @@ class Outage(object):
                         shlThreadsLogger.info('Outage: monitorThread - flicker - 240VAC')
                         self.flicker_240 = tEvent
                         
+                    if self.SHLCallbackInstance is not None:
+                        self.SHLCallbackInstance.processPowerFlicker(False)
+                        
                 elif mtch.group('type') == 'OUTAGE':
                     if mtch.group('data').find('120V') != -1:
                         shlThreadsLogger.info('Outage: monitorThread - outage - 120VAC')
@@ -1837,14 +1840,20 @@ class Outage(object):
                         
                 # Cull the list of old events every so often
                 if (tNow - tCull) >= deltaCull:
+                    refresh_state = False
                     if self.flicker_120 is not None:
                         if (tNow - self.flicker_120) >= deltaAging:
+                            refresh_state = True
                             self.flicker_120 = None
                     if self.flicker_240 is not None:
                         if (tNow - self.flicker_240) >= deltaAging:
+                            refresh_state = True
                             self.flicker_240 = None
                     tCull = tNow
                     
+                    if refresh_state and self.SHLCallbackInstance is not None:
+                        self.SHLCallbackInstance.processPowerFlicker(False)
+                        
             except Exception as e:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 shlThreadsLogger.error("Outage: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
