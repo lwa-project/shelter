@@ -94,7 +94,7 @@ class ShippingContainer(object):
         self.currentState['strikeThread'] = None
         self.currentState['outageThread'] = None
         
-        ## Scheduler for clearning the SNMP unreachable list
+        ## Scheduler for clearing the SNMP unreachable list
         self.scheduler = sched.scheduler(time.time, time.sleep)
         
         # Update the configuration
@@ -911,7 +911,7 @@ class ShippingContainer(object):
                 
                 shlFunctionsLogger.info('Shelter temperature warning condition cleared')
                 
-            elif self.currentState['status'] == 'ERROR' and self.currentState['info'][:12] == 'TEMPERATURE!':
+            elif self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('TEMPERATURE!'):
                 ## From ERROR
                 self.currentState['info'] = 'Error condition cleared, system operating normally'
                 
@@ -926,7 +926,7 @@ class ShippingContainer(object):
                 
                 shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
                 
-            elif self.currentState['status'] == 'ERROR' and self.currentState['info'][:12] == 'TEMPERATURE!':
+            elif self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('TEMPERATURE!'):
                 ## Descalation
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f' % currTemp
@@ -1008,3 +1008,20 @@ class ShippingContainer(object):
                 shlFunctionsLogger.debug('Scheduling another call of \'processSNMPUnreachable\' for six minutes from now')
                 
             return True
+            
+    def processPowerOutage(self, outage):
+        """
+        Deal with power outages.
+        """
+        
+        if outage:
+            self.currentState['status'] = 'ERROR'
+            self.currentState['info'] = 'POWER-OUTAGE!  Shelter power outage'
+            return True
+            
+        else:
+            if self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('POWER-OUTAGE!'):
+                self.currentState['status'] = 'NORMAL'
+                self.currentState['info'] = 'Power restored, system operating normally'
+            return False
+            

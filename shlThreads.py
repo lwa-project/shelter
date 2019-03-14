@@ -1468,7 +1468,7 @@ class Lightning(object):
         self.lastError = None
         
         # Setup variables
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.strikes = {}
         self.aging = 32*60
         
@@ -1564,14 +1564,11 @@ class Lightning(object):
                     self.lock.acquire()
                     try:
                         self.strikes[t] = dist
-                        e = None
                     except Exception as e:
                         pass
                     finally:
                         self.lock.release()
-                        if e is not None:
-                            raise e
-                            
+                        
                 # Cull the list of old strikes every two minutes
                 if (time.time() - tCull) > 120:
                     pruneTime = t
@@ -1666,9 +1663,10 @@ class Outage(object):
         self.lastError = None
         
         # Setup variables
-        self.lock = threading.Lock()
-        self.events_120 = {}
-        self.events_240 = {}
+        self.flicker_120 = None
+        self.flicker_240 = None
+        self.outage_120 = None
+        self.outage_240 = None
         self.aging = 300
         
     def updateConfig(self, config=None):
@@ -1695,7 +1693,7 @@ class Outage(object):
             t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
             fh.close()
             
-            self.events_120[t] = 'outage'
+            self.outage_120 = t
             
             os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
         except Exception as e:
@@ -1706,7 +1704,7 @@ class Outage(object):
             t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
             fh.close()
             
-            self.events_240[t] = 'outage'
+            self.outage_240 = t
             
             os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
         except Exception as e:
@@ -1752,80 +1750,7 @@ class Outage(object):
         sock.settimeout(timeout)
         
         return sock
-        
-    def _clean_event_lists(self):
-        """
-        Clean up the event lists in an intelligent way.
-        """
-        
-        self.lock.acquire()
-        
-        tNow = datetime.utcnow()
-        ageLimit = timedelta(seconds=int(self.aging))
-        
-        try:
-            ## Remove expired flicker entries in the 120VAC list
-            for k in self.events_120.keys():
-                if self.events_120[k] == 'flicker':
-                    if tNow - k >= ageLimit:
-                        del self.events_120[k]
-                        
-            ## Remove expired (cleared) outage entries in the 120VAC list
-            while True:
-                ### Find a clear event that is at least five minutes old
-                clear_time = None
-                for k in self.events_120.keys():
-                    if self.events_120[k] == 'clear':
-                        if tNow - k >= ageLimit:
-                            clear_time = k
-                            break
-                ### Purge events that match that clear event
-                if clear_time is not None:
-                    for k in self.events_120.keys():
-                        if k <= clear_time and self.events_120[k] == 'outage':
-                            del self.events_120.keys[k]
-                else:
-                    break
-                    
-            ## Remove expired flicker entries in the 240VAC list
-            for k in self.events_240.keys():
-                if self.events_240[k] == 'flicker':
-                    if tNow - k >= ageLimit:
-                        del self.events_240[k]
-                        
-            ## Remove expired (cleared) outage entries in the 240VAC list
-            while True:
-                ### Find a clear event that is at least five minutes old
-                clear_time = None
-                for k in self.events_240.keys():
-                    if self.events_240[k] == 'clear':
-                        if tNow - k >= ageLimit:
-                            clear_time = k
-                            break
-                ### Purge events that match that clear event
-                if clear_time is not None:
-                    for k in self.events_240.keys():
-                        if k <= clear_time and self.events_240[k] == 'outage':
-                            del self.events_240.keys[k]
-                else:
-                    break
-                    
-        except Exception as e:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            shlThreadsLogger.error("Outage: _clean_events failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
-            
-            ## Grab the full traceback and save it to a string via StringIO
-            fileObject = StringIO.StringIO()
-            traceback.print_tb(exc_traceback, file=fileObject)
-            tbString = fileObject.getvalue()
-            fileObject.close()
-            ## Print the traceback to the logger as a series of DEBUG messages
-            for line in tbString.split('\n'):
-                shlThreadsLogger.debug("%s", line)
-                
-        finally:
-            self.lock.release()
-            
+           
     def monitorThread(self):
         """
         Create a monitoring thread for the power.
@@ -1836,10 +1761,13 @@ class Outage(object):
         #create a UDP socket
         sock = self._connect()
         
-        tCull = time.time()
+        tCull = datetime.utcnow()
+        deltaCull = timedelta(minutes=2)
+        deltaAging = timedelta(seconds=int(self.aging))
+        
         while self.alive.isSet():
             try:
-                tNow = time.time()
+                tNow = datetime.utcnow()
                 try:
                     data, addr = sock.recvfrom(1024)
                 except socket.timeout:
@@ -1849,23 +1777,21 @@ class Outage(object):
                     
                 # RegEx matching for message date, type, and content
                 mtch = dataRE.match(data)
-                t = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
+                tEvent = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
                 
-                # If we have a lightning strike, figure out it if is close
-                # enough to warrant saving the strike info.
-                local_events = []
+                # Figure out what to do with the notification
                 if mtch.group('type') == 'FLICKER':
                     if mtch.group('data').find('120V') != -1:
                         shlThreadsLogger.info('Outage: monitorThread - flicker - 120VAC')
-                        local_events.append((120,t,'flicker'))
+                        self.flicker_120 = tEvent
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - flicker - 240VAC')
-                        local_events.append((240,t,'flicker'))
+                        self.flicker_240 = tEvent
                         
                 elif mtch.group('type') == 'OUTAGE':
                     if mtch.group('data').find('120V') != -1:
                         shlThreadsLogger.info('Outage: monitorThread - outage - 120VAC')
-                        local_events.append((120,t,'outage'))
+                        self.outage_120 = tEvent
                         
                         try:
                             fh = open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'w')
@@ -1876,7 +1802,7 @@ class Outage(object):
                             
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - outage - 240VAC')
-                        local_events.append((240,t,'outage'))
+                        self.outage_240 = tEvent
                         
                         try:
                             fh = open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'w')
@@ -1885,10 +1811,13 @@ class Outage(object):
                         except (OSError, IOError) as e:
                             shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
                             
+                    if self.SHLCallbackInstance is not None:
+                        self.SHLCallbackInstance.processPowerOutage(True)
+                        
                 elif mtch.group('type') == 'CLEAR':
                     if mtch.group('data').find('120V') != -1:
                         shlThreadsLogger.info('Outage: monitorThread - clear - 120VAC')
-                        local_events.append((120,t,'clear'))
+                        self.outage_120 = None
                         
                         try:
                             os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
@@ -1896,32 +1825,25 @@ class Outage(object):
                             pass
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - clear - 240VAC')
-                        local_events.append((240,t,'clear'))
+                        self.outage_240 = None
                         
                         try:
                             os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
                         except OSError:
                             pass
                             
-                self.lock.acquire()
-                try:
-                    for v,t,c in local_events:
-                        if v == 120:
-                            self.events_120[t] = c
-                        else:
-                            self.events_240[t] = c
-                    e = None
-                except Exception as e:
-                    pass
-                finally:
-                    self.lock.release()
-                    if e is not None:
-                        raise e
+                    if self.SHLCallbackInstance is not None:
+                        self.SHLCallbackInstance.processPowerOutage(False)
                         
-                # Cull the list of old events every two minutes
-                if (time.time() - tCull) > 120:
-                    self._clean_event_lists()
-                    tCull = time.time()
+                # Cull the list of old events every so often
+                if (tNow - tCull) >= deltaCull:
+                    if self.flicker_120 is not None:
+                        if (tNow - self.flicker_120) >= deltaAging:
+                            self.flicker_120 = None
+                    if self.flicker_240 is not None:
+                        if (tNow - self.flicker_240) >= deltaAging:
+                            self.flicker_240 = None
+                    tCull = tNow
                     
             except Exception as e:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -1944,16 +1866,11 @@ class Outage(object):
         sock.close()
         
     def getFlicker(self):
-        flicker = False
-        
-        self.lock.acquire()
         try:
-            for k in self.events_120.keys():
-                if self.events_120[k] == 'flicker':
-                    flicker = True
-            for k in self.events_240.keys():
-                if self.events_240[k] == 'flicker':
-                    flicker = True
+            flicker = False
+            if self.flicker_120 is not None or self.flicker_240 is not None:
+                flicker = True
+                
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             shlThreadsLogger.error("Outage: getFlicker failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
@@ -1968,22 +1885,15 @@ class Outage(object):
                 shlThreadsLogger.debug("%s", line)
                 
             flicker = None
-        finally:
-            self.lock.release()
             
         return flicker
         
     def getOutage(self):
-        outage = False
-        
-        self.lock.acquire()
         try:
-            for k in self.events_120.keys():
-                if self.events_120[k] == 'outage':
-                    outage = True
-            for k in self.events_240.keys():
-                if self.events_240[k] == 'outage':
-                    outage = True
+            outage = False
+            if self.outage_120 is not None or self.outage_240 is not None:
+                outage = True
+                
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             shlThreadsLogger.error("Outage: getOutage failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
@@ -1998,7 +1908,5 @@ class Outage(object):
                 shlThreadsLogger.debug("%s", line)
                 
             outage = None
-        finally:
-            self.lock.release()
             
         return outage

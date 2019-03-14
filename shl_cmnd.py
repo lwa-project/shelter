@@ -120,17 +120,17 @@ def parseConfigFile(filename):
         return float(x)
     # List of the required parameters and their coercion functions
     coerceMap = {'SERIALNUMBER'             : str,
-            'MESSAGEHOST'              : str,
-            'MESSAGEOUTPORT'           : int,
-            'MESSAGEINPORT'            : int, 
-            'TEMPMIN'                  : float, 
-            'TEMPMAX'                  : float, 
-            'DIFFMIN'                  : float, 
-            'DIFFMAX'                  : float,
-            'TEMPMONITORPERIOD'        : float,
-            'RACKMONITORPERIOD'        : float,
-            'WEATHERDATABASE'          : str, 
-            'WEATHERMONITORPERIOD'     : float0}
+                 'MESSAGEHOST'              : str,
+                 'MESSAGEOUTPORT'           : int,
+                 'MESSAGEINPORT'            : int, 
+                 'TEMPMIN'                  : float, 
+                 'TEMPMAX'                  : float, 
+                 'DIFFMIN'                  : float, 
+                 'DIFFMAX'                  : float,
+                 'TEMPMONITORPERIOD'        : float,
+                 'RACKMONITORPERIOD'        : float,
+                 'WEATHERDATABASE'          : str, 
+                 'WEATHERMONITORPERIOD'     : float0}
     config = {}
 
     #
