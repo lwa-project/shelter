@@ -123,6 +123,8 @@ class Thermometer(object):
         Create a monitoring thread for the temperature.
         """
         
+        cmd_gen = cmdgen.CommandGenerator()
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -139,7 +141,7 @@ class Thermometer(object):
                 if oidEntry is not None:
                     try:
                         nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidEntry)
+                        errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, oidEntry)
                         
                         # Check for SNMP errors
                         if errorIndication:
@@ -309,7 +311,7 @@ class PDU(object):
         self.lastError = None
         
     def __str__(self):
-        sString = ','.join(self.status)
+        sString = ','.join(["%i=%s" % (o, self.status[o]) for o in self.status])
         cString = "%.1f Amps" % self.current if self.current is not None else "Unknown"
         
         if self.description is None:
@@ -348,6 +350,8 @@ class PDU(object):
         attribute.
         """
         
+        cmd_gen = cmdgen.CommandGenerator()
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -359,7 +363,7 @@ class PDU(object):
                 try:
                     # Get the system firmware
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidFirmwareEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -390,7 +394,7 @@ class PDU(object):
                 try:
                     # Get the current input frequency
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFrequencyEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidFrequencyEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -423,7 +427,7 @@ class PDU(object):
                 try:
                     # Get the current input voltage
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidVoltageEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidVoltageEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -459,7 +463,7 @@ class PDU(object):
                 try:
                     # Get the current draw of outlet #(i+1)
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidCurrentEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidCurrentEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -504,7 +508,7 @@ class PDU(object):
                     
                     try:
                         nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidOutletStatusEntry)
+                        errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, oidOutletStatusEntry)
                         
                         # Check for SNMP errors
                         if errorIndication:
@@ -640,7 +644,8 @@ class PDU(object):
                 oidOutletChangeEntry = self.oidOutletChangeBaseEntry + (outlet,)
                 
                 try:
-                    errorIndication, errorStatus, errorIndex, varBinds =                                                                          cmdgen.CommandGenerator().setCmd(self.community, self.network, (oidOutletChangeEntry, rfc1902.Integer(numericCode)))
+                    cmd_gen = cmdgen.CommandGenerator()
+                    errorIndication, errorStatus, errorIndex, varBinds =                                                                          cmd_gen.setCmd(self.community, self.network, (oidOutletChangeEntry, rfc1902.Integer(numericCode)))
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -797,6 +802,8 @@ class TrippLiteUPS(PDU):
         attribute.
         """
         
+        cmd_gen = cmdgen.CommandGenerator()
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -808,7 +815,7 @@ class TrippLiteUPS(PDU):
                 try:
                     # Get the system firmware
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFirmwareEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidFirmwareEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -839,7 +846,7 @@ class TrippLiteUPS(PDU):
                 try:
                     # Get the current input frequency
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidFrequencyEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidFrequencyEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -872,7 +879,7 @@ class TrippLiteUPS(PDU):
                 try:
                     # Get the current input voltage
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidVoltageEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidVoltageEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -908,7 +915,7 @@ class TrippLiteUPS(PDU):
                 try:
                     # Get the current draw of outlet #(i+1)
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidCurrentEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidCurrentEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -947,7 +954,7 @@ class TrippLiteUPS(PDU):
                 try:
                     # Get the current draw of outlet #(i+1)
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidUPSOutputEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidUPSOutputEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -986,7 +993,7 @@ class TrippLiteUPS(PDU):
                 try:
                     # Get the current draw of outlet #(i+1)
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidBatteryChargeEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidBatteryChargeEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -1022,7 +1029,7 @@ class TrippLiteUPS(PDU):
                 try:
                     # Get the current draw of outlet #(i+1)
                     nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, self.oidBatteryStatusEntry)
+                    errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidBatteryStatusEntry)
                     
                     # Check for SNMP errors
                     if errorIndication:
@@ -1067,7 +1074,7 @@ class TrippLiteUPS(PDU):
                     
                     try:
                         nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = cmdgen.CommandGenerator().getCmd(self.community, self.network, oidOutletStatusEntry)
+                        errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, oidOutletStatusEntry)
                         
                         # Check for SNMP errors
                         if errorIndication:
