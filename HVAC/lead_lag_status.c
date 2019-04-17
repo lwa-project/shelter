@@ -4,31 +4,14 @@
 #include <string.h>
 
 #include "libsub.h"
+#include "hvac_config.h"
 
 sub_handle* fh = NULL;
 
-const int adc_table[33] = {-1, 
-	-1, -1, -1, -1, -1, -1, -1, -1, 
-	-1, -1, -1, -1, -1, -1, -1, -1, 
-	-1, -1, -1, -1, -1, -1, -1, -1, 
-	7, 6, 5, 4, 3, 2, 1, 0
-};
-
-int main(int argc, char* argv[]) {
-	int pin[2], adc[2], found, data[2];
+int main(void) {
+	int found, count, adc[2], data[2];
 	float value[2];
 	struct usb_device* dev = NULL;
-	
-	if( argc != 1 ) {
-		fprintf(stderr, "Expected no arguments, %i found\n", argc-1);
-		return 1;
-	}
-	pin[0] = 32;
-	pin[1] = 21;
-	adc[0] = adc_table[pin[0]];
-	adc[1] = adc_table[pin[1]];
-	printf("pin %i -> adc %i\n", pin[0], adc[0]);
-	printf("pin %i -> adc %i\n", pin[1], adc[1]);
 	
 	found = 0;
 	while( (dev = sub_find_devices(dev)) ) {
@@ -44,24 +27,27 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 	
+	adc[0] = LEADLAG_UNIT1_ADC;
+	adc[1] = LEADLAG_UNIT2_ADC;
 	sub_adc_config(fh, ADC_ENABLE|ADC_REF_VCC);
-	found = 0;
+	count = 0;
 	value[0] = 0.0;
 	value[1] = 0.0;
-	while( found < 10 ) {
+	while( count < N_POLL_ADC ) {
 		sub_adc_read(fh, data, adc, 2);
-		value[0] += data[0]/1023.*5.0;
-		value[1] += data[1]/1023.*5.0;
-		found++;
+		value[0] += data[0]/1023.*VREF_ADC;
+		value[1] += data[1]/1023.*VREF_ADC;
+		count++;
 		usleep(1000);
 	}
-	value[0] /= found;
-	value[1] /= found;
+	value[0] /= count;
+	value[1] /= count;
 	if( value[0] > value[1] ) {
 		printf("lead: 1\n");
 	} else {
 		printf("lead: 2\n");
 	}
+	
 	sub_close(fh);
 	
 	return 0;

@@ -4,28 +4,15 @@
 #include <string.h>
 
 #include "libsub.h"
+#include "hvac_config.h"
 
 sub_handle* fh = NULL;
 
-const int adc_table[33] = {-1, 
-	-1, -1, -1, -1, -1, -1, -1, -1, 
-	-1, -1, -1, -1, -1, -1, -1, -1, 
-	-1, -1, -1, -1, -1, -1, -1, -1, 
-	7, 6, 5, 4, 3, 2, 1, 0
-};
-
-int main(int argc, char* argv[]) {
-	int pin, adc, found, data;
+int main(void) {
+	int found, config, count, data;
 	float value;
+	char status[256];
 	struct usb_device* dev = NULL;
-	
-	if( argc != 1 ) {
-		fprintf(stderr, "Expected no arguments, %i found\n", argc-1);
-		return 1;
-	}
-	pin = 27;
-	adc = adc_table[pin];
-	printf("pin %i -> adc %i\n", pin, adc);
 	
 	found = 0;
 	while( (dev = sub_find_devices(dev)) ) {
@@ -41,21 +28,29 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 	
+	sub_gpio_read(fh, &config);
+	if( (config>>COMPRESSOR2_GPIO)&1 ) {
+	    sprintf(status, "disabled");
+	} else {
+	    sprintf(status, "enabled");
+	}
+	
 	sub_adc_config(fh, ADC_ENABLE|ADC_REF_VCC);
-	found = 0;
+	count = 0;
 	value = 0.0;
-	while( found < 10 ) {
-		sub_adc_single(fh, &data, adc);
-		value += data/1023.*5.0;
-		found++;
+	while( count < N_POLL_ADC ) {
+		sub_adc_single(fh, &data, COMPRESSOR2_VOLTAGE_ADC);
+		value += data/1023.*VREF_ADC;
+		count++;
 		usleep(1000);
 	}
-	value /= found;
+	value /= count;
 	if( value > 2.5 ) {
-		printf("compressor1: off\n");
+		sprintf(status, "%s off", status);
 	} else {
-		printf("compressor1: on\n");
+		sprintf(status, "%s on", status);
 	}
+	printf("compressor2: %s\n", status);
 	
 	sub_close(fh);
 	
