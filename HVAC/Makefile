@@ -58,7 +58,7 @@ controller_enable: controller_enable.o
 controller_disable: controller_disable.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-controller_status: controller_status.o
+controller_status: controller_status.o utils.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 compressor1_enable: compressor1_enable.o
@@ -67,7 +67,7 @@ compressor1_enable: compressor1_enable.o
 compressor1_disable: compressor1_disable.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-compressor1_status: compressor1_status.o
+compressor1_status: compressor1_status.o utils.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 compressor2_enable: compressor2_enable.o
@@ -76,10 +76,10 @@ compressor2_enable: compressor2_enable.o
 compressor2_disable: compressor2_disable.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-compressor2_status: compressor2_status.o
+compressor2_status: compressor2_status.o utils.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-lead_lag_status: lead_lag_status.o
+lead_lag_status: lead_lag_status.o utils.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 gpio_on: gpio_on.o
@@ -88,7 +88,7 @@ gpio_on: gpio_on.o
 gpio_off: gpio_off.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 	
-adc_read: adc_read.o
+adc_read: adc_read.o utils.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:

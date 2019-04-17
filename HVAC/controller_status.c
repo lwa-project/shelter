@@ -5,12 +5,13 @@
 
 #include "libsub.h"
 #include "hvac_config.h"
+#include "utils.h"
 
 sub_handle* fh = NULL;
 
 int main(void) {
-	int found, config, count, adc[2], data[2];
-	float value[2];
+	int found, config, count, adc[2];
+	float data[2], value[2];
 	char status[256];
 	struct usb_device* dev = NULL;
 	
@@ -28,8 +29,8 @@ int main(void) {
 		return 1;
 	}
 	
-	sub_gpio_read(fh, &config);
-	if( (config>>CONTROLLER_GPIO)&1 ) {
+	gpio_single_value(fh, &config, CONTROLLER_GPIO);
+	if( config ) {
 	    sprintf(status, "disabled");
 	} else {
 	    sprintf(status, "enabled");
@@ -42,9 +43,9 @@ int main(void) {
 	value[0] = 0.0;
 	value[1] = 0.0;
 	while( count < N_POLL_ADC ) {
-		sub_adc_read(fh, data, adc, 2);
-		value[0] += data[0]/1023.*VREF_ADC;
-		value[1] += data[1]/1023.*VREF_ADC;
+	    adc_read_value(fh, data, adc, 2);
+		value[0] += data[0];
+		value[1] += data[1];
 		count++;
 		usleep(1000);
 	}

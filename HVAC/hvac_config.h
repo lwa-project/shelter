@@ -28,7 +28,4 @@
 // Number of times to poll the ADC value
 #define N_POLL_ADC  10
 
-// Reference voltage for the ADCs
-#define VREF_ADC  5.0
-
-#endif
+#endif  // __HVAC_CONFIG_H

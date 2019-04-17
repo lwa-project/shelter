@@ -5,12 +5,13 @@
 
 #include "libsub.h"
 #include "hvac_config.h"
+#include "utils.h"
 
 sub_handle* fh = NULL;
 
 int main(void) {
-	int found, count, adc[2], data[2];
-	float value[2];
+	int found, count, adc[2];
+	float data[2], value[2];
 	struct usb_device* dev = NULL;
 	
 	found = 0;
@@ -34,9 +35,9 @@ int main(void) {
 	value[0] = 0.0;
 	value[1] = 0.0;
 	while( count < N_POLL_ADC ) {
-		sub_adc_read(fh, data, adc, 2);
-		value[0] += data[0]/1023.*VREF_ADC;
-		value[1] += data[1]/1023.*VREF_ADC;
+		adc_read_value(fh, data, adc, 2);
+		value[0] += data[0];
+		value[1] += data[1];
 		count++;
 		usleep(1000);
 	}

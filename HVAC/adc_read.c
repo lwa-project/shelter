@@ -5,6 +5,7 @@
 
 #include "libsub.h"
 #include "hvac_config.h"
+#include "utils.h"
 
 sub_handle* fh = NULL;
 
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]) {
 	count = 0;
 	while( count < N_POLL_ADC ) {
 		sub_adc_single(fh, &data, adc);
-		printf("%03i: %+0.3f V\n", count, data/1023.*VREF_ADC);
+		printf("%03i: %+0.3f V\n", count, adc_to_value(data));
 		count++;
 		usleep(1000);
 	}
