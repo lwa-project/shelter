@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "libsub.h"
+#include "hvac_config.h"
 
 sub_handle* fh = NULL;
 
@@ -15,7 +16,7 @@ const int adc_table[33] = {-1,
 };
 
 int main(int argc, char* argv[]) {
-	int pin, adc, found, data;
+	int pin, adc, found, count, data;
 	struct usb_device* dev = NULL;
 	
 	if( argc != 1+1 ) {
@@ -41,12 +42,12 @@ int main(int argc, char* argv[]) {
 	}
 	
 	sub_adc_config(fh, ADC_ENABLE|ADC_REF_VCC);
-	found = 0;
-	while( found < 100 ) {
+	count = 0;
+	while( count < N_POLL_ADC ) {
 		sub_adc_single(fh, &data, adc);
-		printf("%03i: %+0.3f V\n", found, data/1023.*5.0);
+		printf("%03i: %+0.3f V\n", count, data/1023.*VREF_ADC);
+		count++;
 		usleep(1000);
-		found++;
 	}
 	
 	sub_close(fh);
