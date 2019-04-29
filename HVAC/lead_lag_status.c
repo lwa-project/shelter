@@ -45,10 +45,11 @@ int main(void) {
 	value[1] /= count;
 	if( value[0] > value[1] ) {
 		printf("lead: 1\n");
-	} else {
+	} else if( value[1] > 0.001 ) {
 		printf("lead: 2\n");
-	}
-	
+    } else {
+        printf("lead: ?\n");
+    }
 	sub_close(fh);
 	
 	return 0;
