@@ -37,7 +37,7 @@ try:
     c2s = '-1' if c2s.find('disabled') != -1 else c2s
     c2s = '0' if c2s.find('off') != -1 else c2s
     
-except (OSError, subprocess.CalledProcessError, ValueError):
+except (OSError, subprocess.CalledProcessError, IndexError, ValueError):
     lls = 'NaN'
     c1s = 'NaN'
     c2s = 'NaN'
