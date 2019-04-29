@@ -16,7 +16,9 @@ SUBSYSTEM = "SHL"
 t = subprocess.Popen(["tail", "-n1", '/data/thermometer01.txt'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 test, _ = t.communicate()
 test = test.replace('\n', '')
-
+if SITE != 'lwasv':
+    test += ',NaN'
+    
 # Get the HVAC status
 try:
     t = subprocess.Popen(['/usr/local/bin/lead_lag_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -50,9 +52,7 @@ except ValueError:
     lastUpdated = 0.0
 lastUpdated = float(lastUpdated)
 if time.time() > lastUpdated + 300:
-    test = "%.2f,NaN" % time.time()
-    if SITE == 'lwasv':
-        test += ',NaN'
+    test = "%.2f,NaN,NaN" % time.time()
     test += ',NaN,NaN,NaN'
     
 # Send the update to lwalab
