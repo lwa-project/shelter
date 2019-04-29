@@ -91,6 +91,19 @@ gpio_off: gpio_off.o
 adc_read: adc_read.o utils.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+install:
+	cp controller_*able /usr/local/bin/
+	cp controller_status /usr/local/bin/
+	cp compressor[12]_*able /usr/local/bin/
+	cp compressor[12]_status /usr/local/bin/
+	cp lead_lag_status /usr/local/bin/
+	chown root:root /usr/local/bin/controller_* \
+			/usr/local/bin/compressor[12]_* \
+			/usr/local/bin/lead_lag_status
+	chmod +s /usr/local/bin/controller_* \
+                        /usr/local/bin/compressor[12]_* \
+                        /usr/local/bin/lead_lag_status
+
 clean:
 	rm -f *.o *.out *.err *.exe *.a *.so
 	rm -f *_enable *_disable *_status gpio_on gpio_off adc_read

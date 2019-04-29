@@ -67,6 +67,9 @@ int adc_read_value(sub_handle hndl, float* data, int* mux, int reads) {
 // File-backed lockout directory
 #define LOCK_DIRECTORY "/dev/shm/HVAC"
 
+// Lockout expiration in seconds
+#define LOCK_EXPIRATION 180
+
 int expiring_lockout(char* name) {
     int status, rc;
     char dirname[256], filename[256], command[256];
@@ -91,7 +94,7 @@ int expiring_lockout(char* name) {
     }
     
     // Lock us up to prevent multiple commands from changing the state at the same time
-    sprintf(dirname, "%s/_lock", dirname);
+    sprintf(dirname, "%s/hvac.lock", dirname);
     int ld = open(dirname, O_RDWR);
     flock(ld, LOCK_EX);
     
@@ -103,7 +106,7 @@ int expiring_lockout(char* name) {
         // Good, read in the timestamp and decide what to do
         fclose(f);
         stat(filename, &attrib);
-        if( now-attrib.st_mtime > 30 ) {
+        if( now-attrib.st_mtime >= LOCK_EXPIRATION ) {
             // It's an old file, update it and say that we are good to go
             sprintf(command, "touch %s", filename);
             rc = system(command);
@@ -134,6 +137,7 @@ int expiring_lockout(char* name) {
     // Unlock
     flock(ld, LOCK_UN);
     close(ld);
+    unlink(dirname);
     
     return status;
 }
