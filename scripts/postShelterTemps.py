@@ -19,19 +19,19 @@ test = test.replace('\n', '')
 
 # Get the HVAC status
 try:
-    t = subprocess.Popen(['lead_lag_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    t = subprocess.Popen(['/usr/local/bin/lead_lag_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     lls, _ = t.communicate()
     lls = lls.strip().rstrip().split(None, 1)[1]
     if lls.find('?') != -1:
         lls = 'NaN'
         
-    t = subprocess.Popen(['compressor1_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    t = subprocess.Popen(['/usr/local/bin/compressor1_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     c1s, _ = t.communicate()
     c1s = '1' if c1s.find('on') != -1 else c1s
     c1s = '-1' if c1s.find('disabled') != -1 else c1s
     c1s = '0' if c1s.find('off') != -1 else c1s
     
-    t = subprocess.Popen(['compressor2_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    t = subprocess.Popen(['/usr/local/bin/compressor2_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     c2s, _ = t.communicate()
     c2s = '1' if c2s.find('on') != -1 else c2s
     c2s = '-1' if c2s.find('disabled') != -1 else c2s
