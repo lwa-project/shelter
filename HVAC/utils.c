@@ -56,6 +56,7 @@ int adc_read_value(sub_handle hndl, float* data, int* mux, int reads) {
     for(i=0; i<reads; i++) {
         *(data + i) = adc_to_value(*(raw + i));
     }
+    free(raw);
     return status;
 }
 
