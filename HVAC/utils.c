@@ -17,8 +17,8 @@
 int gpio_single_value(sub_handle hndl, int* data, int mux) {
     int config, status;
     status = sub_gpio_read(hndl, &config);
-	*data = (config>>mux)&1;
-	return status;
+    *data = (config>>mux)&1;
+    return status;
 }
 
 int gpio_read_value(sub_handle hndl, int* data, int* mux, int reads) {
