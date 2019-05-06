@@ -24,7 +24,7 @@ try:
     t = subprocess.Popen(['/usr/local/bin/lead_lag_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     lls, _ = t.communicate()
     lls = lls.strip().rstrip().split(None, 1)[1]
-    if lls.find('?') != -1:
+    if lls.find('unk') != -1:
         lls = 'NaN'
         
     t = subprocess.Popen(['/usr/local/bin/compressor1_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -32,12 +32,14 @@ try:
     c1s = '1' if c1s.find('on') != -1 else c1s
     c1s = '-1' if c1s.find('disabled') != -1 else c1s
     c1s = '0' if c1s.find('off') != -1 else c1s
+    c1s = 'NaN' if c1s.find('unk') != -1 else c1s
     
     t = subprocess.Popen(['/usr/local/bin/compressor2_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     c2s, _ = t.communicate()
     c2s = '1' if c2s.find('on') != -1 else c2s
     c2s = '-1' if c2s.find('disabled') != -1 else c2s
     c2s = '0' if c2s.find('off') != -1 else c2s
+    c2s = 'NaN' if c2s.find('unk') != -1 else c2s
     
 except (OSError, subprocess.CalledProcessError, IndexError, ValueError):
     lls = 'NaN'
