@@ -243,7 +243,7 @@ class ShippingContainer(object):
         if self.currentState['outageThread'] is not None:
             self.currentState['outageThread'].stop()
         else:
-            self.currentState['outageThread'] = Outage(self.config)
+            self.currentState['outageThread'] = Outage(self.config, SHLCallbackInstance=self)
             
         # Set configuration values
         self.currentState['setPoint'] = setPoint
