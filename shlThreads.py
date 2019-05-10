@@ -1701,8 +1701,9 @@ class Outage(object):
             fh.close()
             
             self.outage_120 = t
+            shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 120VAC')
             
-            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
+            #os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
         except Exception as e:
             pass
         ### 240 VAC
@@ -1712,8 +1713,9 @@ class Outage(object):
             fh.close()
             
             self.outage_240 = t
+            shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 240VAC')
             
-            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
+            #os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
         except Exception as e:
             pass
             
