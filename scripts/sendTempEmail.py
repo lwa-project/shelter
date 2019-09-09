@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import os
 import pytz
 import time
@@ -100,7 +102,7 @@ if shlTemp >= CRITICAL_TEMP:
             server.sendmail(FROM, TO, msg.as_string())
             server.close()
         except Exception as e:
-            print "Critical temperature e-mail send: %s" % str(e)
+            print("Critical temperature e-mail send: %s" % str(e))
             
     # Touch the file to update the modification time.  This is used to track
     # when the warning condition is cleared.
@@ -109,7 +111,7 @@ if shlTemp >= CRITICAL_TEMP:
         fh.write('%s\n' % tNow)
         fh.close()
     except Exception as e:
-        print "Set critical temperature lock file: %s" % str(e)
+        print("Set critical temperature lock file: %s" % str(e))
         
 elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTemperatureWarning')):
     # Check the age of the holding file to see if we have entered the "all-clear"
@@ -131,12 +133,12 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTempe
             server.sendmail(FROM, TO, msg.as_string())
             server.close()
         except Exception as e:
-            print "Critical temperature cleared e-mail send: %s" % str(e)
+            print("Critical temperature cleared e-mail send: %s" % str(e))
             
         try:
             os.unlink(os.path.join(STATE_DIR, 'inTemperatureWarning'))
         except Exception as e:
-            print "Remove critical temperature lock file: %s" % str(e)
+            print("Remove critical temperature lock file: %s" % str(e))
 else:
     pass
 
@@ -151,7 +153,7 @@ if SITE == 'lwasv' and shlTemp >= RESET_TEMP:
             try:
                 os.unlink(os.path.join(STATE_DIR, 'inCompressorReset'))
             except Exception as e:
-                print "Remove compressor reset lock file: %s" % str(e)
+                print("Remove compressor reset lock file: %s" % str(e))
                 
     if not os.path.exists(os.path.join(STATE_DIR, 'inCompressorReset')):
         # If the holding file does not exist, trigger a reset and send out an e-mail
@@ -179,7 +181,7 @@ if SITE == 'lwasv' and shlTemp >= RESET_TEMP:
             server.close()
             
         except Exception as e:
-            print "Reset compressor e-mail send: %s" % str(e)
+            print("Reset compressor e-mail send: %s" % str(e))
             
 else:
     pass

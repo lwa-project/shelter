@@ -9,6 +9,8 @@ $LastChangedBy$
 $LastChangedDate$
 """
 
+from __future__ import print_function
+
 import os
 import sys
 import time
@@ -625,7 +627,7 @@ def main(args):
     # If we've made it this far, we have finished so shutdown ASP and close the 
     # communications channels
     tStop = time.time()
-    print '\nShutting down SHL, please wait...'
+    print('\nShutting down SHL, please wait...')
     logger.info('Shutting down SHL, please wait...')
     lwaSHL.sht()
     while lwaSHL.currentState['info'] != 'System has been shut down':
