@@ -12,13 +12,13 @@ $LastChangedDate$
 import os
 import sys
 import time
-import getopt
 import signal
 import socket
 import string
 import struct
 import thread
 import logging
+import argparse
 try:
         from logging.handlers import WatchedFileHandler
 except ImportError:
@@ -45,64 +45,6 @@ __all__ = ['DEFAULTS_FILENAME', 'parseConfigFile', 'MCSCommunicate', '__version_
 # Default Configuration File
 #
 DEFAULTS_FILENAME = '/lwa/software/defaults.cfg'
-
-
-def usage(exitCode=None):
-    print """shl_cmnd.py - Control the SHL sub-system within the guidelines of the SHL 
-and MCS ICDs.
-
-Usage: shl_cmnd.py [OPTIONS]
-
-Options:
--h, --help        Display this help information
--c, --config      Name of the SHL configuration file to use
--l, --log         Name of the logfile to write logging information to
--d, --debug       Print debug messages as well as info and higher
-"""
-
-    if exitCode is not None:
-        sys.exit(exitCode)
-    else:
-        return True
-
-
-def parseOptions(args):
-    """
-    Parse the command line options and return a dictionary of the configuration
-    """
-
-    config = {}
-    # Default parameters
-    config['configFilename'] = DEFAULTS_FILENAME
-    config['logFilename'] = None
-    config['debugMessages'] = False
-    
-    # Read in and process the command line flags
-    try:
-        opts, args = getopt.getopt(args, "hc:l:dk", ["help", "config=", "log=", "debug"])
-    except getopt.GetoptError, err:
-        # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
-        usage(exitCode=2)
-        
-    # Work through opts
-    for opt, value in opts:
-        if opt in ('-h', '--help'):
-            usage(exitCode=0)
-        elif opt in ('-c', '--config'):
-            config['configFilename'] = value
-        elif opt in ('-l', '--log'):
-            config['logFilename'] = value
-        elif opt in ('-d', '--debug'):
-            config['debugMessages'] = True
-        else:
-            assert False
-    
-    # Add in arguments
-    config['args'] = args
-
-    # Return configuration
-    return config
 
 
 def parseConfigFile(filename):
@@ -519,7 +461,7 @@ class MCSCommunicate(Communicate):
             # INI
             elif command == 'INI':
                 # Re-read in the configuration file
-                config = parseConfigFile(self.opts['configFilename'])
+                config = parseConfigFile(self.opts.config)
         
                 # Refresh the configuration for the communicator and ASP
                 self.updateConfig(config)
@@ -592,20 +534,17 @@ def main(args):
     and start the UDP command handler.
     """
     
-    # Parse command line options
-    opts = parseOptions(args)
-    
     # Setup logging
     logger = logging.getLogger(__name__)
     logFormat = logging.Formatter('%(asctime)s [%(levelname)-8s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logFormat.converter = time.gmtime
-    if opts['logFilename'] is None:
+    if args.log is None:
         logHandler = logging.StreamHandler(sys.stdout)
     else:
-        logHandler = WatchedFileHandler(opts['logFilename'])
+        logHandler = WatchedFileHandler(args.log)
     logHandler.setFormatter(logFormat)
     logger.addHandler(logHandler)
-    if opts['debugMessages']:
+    if args.debug:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
@@ -626,13 +565,13 @@ def main(args):
     logger.info('All dates and times are in UTC except where noted')
     
     # Read in the configuration file
-    config = parseConfigFile(opts['configFilename'])
+    config = parseConfigFile(args.config)
     
     # Setup ASP control
     lwaSHL = ShippingContainer(config)
 
     # Setup the communications channels
-    mcsComms = MCSCommunicate(lwaSHL, config, opts)
+    mcsComms = MCSCommunicate(lwaSHL, config, args)
     mcsComms.start()
     
     # Initialize shelter
@@ -701,5 +640,16 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(
+        description='control the SHL sub-system within the guidelines of the SHL and MCS ICDs',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('-c', '--config', type=str, default=DEFAULTS_FILENAME,
+                        help='name of the SHL configuration file to use')
+    parser.add_argument('-l', '--log', type=str,
+                        help='name of the logfile to write logging information to')
+    parser.add_argument('-d', '--debug', action='store_true',
+                        help='print debug messages as well as info and higher')
+    args = parser.parse_args()
+    main(args)
     
