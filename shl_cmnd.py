@@ -18,7 +18,6 @@ import signal
 import socket
 import string
 import struct
-import thread
 import logging
 import argparse
 try:
@@ -29,7 +28,7 @@ import traceback
 try:
         import cStringIO as StringIO
 except ImportError:
-        import StringIO
+        from io import StringIO
 
 from MCS import *
 
@@ -112,7 +111,7 @@ def parseConfigFile(filename):
                 else:
                     config[paramName] = val
                     
-            except Exception, e:
+            except Exception as e:
                 logger.error("Error parsing parameter %s: %s", paramName, str(e))
                 cfile_error = True
                 
@@ -611,7 +610,7 @@ def main(args):
             logger.info('Exiting on ctrl-c')
             break
             
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             logger.error("asp_cmnd.py failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
                 

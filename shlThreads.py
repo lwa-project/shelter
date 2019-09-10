@@ -18,9 +18,9 @@ import threading
 import traceback
 from datetime import datetime, timedelta
 try:
-        import cStringIO as StringIO
+    import cStringIO as StringIO
 except ImportError:
-        import StringIO
+    from io import StringIO
 
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
@@ -67,7 +67,7 @@ class Thermometer(object):
         
         # Setup the sensors
         self.nSensors = nSensors
-        self.temp = [None for i in xrange(self.nSensors)]
+        self.temp = [None for i in range(self.nSensors)]
         
         # Setup the SNMP UDP connection
         self.community = community
@@ -174,7 +174,7 @@ class Thermometer(object):
             SNMPLock.release()
             
             # Log the data
-            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in xrange(self.nSensors)]))
+            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nSensors)]))
             fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
             fh.write('%s\n' % toDataLog)
             fh.close()
@@ -298,7 +298,7 @@ class PDU(object):
         self.frequency = None
         self.firmwareVersion = None
         self.status = {}
-        for i in xrange(1, self.nOutlets+1):
+        for i in range(1, self.nOutlets+1):
             self.status[i] = "UNK"
             
         # Setup the SNMP UDP connection
@@ -499,7 +499,7 @@ class PDU(object):
                     self.current = None
                     
             if self.oidOutletStatusBaseEntry is not None:
-                for i in xrange(1, self.nOutlets+1):
+                for i in range(1, self.nOutlets+1):
                     # Get the status of outlet #(i+1).
                     # NOTE:  Since the self.oidOutletStatusBaseEntry is just a base entry, 
                     # we need to append on the outlet number (1-indexed) before we can use
@@ -621,7 +621,7 @@ class PDU(object):
             # If outlet is None, loop over all outlets and return a list of
             # the individual operation result codes
             ret = [False]*self.nOutlets
-            for i in xrange(1, self.nOutlets+1):
+            for i in range(1, self.nOutlets+1):
                 ret[i] = self.setStatus(outlet=i, status=status)
                 
             return ret
@@ -1065,7 +1065,7 @@ class TrippLiteUPS(PDU):
                     self.batteryStatus = None
                     
             if self.oidOutletStatusBaseEntry is not None:
-                for i in xrange(1, self.nOutlets+1):
+                for i in range(1, self.nOutlets+1):
                     # Get the status of outlet #(i+1).
                     # NOTE:  Since the self.oidOutletStatusBaseEntry is just a base entry, 
                     # we need to append on the outlet number (1-indexed) before we can use
