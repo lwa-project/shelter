@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time
-import urllib
+import requests
 import subprocess
 from socket import gethostname
 
@@ -58,6 +58,6 @@ if time.time() > lastUpdated + 300:
     test += ',NaN,NaN,NaN'
     
 # Send the update to lwalab
-p = urllib.urlencode({'key': KEY, 'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
-f = urllib.urlopen(URL, p)
+f = requests.post(URL, data={'key': KEY, 'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
+f.close()
 
