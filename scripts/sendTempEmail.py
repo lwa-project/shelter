@@ -64,6 +64,11 @@ def getLast(filename, N):
     
     proc = subprocess.Popen(['tail', '-n%i' % int(N), filename], stdout=subprocess.PIPE)
     output, error = proc.communicate()
+    try:
+        output = output.decode('ascii')
+        error = error.decode('ascii')
+    except AttributeError:
+        pass
     output = output.split('\n')[:-1]
     
     return output
