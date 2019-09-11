@@ -15,6 +15,10 @@ SUBSYSTEM = "SHL"
 # Get the last line of the log file
 t = subprocess.Popen(["tail", "-n1", '/data/thermometer01.txt'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 test, _ = t.communicate()
+try:
+    test = test.decode('ascii')
+except AttributeError:
+    pass
 test = test.replace('\n', '')
 if SITE != 'lwasv':
     test += ',NaN'
@@ -23,12 +27,20 @@ if SITE != 'lwasv':
 try:
     t = subprocess.Popen(['/usr/local/bin/lead_lag_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     lls, _ = t.communicate()
+    try:
+        lls = lls.decode('ascii')
+    except AttributeError:
+        pass
     lls = lls.strip().rstrip().split(None, 1)[1]
     if lls.find('unk') != -1:
         lls = 'NaN'
         
     t = subprocess.Popen(['/usr/local/bin/compressor1_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     c1s, _ = t.communicate()
+    try:
+        c1s = c1s.decode('ascii')
+    except AttributeError:
+        pass
     c1s = '1' if c1s.find('on') != -1 else c1s
     c1s = '-1' if c1s.find('disabled') != -1 else c1s
     c1s = '0' if c1s.find('off') != -1 else c1s
@@ -36,6 +48,10 @@ try:
     
     t = subprocess.Popen(['/usr/local/bin/compressor2_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     c2s, _ = t.communicate()
+    try:
+        c2s = c2s.decode('ascii')
+    except AttributeError:
+        pass
     c2s = '1' if c2s.find('on') != -1 else c2s
     c2s = '-1' if c2s.find('disabled') != -1 else c2s
     c2s = '0' if c2s.find('off') != -1 else c2s
@@ -58,6 +74,7 @@ if time.time() > lastUpdated + 300:
     test += ',NaN,NaN,NaN'
     
 # Send the update to lwalab
-f = requests.post(URL, data={'key': KEY, 'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
+f = requests.post(URL,
+                  data={'key': KEY, 'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
 f.close()
 
