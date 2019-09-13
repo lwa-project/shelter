@@ -26,7 +26,7 @@ except ImportError:
         from logging import FileHandler as WatchedFileHandler
 import traceback
 try:
-        import cStringIO as StringIO
+        from cStringIO import StringIO
 except ImportError:
         from io import StringIO
 
@@ -615,7 +615,7 @@ def main(args):
             logger.error("asp_cmnd.py failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                 
             ## Grab the full traceback and save it to a string via StringIO
-            fileObject = StringIO.StringIO()
+            fileObject = StringIO()
             traceback.print_tb(exc_traceback, file=fileObject)
             tbString = fileObject.getvalue()
             fileObject.close()

@@ -152,7 +152,10 @@ class Thermometer(object):
                             
                         name, value = varBinds[0]
                         
-                        self.temp[s] = float(unicode(value))
+                        try:
+                            self.temp[s] = float(unicode(value))
+                        except NameError:
+                            self.temp[s] = float(str(value))
                         self.lastError = None
                         
                     except Exception as e:
@@ -404,7 +407,10 @@ class PDU(object):
                         raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                         
                     name, PWRfreq = varBinds[0]
-                    self.frequency = float(unicode(PWRfreq)) / 10.0
+                    try:
+                        self.frequency = float(unicode(PWRfreq)) / 10.0
+                    except NameError:
+                        self.frequency = float(str(PWRfreq)) / 10.0
                     self.lastError = None
                     
                 except Exception as e:
@@ -437,7 +443,10 @@ class PDU(object):
                         raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                         
                     name, PWRvoltage = varBinds[0]
-                    self.voltage = float(unicode(PWRvoltage))
+                    try:
+                        self.voltage = float(unicode(PWRvoltage))
+                    except NameError:
+                        self.voltage = float(str(PWRvoltage))
                     self.lastError = None
                     
                 except Exception as e:
@@ -473,10 +482,14 @@ class PDU(object):
                         raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                         
                     name, PWRcurrent = varBinds[0]
-                    if self.firmwareVersion == '12.04.0053':
+                    try:
                         self.current = float(unicode(PWRcurrent))
+                    except NameError:
+                        self.current = float(str(PWRcurrent))
+                    if self.firmwareVersion == '12.04.0053':
+                        pass
                     else:
-                        self.current = float(unicode(PWRcurrent)) / 10
+                        self.current = self.current / 10.0
                     self.lastError = None
                     
                 except Exception as e:
@@ -518,8 +531,11 @@ class PDU(object):
                             raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                             
                         name, PortStatus = varBinds[0]
-                        PortStatus = int(unicode(PortStatus))
-                        
+                        try:
+                            PortStatus = int(unicode(PortStatus))
+                        except NameError:
+                            PortStatus = int(str(PortStatus))
+                            
                         try:
                             self.status[i] = self.outletStatusCodes[PortStatus]
                         except KeyError:
@@ -856,7 +872,10 @@ class TrippLiteUPS(PDU):
                         raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                         
                     name, PWRfreq = varBinds[0]
-                    self.frequency = float(unicode(PWRfreq)) / 10.0
+                    try:
+                        self.frequency = float(unicode(PWRfreq)) / 10.0
+                    except NameError:
+                        self.frequency = float(str(PWRfreq)) / 10.0
                     self.lastError = None
                     
                 except Exception as e:
@@ -889,7 +908,10 @@ class TrippLiteUPS(PDU):
                         raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                         
                     name, PWRvoltage = varBinds[0]
-                    self.voltage = float(unicode(PWRvoltage))
+                    try:
+                        self.voltage = float(unicode(PWRvoltage))
+                    except NameError:
+                        self.voltage = float(str(PWRvoltage))
                     self.lastError = None
                     
                 except Exception as e:
@@ -925,10 +947,14 @@ class TrippLiteUPS(PDU):
                         raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                         
                     name, PWRcurrent = varBinds[0]
-                    if self.firmwareVersion == '12.04.0053':
+                    try:
                         self.current = float(unicode(PWRcurrent))
+                    except NameError:
+                        self.current = float(str(PWRcurrent))
+                    if self.firmwareVersion == '12.04.0053':
+                       pass
                     else:
-                        self.current = float(unicode(PWRcurrent)) / 10
+                        self.current = self.current / 10.0
                     self.lastError = None
                     
                 except Exception as e:
@@ -965,7 +991,10 @@ class TrippLiteUPS(PDU):
                         
                     name, UPSoutput = varBinds[0]
                     try:
-                        self.upsOutput = self.upsOutputCodes[int(unicode(UPSoutput))]
+                        try:
+                            self.upsOutput = self.upsOutputCodes[int(unicode(UPSoutput))]
+                        except NameError:
+                            self.upsOutput = self.upsOutputCodes[int(str(UPSoutput))]
                     except KeyError:
                         self.upsOutput = "UNK"
                     self.lastError = None
@@ -1003,7 +1032,10 @@ class TrippLiteUPS(PDU):
                         raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                         
                     name, BTYcharge = varBinds[0]
-                    self.batteryCharge = float(unicode(BTYcharge))
+                    try:
+                        self.batteryCharge = float(unicode(BTYcharge))
+                    except NameError:
+                        self.batteryCharge = float(str(BTYcharge))
                     self.lastError = None
                     
                 except Exception as e:
@@ -1040,7 +1072,10 @@ class TrippLiteUPS(PDU):
                         
                     name, BTYstatus = varBinds[0]
                     try:
-                        self.batteryStatus = self.batteryStatusCodes[int(unicode(BTYstatus))]
+                        try:
+                            self.batteryStatus = self.batteryStatusCodes[int(unicode(BTYstatus))]
+                        except NameError:
+                           self.batteryStatus = self.batteryStatusCodes[int(str(BTYstatus))]
                     except KeyError:
                         self.batteryStatus = "UNK"
                     self.lastError = None
@@ -1084,8 +1119,11 @@ class TrippLiteUPS(PDU):
                             raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
                             
                         name, PortStatus = varBinds[0]
-                        PortStatus = int(unicode(PortStatus))
-                        
+                        try:
+                            PortStatus = int(unicode(PortStatus))
+                        except NameError:
+                            PortStatus = int(str(PortStatus))
+                            
                         try:
                             self.status[i] = self.outletStatusCodes[PortStatus]
                         except KeyError:
@@ -1559,6 +1597,10 @@ class Lightning(object):
                     continue
                     
                 # RegEx matching for message date, type, and content
+                try:
+                    data = data.decode('ascii')
+                except AttributeError:
+                    pass
                 mtch = dataRE.match(data)
                 t = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
                 
@@ -1785,6 +1827,10 @@ class Outage(object):
                     continue
                     
                 # RegEx matching for message date, type, and content
+                try:
+                    data = data.decode('ascii')
+                except AttributeError:
+                    pass
                 mtch = dataRE.match(data)
                 tEvent = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
                 
