@@ -18,7 +18,7 @@ import threading
 import traceback
 from datetime import datetime, timedelta
 try:
-    import cStringIO as StringIO
+    from cStringIO import StringIO
 except ImportError:
     from io import StringIO
 
@@ -157,10 +157,10 @@ class Thermometer(object):
                         
                     except Exception as e:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s: monitorThread failed with: %s at line %i", type(self).__name__, str(e), traceback.tb_lineno(exc_traceback))
+                        shlThreadsLogger.error("%s: monitorThread failed with: %s at line %i", type(self).__name__, str(e), exc_traceback.tb_lineno)
                         
                         ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO.StringIO()
+                        fileObject = StringIO()
                         traceback.print_tb(exc_traceback, file=fileObject)
                         tbString = fileObject.getvalue()
                         fileObject.close()
@@ -376,10 +376,10 @@ class PDU(object):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -409,10 +409,10 @@ class PDU(object):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -442,10 +442,10 @@ class PDU(object):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -481,10 +481,10 @@ class PDU(object):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -529,10 +529,10 @@ class PDU(object):
                             
                     except Exception as e:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                         
                         ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO.StringIO()
+                        fileObject = StringIO()
                         traceback.print_tb(exc_traceback, file=fileObject)
                         tbString = fileObject.getvalue()
                         fileObject.close()
@@ -649,10 +649,10 @@ class PDU(object):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s: setStatus failed with: %s at line %i", type(self).__name__, str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s: setStatus failed with: %s at line %i", type(self).__name__, str(e), exc_traceback.tb_lineno)
                         
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -828,10 +828,10 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -861,10 +861,10 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -894,10 +894,10 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -933,10 +933,10 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -972,10 +972,10 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -1008,10 +1008,10 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -1047,10 +1047,10 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                    shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                     
                     ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO.StringIO()
+                    fileObject = StringIO()
                     traceback.print_tb(exc_traceback, file=fileObject)
                     tbString = fileObject.getvalue()
                     fileObject.close()
@@ -1095,10 +1095,10 @@ class TrippLiteUPS(PDU):
                             
                     except Exception as e:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), traceback.tb_lineno(exc_traceback))
+                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
                         
                         ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO.StringIO()
+                        fileObject = StringIO()
                         traceback.print_tb(exc_traceback, file=fileObject)
                         tbString = fileObject.getvalue()
                         fileObject.close()
@@ -1300,10 +1300,10 @@ class Weather(object):
                 
             except Exception as e:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                shlThreadsLogger.error("Weather: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+                shlThreadsLogger.error("Weather: monitorThread failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                 
                 ## Grab the full traceback and save it to a string via StringIO
-                fileObject = StringIO.StringIO()
+                fileObject = StringIO()
                 traceback.print_tb(exc_traceback, file=fileObject)
                 tbString = fileObject.getvalue()
                 fileObject.close()
@@ -1595,10 +1595,10 @@ class Lightning(object):
                     
             except Exception as e:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                shlThreadsLogger.error("Lightning: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+                shlThreadsLogger.error("Lightning: monitorThread failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                 
                 ## Grab the full traceback and save it to a string via StringIO
-                fileObject = StringIO.StringIO()
+                fileObject = StringIO()
                 traceback.print_tb(exc_traceback, file=fileObject)
                 tbString = fileObject.getvalue()
                 fileObject.close()
@@ -1631,10 +1631,10 @@ class Lightning(object):
                         counter += 1
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            shlThreadsLogger.error("Lightning: getStrikeCount failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+            shlThreadsLogger.error("Lightning: getStrikeCount failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
             
             ## Grab the full traceback and save it to a string via StringIO
-            fileObject = StringIO.StringIO()
+            fileObject = StringIO()
             traceback.print_tb(exc_traceback, file=fileObject)
             tbString = fileObject.getvalue()
             fileObject.close()
@@ -1810,7 +1810,7 @@ class Outage(object):
                             fh.write(mtch.group('date'))
                             fh.close()
                         except (OSError, IOError) as e:
-                            shlThreadsLogger.warning("Outage: monitorThread 120VAC save state failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+                            shlThreadsLogger.warning("Outage: monitorThread 120VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                             
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - outage - 240VAC')
@@ -1821,7 +1821,7 @@ class Outage(object):
                             fh.write(mtch.group('date'))
                             fh.close()
                         except (OSError, IOError) as e:
-                            shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+                            shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                             
                     if self.SHLCallbackInstance is not None:
                         self.SHLCallbackInstance.processPowerOutage(True)
@@ -1865,10 +1865,10 @@ class Outage(object):
                         
             except Exception as e:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
-                shlThreadsLogger.error("Outage: monitorThread failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+                shlThreadsLogger.error("Outage: monitorThread failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                 
                 ## Grab the full traceback and save it to a string via StringIO
-                fileObject = StringIO.StringIO()
+                fileObject = StringIO()
                 traceback.print_tb(exc_traceback, file=fileObject)
                 tbString = fileObject.getvalue()
                 fileObject.close()
@@ -1891,10 +1891,10 @@ class Outage(object):
                 
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            shlThreadsLogger.error("Outage: getFlicker failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+            shlThreadsLogger.error("Outage: getFlicker failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
             
             ## Grab the full traceback and save it to a string via StringIO
-            fileObject = StringIO.StringIO()
+            fileObject = StringIO()
             traceback.print_tb(exc_traceback, file=fileObject)
             tbString = fileObject.getvalue()
             fileObject.close()
@@ -1914,10 +1914,10 @@ class Outage(object):
                 
         except Exception as e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
-            shlThreadsLogger.error("Outage: getOutage failed with: %s at line %i", str(e), traceback.tb_lineno(exc_traceback))
+            shlThreadsLogger.error("Outage: getOutage failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
             
             ## Grab the full traceback and save it to a string via StringIO
-            fileObject = StringIO.StringIO()
+            fileObject = StringIO()
             traceback.print_tb(exc_traceback, file=fileObject)
             tbString = fileObject.getvalue()
             fileObject.close()

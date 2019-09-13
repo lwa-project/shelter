@@ -13,6 +13,7 @@ import time
 import sched
 import logging
 import threading
+from functools import reduce
 
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 
