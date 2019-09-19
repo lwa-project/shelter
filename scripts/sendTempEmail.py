@@ -147,7 +147,7 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTempe
 else:
     pass
 
-if SITE == 'lwasv' and shlTemp >= RESET_TEMP:
+if shlTemp >= RESET_TEMP:
     tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
     
     if os.path.exists(os.path.join(STATE_DIR, 'inCompressorReset')):
