@@ -1033,6 +1033,7 @@ int sub_sdio_transfer( sub_handle hndl, char* out_buf, char* in_buf,
 	return rc;
 }
 
+/*
 int sub_spi_transfer_ess( sub_handle hndl, 
 						  char* out_buf, char* in_buf, int sz, char* ess_str )
 {
@@ -1068,7 +1069,7 @@ int sub_spi_transfer_ess( sub_handle hndl,
 	}
 	return rc;
 }
-
+*/
 
 /*
 *-----------------------------------------------------------------------------

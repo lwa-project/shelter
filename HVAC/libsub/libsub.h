@@ -348,7 +348,9 @@ int sub_i2c_write( sub_handle hndl, int sa, sub_int32_t ma, int ma_sz, char* buf
 int sub_spi_config( sub_handle hndl, int cfg_set, int* cfg_get );
 int sub_spi_transfer( sub_handle hndl, char* out_buf, char* in_buf, int sz, int ss_config );
 int sub_sdio_transfer( sub_handle hndl, char* out_buf, char* in_buf, int out_sz, int in_sz, int ss_config );
+/*
 int sub_spi_transfer_ess( sub_handle hndl, char* out_buf, char* in_buf, int sz, char* ess_str );
+*/
 
 /* MDIO */
 int sub_mdio22( sub_handle hndl, int op, int phyad, int regad, int data, int* content );
