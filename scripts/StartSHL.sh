@@ -1,5 +1,14 @@
 #!/bin/bash
 
+### BEGIN INIT INFO
+# Provides:        StartSHL
+# Required-Start:  $network $local_fs
+# Required-Stop:   none
+# Default-Start:   2 3 4 5
+# Default-Stop:    0 1 6
+# Short-Description: Start SHL
+### END INIT INFO
+
 case "$1" in
 'start')
   echo -n "Starting SHL MCS..."
