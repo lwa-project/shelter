@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Background threads to interacting with temperature sensors and PDUs.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 import os
@@ -28,8 +24,7 @@ from pysnmp.proto import rfc1902
 from shlCommon import LIGHTNING_IP, LIGHTNING_PORT, OUTAGE_IP, OUTAGE_PORT
 
 __version__ = "0.6"
-__revision__ = "$Rev$"
-__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage', '__version__', '__revision__', '__all__']
+__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
 
 
 shlThreadsLogger = logging.getLogger('__main__')

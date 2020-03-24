@@ -3,18 +3,13 @@
 """
 Module to store "common" values used by SHL as well as the getTime() function for
 finding out the current MJD and MPM values.
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 import math
 from datetime import datetime
 
 __version__ = "0.5"
-__revision__ = "$Rev$"
-__all__ = ['THERMOMLIST', 'PDULIST', 'WARNING_TEMP', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'OUTAGE_IP', 'OUTAGE_PORT', 'CRITICAL_LIST', '__version__', '__revision__', '__all__']
+__all__ = ['THERMOMLIST', 'PDULIST', 'WARNING_TEMP', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'OUTAGE_IP', 'OUTAGE_PORT', 'CRITICAL_LIST']
 
 # Setup the thermometers
 THERMOMLIST = {}

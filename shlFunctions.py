@@ -2,10 +2,6 @@
 """
 Module for dealing with all of the stuff the SHL deals with (INI, SHT, 
 turning on/off ports, etc.)
-
-$Rev$
-$LastChangedBy$
-$LastChangedDate$
 """
 
 import os
@@ -21,8 +17,7 @@ from shlCommon import *
 from shlThreads import *
 
 __version__ = "0.3"
-__revision__ = "$Rev$"
-__all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer", "__version__", "__revision__", "__all__"]
+__all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer"]
 
 
 shlFunctionsLogger = logging.getLogger('__main__')
