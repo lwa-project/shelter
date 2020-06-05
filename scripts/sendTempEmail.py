@@ -149,12 +149,14 @@ else:
 
 if shlTemp >= RESET_TEMP:
     tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
+    tOff = 5
     
     if os.path.exists(os.path.join(STATE_DIR, 'inCompressorReset')):
         # Check the age of the holding file to see if we have entered the "all-clear"
         age = time.time() - os.path.getmtime(os.path.join(STATE_DIR, 'inCompressorReset'))
         
         if age >= RESET_CLEAR_TIME*60:
+            tOff += 5
             try:
                 os.unlink(os.path.join(STATE_DIR, 'inCompressorReset'))
             except Exception as e:
@@ -164,7 +166,7 @@ if shlTemp >= RESET_TEMP:
         # If the holding file does not exist, trigger a reset and send out an e-mail
         try:
             ## Reset the compressors
-            rst = subprocess.Popen(['/home/ops/reset_compressors.sh',])
+            rst = subprocess.Popen(['/home/ops/reset_compressors.sh', str(tOff)])
             
             ## Touch the file to update the modification time.  This is used to track
             ## when the warning condition is cleared.
