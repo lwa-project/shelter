@@ -550,7 +550,7 @@ def main(args):
     
     # Git information
     try:
-        repo = git.Repo(os.path.basename(os.path.abspath(__file__)))
+        repo = git.Repo(os.path.dirname(os.path.abspath(__file__)))
         branch = repo.active_branch.name
         hexsha = repo.active_branch.commit.hexsha
         shortsha = hexsha[-7:]
