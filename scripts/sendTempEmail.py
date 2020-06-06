@@ -191,4 +191,7 @@ if shlTemp >= RESET_TEMP:
             print("Reset compressor e-mail send: %s" % str(e))
             
 else:
-    pass
+    try:
+        os.unlink(os.path.join(STATE_DIR, 'inCompressorReset'))
+    except Exception as e:
+        pass
