@@ -21,6 +21,8 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
+from influxdb import InfluxDBClient
+
 from shlCommon import LIGHTNING_IP, LIGHTNING_PORT, OUTAGE_IP, OUTAGE_PORT
 
 __version__ = "0.6"
@@ -176,6 +178,20 @@ class Thermometer(object):
             fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
             fh.write('%s\n' % toDataLog)
             fh.close()
+            
+            json = [{"measurement": "temperature",
+                     "tags": {"subsystem": "shl",
+                              "monitorpoint": "temperature"},
+                     "time": time.time(),
+                     "fields": {}},]
+            for s in range(self.nSensors):
+                json['fields']['sensor%i' % s] = self.temp[s] 
+            try:
+                ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
+                ifdb.write_points(json)
+                ifdb.close()
+            except Exception as e:
+                print(e)
             
             # Make sure we aren't critical
             temps = [value for value in self.temp if value is not None]

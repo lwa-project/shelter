@@ -17,7 +17,7 @@ case "$1" in
   echo "starting shl_cmnd.py" >> /lwa/runtime/runtime.log
 
   cd /lwa/software
-  python /lwa/software/shl_cmnd.py -c /lwa/software/defaults.cfg -d -l /lwa/runtime/runtime.log
+  python3 /lwa/software/shl_cmnd.py -c /lwa/software/defaults.cfg -d -l /lwa/runtime/runtime.log
 
   echo "done"
   ;;
