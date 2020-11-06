@@ -182,10 +182,10 @@ class Thermometer(object):
             json = [{"measurement": "temperature",
                      "tags": {"subsystem": "shl",
                               "monitorpoint": "temperature"},
-                     "time": time.time(),
+                     "time": int(time.time()*1e9),
                      "fields": {}},]
             for s in range(self.nSensors):
-                json['fields']['sensor%i' % s] = self.temp[s] 
+                json[0]['fields']['sensor%i' % s] = self.temp[s]
             try:
                 ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
                 ifdb.write_points(json)
