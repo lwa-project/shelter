@@ -475,9 +475,12 @@ class ShippingContainer(object):
         for t in self.currentState['tempThreads']:
             # Make sure the monitoring thread is running
             if t.alive.isSet():
-                meanTemp += t.getTemperature(DegreesF=DegreesF)
-                i += 1
-                
+                try:
+                    meanTemp += t.getTemperature(DegreesF=DegreesF)
+                    i += 1
+                except TypeError:
+                    pass
+                     
         # Make sure we have actual values to average
         if i == 0:
             self.currentState['lastLog'] = 'No temperature monitoring threads are running'
