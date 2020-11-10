@@ -192,7 +192,7 @@ class Thermometer(object):
                 ifdb.close()
             except Exception as e:
                 print(e)
-            
+                
             # Make sure we aren't critical
             temps = [value for value in self.temp if value is not None]
             if self.SHLCallbackInstance is not None and len(temps) != 0:
@@ -584,6 +584,20 @@ class PDU(object):
             if self.SHLCallbackInstance is not None and nFailures > 0:
                 self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
+            if self.voltage is not None and self.current is not None:
+                json = [{"measurement": "power",
+                         "tags": {"subsystem": "shl",
+                                  "monitorpoint": "rack%02i" % self.id},
+                         "time": int(time.time()*1e9),
+                         "fields": {"voltage": self.voltage,
+                                    "current": self.current}},]
+                try:
+                    ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
+                    ifdb.write_points(json)
+                    ifdb.close()
+                except Exception as e:
+                    print(e)
+                    
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -1171,7 +1185,21 @@ class TrippLiteUPS(PDU):
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
                 self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-            
+                
+            if self.voltage is not None and self.current is not None:
+                json = [{"measurement": "power",
+                         "tags": {"subsystem": "shl",
+                                  "monitorpoint": "rack%02i" % self.id},
+                         "time": int(time.time()*1e9),
+                         "fields": {"voltage": self.voltage,
+                                    "current": self.current}},]
+                try:
+                    ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
+                    ifdb.write_points(json)
+                    ifdb.close()
+                except Exception as e:
+                    print(e)
+                    
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -1391,7 +1419,25 @@ class Weather(object):
                     self.rain = None
                 if 'rainRate' not in updated_list:
                     self.rainRate = None
-                
+                    
+            if 'updatetime' in updated_list:
+                json = [{"measurement": "weather",
+                         "tags": {"subsystem": "shl",
+                                  "monitorpoint": "weather"},
+                         "time": int(self.updatetime*1e9),
+                         "fields": {}},]
+                for key in updated_list:
+                    if key == 'usUnits':
+                        continue
+                    json[0]['fields'][key] = getattr(self, key)
+                if len(json[0]['fields']) > 0:
+                    try:
+                        ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
+                        ifdb.write_points(json)
+                        ifdb.close()
+                    except Exception as e:
+                        print(e)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating weather station data in %.3f seconds', tStop - tStart)
