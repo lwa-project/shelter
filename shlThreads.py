@@ -595,6 +595,7 @@ class PDU(object):
                     json[0]['fields']['voltage'] /= 1000.0
                 if json[0]['fields']['current'] > 100:
                     json[0]['fields']['current'] /= 100.0
+                json[0]['fields']['power'] = json[0]['fields']['voltage']*json[0]['fields']['current']
                 try:
                     ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
                     ifdb.write_points(json)
