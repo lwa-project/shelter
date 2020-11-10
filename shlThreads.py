@@ -591,6 +591,10 @@ class PDU(object):
                          "time": int(time.time()*1e9),
                          "fields": {"voltage": self.voltage,
                                     "current": self.current}},]
+                if json[0]['fields']['voltage'] > 1000:
+                    json[0]['fields']['voltage'] /= 1000.0
+                if json[0]['fields']['current'] > 100:
+                    json[0]['fields']['current'] /= 100.0
                 try:
                     ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
                     ifdb.write_points(json)
