@@ -1198,6 +1198,7 @@ class TrippLiteUPS(PDU):
                          "time": int(time.time()*1e9),
                          "fields": {"voltage": self.voltage,
                                     "current": self.current}},]
+                json[0]['fields']['power'] = json[0]['fields']['voltage']*json[0]['fields']['current']
                 try:
                     ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
                     ifdb.write_points(json)
