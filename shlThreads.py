@@ -1295,7 +1295,7 @@ class Weather(object):
         if config is not None:
             self.config = config
         self.database = self.config['WEATHERDATABASE']
-        self.influxdb = LWAInfluxClient.from_config(config)
+        self.influxdb = LWAInfluxClient.from_config(self.config)
         
     def start(self):
         """
@@ -1572,7 +1572,7 @@ class Lightning(object):
         # Update the current configuration
         if config is not None:
             self.config = config
-        self.influxdb = LWAInfluxClient.from_config(config)
+        self.influxdb = LWAInfluxClient.from_config(self.config)
         
     def start(self):
         """
@@ -1774,7 +1774,7 @@ class Outage(object):
         # Update the current configuration
         if config is not None:
             self.config = config
-        self.influxdb = LWAInfluxClient.from_config(config)
+        self.influxdb = LWAInfluxClient.from_config(self.config)
         
     def start(self):
         """
