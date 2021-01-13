@@ -21,11 +21,11 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
-from influxdb import InfluxDBClient
+from lwainflux import LWAInfluxClient
 
 from shlCommon import LIGHTNING_IP, LIGHTNING_PORT, OUTAGE_IP, OUTAGE_PORT
 
-__version__ = "0.6"
+__version__ = "0.7"
 __all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
 
 
@@ -54,12 +54,13 @@ class Thermometer(object):
     oidTemperatureEntry2 = None
     oidTemperatureEntry3 = None
     
-    def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+    def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=5.0):
         self.ip = ip
         self.port = port
         self.id = id
         self.description = description
         self.SHLCallbackInstance = SHLCallbackInstance
+        self.InfluxDBClient = InfluxDBClient
         self.MonitorPeriod = MonitorPeriod
         
         # Setup the sensors
@@ -178,20 +179,16 @@ class Thermometer(object):
             fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
             fh.write('%s\n' % toDataLog)
             fh.close()
-            
-            json = [{"measurement": "temperature",
-                     "tags": {"subsystem": "shl",
-                              "monitorpoint": "temperature"},
-                     "time": int(time.time()*1e9),
-                     "fields": {}},]
-            for s in range(self.nSensors):
-                json[0]['fields']['sensor%i' % s] = self.temp[s]
-            try:
-                ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
-                ifdb.write_points(json)
-                ifdb.close()
-            except Exception as e:
-                print(e)
+           
+            if self.InfluxDBClient is not None: 
+                json = [{"measurement": "temperature",
+                         "tags": {"subsystem": "shl",
+                                  "monitorpoint": "temperature"},
+                         "time": self.InfluxDBClient.now(),
+                         "fields": {}},]
+                for s in range(self.nSensors):
+                    json[0]['fields']['sensor%i' % s] = self.temp[s]
+                self.InfluxDBClient.write(json)
                 
             # Make sure we aren't critical
             temps = [value for value in self.temp if value is not None]
@@ -254,8 +251,8 @@ class Comet(Thermometer):
     the temperature.  The temperature value is stored in the "temp" attribute.
     """
     
-    def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
-        super(Comet, self).__init__(ip, port, community, id, nSensors=1, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=5.0):
+        super(Comet, self).__init__(ip, port, community, id, nSensors=1, description=description, SHLCallbackInstance=SHLCallbackInstance,  InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidTemperatureEntry0 = (1,3,6,1,4,1,22626,1,5,2,1,2,0)
@@ -267,8 +264,8 @@ class HWg(Thermometer):
     the temperature.  The temperature value is stored in the "temp" attribute.
     """
     
-    def __init__(self, ip, port, community, id, nSensors=2, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
-        super(HWg, self).__init__(ip, port, community, id, nSensors=nSensors, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nSensors=2, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=5.0):
+        super(HWg, self).__init__(ip, port, community, id, nSensors=nSensors, description=description, SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidTemperatureEntry0 = (1,3,6,1,4,1,21796,4,1,3,1,4,1)
@@ -297,12 +294,13 @@ class PDU(object):
     
     outletStatusCodes = {1: "OFF", 2: "ON"}
     
-    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
+    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
         self.ip = ip
         self.port = port
         self.id = id
         self.description = description
         self.SHLCallbackInstance = SHLCallbackInstance
+        self.InfluxDBClient =  InfluxDBClient
         self.MonitorPeriod = MonitorPeriod
         
         # Setup the outlets, their currents and status codes
@@ -584,11 +582,11 @@ class PDU(object):
             if self.SHLCallbackInstance is not None and nFailures > 0:
                 self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
-            if self.voltage is not None and self.current is not None:
+            if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
                          "tags": {"subsystem": "shl",
                                   "monitorpoint": "rack%02i" % self.id},
-                         "time": int(time.time()*1e9),
+                         "time": self.InfluxDBClient.now(),
                          "fields": {"voltage": self.voltage,
                                     "current": self.current}},]
                 if json[0]['fields']['voltage'] > 1000:
@@ -596,13 +594,8 @@ class PDU(object):
                 if json[0]['fields']['current'] > 100:
                     json[0]['fields']['current'] /= 100.0
                 json[0]['fields']['power'] = json[0]['fields']['voltage']*json[0]['fields']['current']
-                try:
-                    ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
-                    ifdb.write_points(json)
-                    ifdb.close()
-                except Exception as e:
-                    print(e)
-                    
+                self.InfluxDBClient.write(json)
+                 
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -716,8 +709,8 @@ class TrippLite(PDU):
     Sub-class of the PDU class for TrippLite PDUs.
     """
     
-    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
-        super(TrippLite, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description,  SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
+        super(TrippLite, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description,  SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,4,0)
@@ -736,8 +729,8 @@ class APC(PDU):
     Sub-class of the PDU class for the APC PDU on PASI.
     """
     
-    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
-        super(APC, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
+        super(APC, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidFirmwareEntry = None
@@ -756,8 +749,8 @@ class Raritan(PDU):
     Sub-class of the PDU class for the new Raritan PDU on DP.
     """
     
-    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
-        super(Raritan, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
+        super(Raritan, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidFirmwareEntry = (1,3,6,1,4,1,13742,6,3,2,3,1,6,1,1,1)
@@ -776,8 +769,8 @@ class Dominion(PDU):
     Sub-class of the PDU class for the new Raritan PDU on DP.
     """
     
-    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
-        super(Dominion, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
+        super(Dominion, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidFirmwareEntry = (1,3,6,1,4,1,13742,4,1,1,1)
@@ -814,8 +807,8 @@ class TrippLiteUPS(PDU):
     http://www.simpleweb.org/ietf/mibs/modules/IETF/txt/UPS-MIB
     """
     
-    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
-        super(TrippLiteUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
+        super(TrippLiteUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # This is a UPS
         self.isUPS = True
@@ -1191,21 +1184,16 @@ class TrippLiteUPS(PDU):
             if self.SHLCallbackInstance is not None and nFailures > 0:
                 self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
-            if self.voltage is not None and self.current is not None:
+            if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
                          "tags": {"subsystem": "shl",
                                   "monitorpoint": "rack%02i" % self.id},
-                         "time": int(time.time()*1e9),
+                         "time": self.InfluxDBClient.now(),
                          "fields": {"voltage": self.voltage,
                                     "current": self.current}},]
                 json[0]['fields']['power'] = json[0]['fields']['voltage']*json[0]['fields']['current']
-                try:
-                    ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
-                    ifdb.write_points(json)
-                    ifdb.close()
-                except Exception as e:
-                    print(e)
-                    
+                self.InfluxDBClient.write(json)
+                 
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -1249,8 +1237,8 @@ class APCUPS(TrippLiteUPS):
     http://www.oidview.com/mibs/318/PowerNet-MIB.html
     """
     
-    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
-        super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=None, MonitorPeriod=MonitorPeriod)
+    def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
+        super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,3,0)
@@ -1307,6 +1295,7 @@ class Weather(object):
         if config is not None:
             self.config = config
         self.database = self.config['WEATHERDATABASE']
+        self.influxdb = LWAInfluxClient.from_config(config)
         
     def start(self):
         """
@@ -1430,20 +1419,15 @@ class Weather(object):
                 json = [{"measurement": "weather",
                          "tags": {"subsystem": "shl",
                                   "monitorpoint": "weather"},
-                         "time": int(self.updatetime*1e9),
+                         "time": self.influxdb.now(),
                          "fields": {}},]
                 for key in updated_list:
                     if key == 'usUnits':
                         continue
                     json[0]['fields'][key] = getattr(self, key)
                 if len(json[0]['fields']) > 0:
-                    try:
-                        ifdb = InfluxDBClient('fornax.phys.unm.edu', 8086, 'root', 'root', 'lwasv')
-                        ifdb.write_points(json)
-                        ifdb.close()
-                    except Exception as e:
-                        print(e)
-                        
+                    self.influxdb.write(json)
+                     
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating weather station data in %.3f seconds', tStop - tStart)
@@ -1588,7 +1572,8 @@ class Lightning(object):
         # Update the current configuration
         if config is not None:
             self.config = config
-            
+        self.influxdb = LWAInfluxClient.from_config(config)
+        
     def start(self):
         """
         Start the monitoring thread.
@@ -1789,7 +1774,8 @@ class Outage(object):
         # Update the current configuration
         if config is not None:
             self.config = config
-            
+        self.influxdb = LWAInfluxClient.from_config(config)
+        
     def start(self):
         """
         Start the monitoring thread.

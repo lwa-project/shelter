@@ -13,10 +13,12 @@ from functools import reduce
 
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 
+from lwainflux import LWAInfluxClient
+
 from shlCommon import *
 from shlThreads import *
 
-__version__ = "0.3"
+__version__ = "0.4"
 __all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer"]
 
 
@@ -177,6 +179,9 @@ class ShippingContainer(object):
         self.currentState['info'] = 'Running INI sequence'
         self.currentState['activeProcess'].append('INI')
         
+        # Create the InfluxDB client
+        influxdb = LWAInfluxClient.from_config(self.config)
+        
         # Stop all threads.  If the don't exist yet, create them.
         ## Temperature
         if self.currentState['tempThreads'] is not None:
@@ -195,7 +200,7 @@ class ShippingContainer(object):
                     
                 nT = ThermoBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
                                 c+1, nSensors=v['nSensors'], description=v['Description'], 
-                                MonitorPeriod=self.config['TEMPMONITORPERIOD'], SHLCallbackInstance=self)
+                                MonitorPeriod=self.config['TEMPMONITORPERIOD'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
                 self.currentState['tempThreads'].append(nT)
         ## PDUs
         if self.currentState['pduThreads'] is not None:
@@ -222,7 +227,7 @@ class ShippingContainer(object):
                     
                 nP = PDUBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
                                 c+1, nOutlets=v['nOutlets'], description=v['Description'], 
-                                MonitorPeriod=self.config['RACKMONITORPERIOD'], SHLCallbackInstance=self)
+                                MonitorPeriod=self.config['RACKMONITORPERIOD'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
                                 
                 self.currentState['pduThreads'].append(nP)
         ## Weather station

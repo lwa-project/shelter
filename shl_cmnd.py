@@ -68,7 +68,10 @@ def parseConfigFile(filename):
                  'TEMPMONITORPERIOD'        : float,
                  'RACKMONITORPERIOD'        : float,
                  'WEATHERDATABASE'          : str, 
-                 'WEATHERMONITORPERIOD'     : float0}
+                 'WEATHERMONITORPERIOD'     : float0,
+                 'INFLUXUSER'               : str,
+                 'INFLUXPASSWORD'           : str,
+                 'INFLUXDATABASE'           : str}
     config = {}
 
     #

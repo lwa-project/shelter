@@ -28,3 +28,7 @@ RackMonitorPeriod      20.0
 WeatherDatabase        /var/wview/archive/wview-archive.sdb
 WeatherMonitorPeriod   300.0
 
+# InfluxDB access
+InfluxUser             lwasv
+InfluxPassword         logging4Fun@SV
+InfluxDatabase         lwasv
