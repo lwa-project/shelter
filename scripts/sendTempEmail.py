@@ -33,7 +33,7 @@ RESET_TEMP = 77.00
 RESET_CLEAR_TIME = 60
 
 # E-mail Users
-TO = ['lwa1ops@phys.unm.edu',]
+TO = ['lwa1ops-l@list.unm.edu',]
 
 # SMTP user and password
 if SITE == 'lwa1':
