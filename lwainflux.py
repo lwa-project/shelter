@@ -62,7 +62,7 @@ class LWAInfluxClient(object):
         
         status = True
         try:
-            db = InfluxDBClient(self._host, self._port, self._username, self._password, self._database, self._ssl)
+            db = InfluxDBClient(self._host, self._port, self._username, self._password, self._database, self._ssl, verify_ssl=self._ssl)
             db.ping()
             db.close()
         except Exception as e:
@@ -83,7 +83,7 @@ class LWAInfluxClient(object):
         status = True
         error = None
         try:
-            db = InfluxDBClient(self._host, self._port, self._username, self._password, self._database, self._ssl)
+            db = InfluxDBClient(self._host, self._port, self._username, self._password, self._database, self._ssl, verify_ssl=self._ssl)
             db.write_points(json_list)
             db.close()
         except Exception as e:
