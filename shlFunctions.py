@@ -81,7 +81,7 @@ class ShippingContainer(object):
         self.currentState['diffPoint'] = 0
         self.currentState['nRacks'] = 0
         self.currentState['rackPresent'] = []
-        self.currentState['snmpUnreachable'] = {}
+        self.currentState['unreachableDevices'] = {}
         
         ## Monitoring and background threads
         self.currentState['tempThreads'] = None
@@ -90,7 +90,7 @@ class ShippingContainer(object):
         self.currentState['strikeThread'] = None
         self.currentState['outageThread'] = None
         
-        ## Scheduler for clearing the SNMP unreachable list
+        ## Scheduler for clearing the unreachable device list
         self.scheduler = sched.scheduler(time.time, time.sleep)
         
         # Update the configuration
@@ -221,20 +221,21 @@ class ShippingContainer(object):
                     PDUBaseType = APCUPS
                     
                 nP = PDUBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
-                                c+1, nOutlets=v['nOutlets'], description=v['Description'], 
-                                MonitorPeriod=self.config['RACKMONITORPERIOD'], SHLCallbackInstance=self)
+                                 c+1, nOutlets=v['nOutlets'], description=v['Description'], 
+                                 MonitorPeriod=self.config['RACKMONITORPERIOD'], SHLCallbackInstance=self)
                                 
                 self.currentState['pduThreads'].append(nP)
         ## Weather station
         if self.currentState['wxThread'] is not None:
             self.currentState['wxThread'].stop()
         else:
-            self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['WEATHERMONITORPERIOD'])
+            self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['WEATHERMONITORPERIOD'],
+                                                    SHLCallbackInstance=self)
         ## Lightning monitor
         if self.currentState['strikeThread'] is not None:
             self.currentState['strikeThread'].stop()
         else:
-            self.currentState['strikeThread'] = Lightning(self.config)
+            self.currentState['strikeThread'] = Lightning(self.config, SHLCallbackInstance=self)
         ## Line voltage monitor
         if self.currentState['outageThread'] is not None:
             self.currentState['outageThread'].stop()
@@ -249,8 +250,8 @@ class ShippingContainer(object):
         ## Extend self.currentState['rackPresent'] for racks in shlCommon but not in the INI
         while len(self.currentState['pduThreads']) > len(self.currentState['rackPresent']):
             self.currentState['rackPresent'].append(0)
-        ## Reset the SNMP unreacable list
-        self.currentState['snmpUnreachable'] = {}
+        ## Reset the unreacable device list
+        self.currentState['unreachableDevices'] = {}
         
         # Print out some rack status
         shlFunctionsLogger.info('-----------------')
@@ -349,8 +350,8 @@ class ShippingContainer(object):
         self.currentState['status'] = 'SHUTDWN'
         self.currentState['info'] = 'System has been shut down'
         self.currentState['lastLog'] = 'System has been shut down'
-        ## Reset the SNMP unreacable list
-        self.currentState['snmpUnreachable'] = {}
+        ## Reset the unreachable device list
+        self.currentState['unreachableDevices'] = {}
         
         shlFunctionsLogger.info("Finished the SHT process in %.3f s", time.time() - tStart)
         self.currentState['activeProcess'].remove('SHT')
@@ -957,7 +958,7 @@ class ShippingContainer(object):
             
         return True
         
-    def processSNMPUnreachable(self, unreachableDevice):
+    def processUnreachable(self, unreachableDevice):
         """
         Deal with an unreachable device.
         """
@@ -968,23 +969,23 @@ class ShippingContainer(object):
         # Update the unreachable device list
         if unreachableDevice is not None:
             ListLock.acquire()
-            self.currentState['snmpUnreachable'][unreachableDevice] = tNow
+            self.currentState['unreachableDevices'][unreachableDevice] = tNow
             ListLock.release()
-            shlFunctionsLogger.warning('Updated SNMP unreachable list - add %s', unreachableDevice)
+            shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
             
-        # Count the recently updated (<= 5 minutes since the last failure) entries
+        # Count the recently updated (<= 6 minutes since the last failure) entries
         nUnreachable = 0
         unreachable = {}
-        for device in self.currentState['snmpUnreachable']:
-            age = tNow - self.currentState['snmpUnreachable'][device]
-            if age <= 300:
+        for device in self.currentState['unreachableDevices']:
+            age = tNow - self.currentState['unreachableDevices'][device]
+            if age <= 360:
                 nUnreachable += 1
-                unreachable[device] = self.currentState['snmpUnreachable'][device]
+                unreachable[device] = self.currentState['unreachableDevices'][device]
             else:
-                shlFunctionsLogger.info('Updated SNMP unreachable list - remove %s', device)
+                shlFunctionsLogger.info('Updated unreachable list - remove %s', device)
         ListLock.acquire()
-        self.currentState['snmpUnreachable'] = unreachable
-        shlFunctionsLogger.debug('Unreachable list now contains %i entries', len(self.currentState['snmpUnreachable']))
+        self.currentState['unreachableDevices'] = unreachable
+        shlFunctionsLogger.debug('Unreachable list now contains %i entries', len(self.currentState['unreachableDevices']))
         ListLock.release()
             
         # If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
@@ -998,13 +999,13 @@ class ShippingContainer(object):
         else:
             if self.currentState['status'] in ('NORMAL', 'WARNING'):
                 self.currentState['status'] = 'WARNING'
-                self.currentState['info'] = 'SUMMARY! %i Devices unreachable via SNMP: %s' % (nUnreachable, ', '.join(unreachable))
+                self.currentState['info'] = 'SUMMARY! %i Devices unreachable: %s' % (nUnreachable, ', '.join(unreachable))
                 
             ## Make sure to check back later to see if this is still a problem
             if self.scheduler.empty():
-                self.scheduler.enter(360, 1, self.processSNMPUnreachable, (None,))
+                self.scheduler.enter(420, 1, self.processUnreachable, (None,))
                 self.scheduler.run()
-                shlFunctionsLogger.debug('Scheduling another call of \'processSNMPUnreachable\' for six minutes from now')
+                shlFunctionsLogger.debug('Scheduling another call of \'processUnreachable\' for seven minutes from now')
                 
             return True
             

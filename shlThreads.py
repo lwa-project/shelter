@@ -185,7 +185,7 @@ class Thermometer(object):
                 
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
             # Stop time
             tStop = time.time()
@@ -566,7 +566,7 @@ class PDU(object):
             
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
             # Stop time
             tStop = time.time()
@@ -1154,8 +1154,8 @@ class TrippLiteUPS(PDU):
             
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-            
+                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -1200,7 +1200,7 @@ class APCUPS(TrippLiteUPS):
     """
     
     def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
-        super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=None, MonitorPeriod=MonitorPeriod)
+        super(APCUPS, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
         self.oidFirmwareEntry = (1,3,6,1,2,1,33,1,1,3,0)
@@ -1291,6 +1291,7 @@ class Weather(object):
             tStart = time.time()
             
             updated_list = []
+            updated_age = 86400
             
             try:
                 # Make sure we don't try near the edge of a minute
@@ -1328,6 +1329,8 @@ class Weather(object):
                 updated_list.append('rain')
                 self.rainRate = float(row['rainRate'])
                 updated_list.append('rainRate')
+                
+                updated_age = tStart - self.updatetime
                 
                 conn.close()
                 
@@ -1375,6 +1378,9 @@ class Weather(object):
                     self.rain = None
                 if 'rainRate' not in updated_list:
                     self.rainRate = None
+                    
+            if self.SHLCallbackInstance is not None and updated_age > 900:
+                self.SHLCallbackInstance.processUnreachable('weather')
                 
             # Stop time
             tStop = time.time()
@@ -1588,6 +1594,9 @@ class Lightning(object):
                     data, addr = sock.recvfrom(1024)
                 except socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
+                    if self.SHLCallbackInstance is not None:
+                        self.SHLCallbackInstance.processUnreachable('lightning')
+                        
                     sock = self._connect(sock)
                     continue
                     
