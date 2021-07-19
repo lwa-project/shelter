@@ -198,7 +198,7 @@ class Thermometer(object):
                 
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
             # Stop time
             tStop = time.time()
@@ -580,7 +580,7 @@ class PDU(object):
             
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
             if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
@@ -1182,7 +1182,7 @@ class TrippLiteUPS(PDU):
             
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processSNMPUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
                 
             if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
@@ -1330,6 +1330,7 @@ class Weather(object):
             tStart = time.time()
             
             updated_list = []
+            updated_age = 86400
             
             try:
                 # Make sure we don't try near the edge of a minute
@@ -1367,6 +1368,8 @@ class Weather(object):
                 updated_list.append('rain')
                 self.rainRate = float(row['rainRate'])
                 updated_list.append('rainRate')
+                
+                updated_age = tStart - self.updatetime
                 
                 conn.close()
                 
@@ -1427,7 +1430,10 @@ class Weather(object):
                     json[0]['fields'][key] = getattr(self, key)
                 if len(json[0]['fields']) > 0:
                     self.influxdb.write(json)
-                     
+                    
+            if self.SHLCallbackInstance is not None and updated_age > 900:
+                self.SHLCallbackInstance.processUnreachable('weather')
+                
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating weather station data in %.3f seconds', tStop - tStart)
@@ -1641,6 +1647,9 @@ class Lightning(object):
                     data, addr = sock.recvfrom(1024)
                 except socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
+                    if self.SHLCallbackInstance is not None:
+                        self.SHLCallbackInstance.processUnreachable('lightning')
+                        
                     sock = self._connect(sock)
                     continue
                     
