@@ -1358,6 +1358,9 @@ class Weather(object):
                     self.lastError = str(e)
                 if 'updatetime' not in updated_list:
                     self.updatetime = None
+                    if os.path.exists(self.database):
+                        updated_age = tStart - os.path.getmtime(self.database)
+                        
                 if 'usUnits' not in updated_list:
                     self.usUnits = False
                 if 'pressure' not in updated_list:
@@ -1378,9 +1381,6 @@ class Weather(object):
                     self.rain = None
                 if 'rainRate' not in updated_list:
                     self.rainRate = None
-                    
-                if os.path.exists(self.database):
-                    updated_age = tStart - os.path.getmtime(self.database)
                     
             if self.SHLCallbackInstance is not None and updated_age > 900:
                 self.SHLCallbackInstance.processUnreachable('weather')
