@@ -1348,6 +1348,8 @@ class Weather(object):
                 
                 self.updatetime = int(row['dateTime'])
                 updated_list.append('updatetime')
+                updated_age = tStart - self.updatetime
+                
                 self.usUnits = bool(row['usUnits'])
                 updated_list.append('usUnits')
                 self.pressure = float(row['barometer'])
