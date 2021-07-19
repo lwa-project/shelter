@@ -1309,6 +1309,8 @@ class Weather(object):
                 
                 self.updatetime = int(row['dateTime'])
                 updated_list.append('updatetime')
+                updated_age = tStart - self.updatetime
+                
                 self.usUnits = bool(row['usUnits'])
                 updated_list.append('usUnits')
                 self.pressure = float(row['barometer'])
@@ -1329,8 +1331,6 @@ class Weather(object):
                 updated_list.append('rain')
                 self.rainRate = float(row['rainRate'])
                 updated_list.append('rainRate')
-                
-                updated_age = tStart - self.updatetime
                 
                 conn.close()
                 
@@ -1378,6 +1378,9 @@ class Weather(object):
                     self.rain = None
                 if 'rainRate' not in updated_list:
                     self.rainRate = None
+                    
+                if os.path.exists(self.database):
+                    updated_age = tStart - os.path.getmtime(self.database)
                     
             if self.SHLCallbackInstance is not None and updated_age > 900:
                 self.SHLCallbackInstance.processUnreachable('weather')
