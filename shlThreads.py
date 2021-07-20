@@ -1437,7 +1437,7 @@ class Weather(object):
                     self.influxdb.write(json)
                     
             if self.SHLCallbackInstance is not None and updated_age > 900:
-                self.SHLCallbackInstance.processUnreachable('weather')
+                self.SHLCallbackInstance.processUnreachable('weather-station')
                 
             # Stop time
             tStop = time.time()
@@ -1653,7 +1653,7 @@ class Lightning(object):
                 except socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
                     if self.SHLCallbackInstance is not None:
-                        self.SHLCallbackInstance.processUnreachable('lightning')
+                        self.SHLCallbackInstance.processUnreachable('lightning-detector')
                         
                     sock = self._connect(sock)
                     continue
@@ -1886,6 +1886,9 @@ class Outage(object):
                     data, addr = sock.recvfrom(1024)
                 except socket.timeout:
                     shlThreadsLogger.warning('Outage: monitorThread timeout on socket, re-trying')
+                    if self.SHLCallbackInstance is not None:
+                        self.SHLCallbackInstance.processUnreachable('voltage-monitor')
+                        
                     sock = self._connect(sock)
                     continue
                     
