@@ -906,8 +906,11 @@ class ShippingContainer(object):
             # Everything is OK
             if self.currentState['status'] == 'WARNING':
                 ## From WARNING
-                self.currentState['status'] = 'NORMAL'
-                self.currentState['info'] = 'Warning condition cleared, system operating normally'
+                in_warning, message = self._merge_states(self.currentState['info'],
+                                                         remove='TEMPERATURE')
+                if not in_warning:
+                    self.currentState['status'] = 'NORMAL'
+                self.currentState['info'] = message
                 
                 shlFunctionsLogger.info('Shelter temperature warning condition cleared')
                 
@@ -921,15 +924,21 @@ class ShippingContainer(object):
             # We are in warning
             if self.currentState['status'] in ('NORMAL', 'WARNING'):
                 ## Escalation
+                _, message = self._merge_states(self.currentState['info'],
+                                                append=('TEMPERATURE',
+                                                        "Shelter temperature at %.2f" % currTemp))
                 self.currentState['status'] = 'WARNING'
-                self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f' % currTemp
+                self.currentState['info'] = message
                 
                 shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
                 
             elif self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('TEMPERATURE!'):
                 ## Descalation
+                _, message = self._merge_states('',
+                                                append=('TEMPERATURE',
+                                                        "Shelter temperature at %.2f" % currTemp))
                 self.currentState['status'] = 'WARNING'
-                self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f' % currTemp
+                self.currentState['info'] = message
                 
                 shlFunctionsLogger.info('Shelter temperature critical condition cleared')
                 shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
@@ -937,7 +946,7 @@ class ShippingContainer(object):
         else:
             # We are critical, take action
             ## Find out what ports we need to shut down
-            criticalPortList = ';'.join(["rack %i, port %i" % (r,p) for r,p in CRITICAL_LIST])
+            criticalPortList = ','.join(["rack %i - port %i" % (r,p) for r,p in CRITICAL_LIST])
             if len(CRITICAL_LIST) == 0:
                 criticalPortList = 'None listed'
                 
@@ -990,16 +999,23 @@ class ShippingContainer(object):
             
         # If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
         if nUnreachable == 0:
-            if self.currentState['status'] == 'WARNING' and self.currentState['info'].startswith('SUMMARY!'):
-                self.currentState['status'] = 'NORMAL'
-                self.currentState['info'] = 'Warning condition cleared, system operating normally'
+            if self.currentState['status'] == 'WARNING':
+                in_warning, message = self._merge_states(self.currentState['info'],
+                                                         remove='SUMMARY')
+                if not in_warning:
+                    self.currentState['status'] = 'NORMAL'
+                self.currentState['info'] = message
             return False
             
         # Otherwise set a warning
         else:
             if self.currentState['status'] in ('NORMAL', 'WARNING'):
+                _, message = self._merge_states(self.currentState['info'],
+                                                append=('SUMMARY',
+                                                        "%i Devices unreachable: %s" % (nUnreachable,
+                                                                                        ', '.join(unreachable))))
                 self.currentState['status'] = 'WARNING'
-                self.currentState['info'] = 'SUMMARY! %i Devices unreachable: %s' % (nUnreachable, ', '.join(unreachable))
+                self.currentState['info'] = message
                 
             ## Make sure to check back later to see if this is still a problem
             if self.scheduler.empty():
@@ -1016,14 +1032,20 @@ class ShippingContainer(object):
         
         if flicker:
             if self.currentState['status'] in ('NORMAL', 'WARNING'):
+                _, message = self._merge_states(self.currentState['info'],
+                                                append=('POWER-FLICKER',
+                                                        'Flicker in the shelter power'))
                 self.currentState['status'] = 'WARNING'
-                self.currentState['info'] = 'POWER-FLICKER! Flicker in the shelter power'
+                self.currentState['info'] = message
             return True
             
         else:
-            if self.currentState['status'] == 'WARNING' and self.currentState['info'].startswith('POWER-FLICKER!'):
-                self.currentState['status'] = 'NORMAL'
-                self.currentState['info'] = 'Warning condition cleared, system operating normally'
+            if self.currentState['status'] == 'WARNING':
+                in_warning, message = self._merge_states(self.currentState['info'],
+                                                         remove='POWER-FLICKER')
+                if not in_warning:
+                    self.currentState['status'] = 'NORMAL'
+                self.currentState['info'] = message
             return False
             
     def processPowerOutage(self, outage):
@@ -1042,3 +1064,52 @@ class ShippingContainer(object):
                 self.currentState['info'] = 'Power restored, system operating normally'
             return False
             
+    @staticmethod
+    def _merge_states(message, append=None, remove=None):
+        """
+        Merge multiple warning conditions together and return a unified message.
+        Returns a two-element tuple of a Boolean of whether or not the message
+        is a warning message and the message itself.
+        """
+        
+        # Split it into the two parts:  MIBs and descriptions
+        mibs = message.split('!')
+        mibs, info = mibs[:-1], mibs[-1]
+        descriptions = info.split(';')
+        if len(mibs) == 0:
+            descriptions = []
+            
+        # Clean
+        mibs = [mib.strip().rstrip() for mib in mibs]
+        descriptions = [description.strip().strip() for description in descriptions]
+        
+        # Append, if needed
+        if append is not None:
+            new_mib, new_description = append
+            if new_mib not in mibs:
+                ## Add
+                mibs.append(new_mib)
+                descriptions.append(new_description)
+            else:
+                ## Replace the description
+                i = mibs.index(new_mib)
+                descriptions[i] = new_description
+                
+        # Remove, if needed
+        if remove is not None:
+            old_mib = remove
+            try:
+                i = mibs.index(old_mib)
+                del mibs[i]
+                del descriptions[i]
+            except (ValueError, IndexError):
+                pass
+                
+        # Unify the message
+        in_warning = True
+        message = "%s! %s" % ('! '.join(mibs), '; '.join(descriptions))
+        if len(mibs) == 0:
+            in_warning = False
+            message = 'Warning condition(s) cleared, system operating normally'
+            
+        return in_warning, message
