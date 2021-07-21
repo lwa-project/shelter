@@ -8,18 +8,14 @@ finding out the current MJD and MPM values.
 import math
 from datetime import datetime
 
-__version__ = "0.5"
+__version__ = "0.6"
 __all__ = ['THERMOMLIST', 'PDULIST', 'WARNING_TEMP', 'CRITICAL_TEMP', 'LIGHTNING_IP', 'LIGHTNING_PORT', 'OUTAGE_IP', 'OUTAGE_PORT', 'CRITICAL_LIST']
 
 # Setup the thermometers
 THERMOMLIST = {}
 THERMOMLIST[1] = {'Type': 'HWg', 'IP': '172.16.1.111', 'Port': 161, 
                   'SecurityModel': ('arbitrary', 'public', 0), 
-                  'nSensors': 1, 'Description': "Shelter #1"}
-### Entry for the old network thermometer
-##THERMOMLIST[1] = {'Type': 'Comet', 'IP': '172.16.1.111', 'Port': 161, 
-##		            'SecurityModel': ('arbitrary', 'public', 0), 
-##			        'nSensors': 1, 'Description': "Shelter #1"}
+                  'nSensors': 2, 'Description': "Shelter #1 and #2"}
 
 # Setup the PDUs
 PDULIST = {}
