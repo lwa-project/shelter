@@ -698,17 +698,17 @@ class TrippLite(PDU):
 
 class APC(PDU):
     """
-    Sub-class of the PDU class for the APC PDU on PASI.
+    Sub-class of the PDU class for the APC AP7921B PDU.
     """
     
     def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, MonitorPeriod=1.0):
         super(APC, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
-        self.oidFirmwareEntry = None
+        self.oidFirmwareEntry = (1,3,6,1,4,1,318,1,1,12,1,3,0,)
         self.oidFrequencyEntry = None
         self.oidVoltageEntry = None
-        self.oidCurrentEntry = None
+        self.oidCurrentEntry = (1,3,6,1,4,1,318,1,1,12,2,3,1,1,2,1,)
         self.oidOutletStatusBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
         self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
         
