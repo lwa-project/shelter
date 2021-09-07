@@ -25,10 +25,6 @@ PDULIST[1] = {'Type': 'TrippLite', 'IP': '172.16.1.113', 'Port': 161,
 PDULIST[2] = {'Type': 'TrippLite', 'IP': '172.16.1.114', 'Port': 161, 
               'SecurityModel': ('my-agent', 'public', 0), 
               'nOutlets': 8, 'Description': "DP - 120VAC"}
-### Entry for the old TrippLite PDU
-##PDULIST[3] = {'Type': 'TrippLite', 'IP': '172.16.1.117', 'Port': 161, 
-##		        'SecurityModel': ('my-agent', 'public', 0), 
-##		        'nOutlets': 8, 'Description': "DP - 240VAC"}
 PDULIST[3] = {'Type': 'Raritan', 'IP': '172.16.1.117', 'Port': 161, 
               'SecurityModel': ('my-agent', 'private', 0), 
               'nOutlets': 8, 'Description': "DP - 240VAC"}
@@ -38,14 +34,11 @@ PDULIST[4] = {'Type': 'TrippLite', 'IP': '172.16.1.112', 'Port': 161,
 PDULIST[5] = {'Type': 'TrippLite', 'IP': '172.16.1.115', 'Port': 161, 
               'SecurityModel': ('my-agent', 'public', 0), 
               'nOutlets': 8, 'Description': "3-Bay - 120VAC - #2"}
-### Entry for old APC PDU
-##PDULIST[6] = {'Type': 'APC', 'IP': '172.16.1.116', 'Port': 161, 
-##              'SecurityModel': ('my-agent', 'private', 0), 
-##              'nOutlets': 8, 'Description': "3-Bay - PASI"}
-PDULIST[6] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.119', 'Port': 161, 
-              'SecurityModel': ('my-agent', 'public', 0), 
-              'nOutlets': 3, 'Description': "UPS #1"}
-PDULIST[7] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.118', 'Port': 161, 
+## Removed sometime before 2021 Sep 5
+#PDULIST[6] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.119', 'Port': 161, 
+#              'SecurityModel': ('my-agent', 'public', 0), 
+#              'nOutlets': 3, 'Description': "UPS #1"}
+PDULIST[6] = {'Type': 'TrippLiteUPS', 'IP': '172.16.1.118', 'Port': 161, 
               'SecurityModel': ('my-agent', 'public', 0), 
               'nOutlets': 3, 'Description': "UPS #2"}
 
