@@ -19,7 +19,7 @@ THERMOMLIST[1] = {'Type': 'HWg', 'IP': '172.16.1.111', 'Port': 161,
 
 # Setup the PDUs
 PDULIST = {}
-PDULIST[1] = {'Type': 'TrippLite', 'IP': '172.16.1.113', 'Port': 161, 
+PDULIST[1] = {'Type': 'APC', 'IP': '172.16.1.113', 'Port': 161, 
               'SecurityModel': ('my-agent', 'public', 1), 
               'nOutlets': 8, 'Description': "ASP"}
 PDULIST[2] = {'Type': 'TrippLite', 'IP': '172.16.1.114', 'Port': 161, 
