@@ -9,6 +9,7 @@ __all__ = ["LWAInfluxClient",]
 DEFAULT_INFLUX_HOST = 'fornax.phys.unm.edu'
 DEFAULT_INFLUX_PORT = 8086
 DEFAULT_INFLUX_SSL = True
+DEFAULT_INFLUX_TIMEOUT = 5
 
 
 class LWAInfluxClient(object):
@@ -17,10 +18,11 @@ class LWAInfluxClient(object):
     data.
     """
     
-    def __init__(self, username, password, database, host=DEFAULT_INFLUX_HOST, port=DEFAULT_INFLUX_PORT, ssl=DEFAULT_INFLUX_SSL):
+    def __init__(self, username, password, database, host=DEFAULT_INFLUX_HOST, port=DEFAULT_INFLUX_PORT, ssl=DEFAULT_INFLUX_SSL, timeout=DEFAULT_INFLUX_TIMEOUT):
         self._host = host
         self._port = port
         self._ssl = ssl
+        self._timeout = timeout
         self._username = username
         self._password = password
         self._database = database
@@ -40,7 +42,7 @@ class LWAInfluxClient(object):
                 args.append(config[key])
             except KeyError:
                 raise ValueError("Configuration dictionary missing required key: %s" % key)
-        for key,default in zip(('INFLUXHOST', 'INFLUXPORT', 'INFLUXSSL'), (DEFAULT_INFLUX_HOST, DEFAULT_INFLUX_PORT, DEFAULT_INFLUX_SSL)):
+        for key,default in zip(('INFLUXHOST', 'INFLUXPORT', 'INFLUXSSL', 'INFLUXTIMEOUT'), (DEFAULT_INFLUX_HOST, DEFAULT_INFLUX_PORT, DEFAULT_INFLUX_SSL, DEFAULT_INFLUX_TIMEOUT)):
             try:
                 args.append(config[key])
             except KeyError:
@@ -62,7 +64,10 @@ class LWAInfluxClient(object):
         
         status = True
         try:
-            db = InfluxDBClient(self._host, self._port, self._username, self._password, self._database, self._ssl, verify_ssl=self._ssl)
+            db = InfluxDBClient(self._host, self._port,
+                                self._username, self._password, self._database,
+                                self._ssl, verify_ssl=self._ssl,
+                                timeout=self._timeout)
             db.ping()
             db.close()
         except Exception as e:
