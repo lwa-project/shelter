@@ -126,7 +126,7 @@ class Thermometer(object):
         while self.alive.isSet():
             tStart = time.time()
             
-            with SNMPLock.acquire():
+            with SNMPLock:
                 # Read the networked thermometers and store values to temp.
                 # NOTE: self.temp is in Celsius
                 nAttempts = 0
@@ -364,7 +364,7 @@ class PDU(object):
         while self.alive.isSet():
             tStart = time.time()
             
-            with SNMPLock.acquire():
+            with SNMPLock:
                 nAttempts = 0
                 nFailures = 0
                 if self.oidFirmwareEntry is not None:
@@ -840,7 +840,7 @@ class TrippLiteUPS(PDU):
         while self.alive.isSet():
             tStart = time.time()
             
-            with SNMPLock.acquire():
+            with SNMPLock:
                 nAttempts = 0
                 nFailures = 0
                 if self.oidFirmwareEntry is not None:
@@ -1663,13 +1663,13 @@ class Lightning(object):
                     dist, junk = mtch.group('data').split(None, 1)
                     dist = float(dist)
                     
-                    with self.lock.acquire():
+                    with self.lock:
                         self.strikes[t] = dist
                         
                 # Cull the list of old strikes every two minutes
                 if (time.time() - tCull) > 120:
                     pruneTime = t
-                    with self.lock.acquire():
+                    with self.lock:
                         for k in self.strikes.keys():
                             if pruneTime - k > timedelta(seconds=self.aging):
                                 del self.strikes[k]
@@ -1706,7 +1706,7 @@ class Lightning(object):
         counter = 0
         
         try:
-            with self.lock.acquire():
+            with self.lock:
                 for k in self.strikes.keys():
                     if k >= tWindow:
                         if self.strikes[k] <= radius:
