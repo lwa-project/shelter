@@ -1617,29 +1617,17 @@ class Lightning(object):
                     dist, junk = mtch.group('data').split(None, 1)
                     dist = float(dist)
                     
-                    self.lock.acquire()
-                    try:
+                    with self.lock.acquire():
                         self.strikes[t] = dist
-                    except Exception as e:
-                        pass
-                    finally:
-                        self.lock.release()
                         
                 # Cull the list of old strikes every two minutes
                 if (time.time() - tCull) > 120:
                     pruneTime = t
                     e = None
-                    self.lock.acquire()
-                    try:
+                    with self.lock.acquire():
                         for k in self.strikes.keys():
                             if pruneTime - k > timedelta(seconds=self.aging):
                                 del self.strikes[k]
-                    except Exception as e:
-                        pass
-                    finally:
-                        self.lock.release()
-                        if e is not None:
-                            raise e
                     tCull = time.time()
                     
             except Exception as e:
@@ -1672,8 +1660,7 @@ class Lightning(object):
         tWindow = tNow - timedelta(minutes=int(interval))
         counter = 0
         
-        self.lock.acquire()
-        try:
+        with self.lock.acquire():
             for k in self.strikes.keys():
                 if k >= tWindow:
                     if self.strikes[k] <= radius:
@@ -1692,8 +1679,6 @@ class Lightning(object):
                 shlThreadsLogger.debug("%s", line)
                 
             counter = None
-        finally:
-            self.lock.release()
             
         return counter
 
