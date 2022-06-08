@@ -42,6 +42,9 @@ if SITE == 'lwa1':
 elif SITE == 'lwasv':
     FROM = 'lwa.station.sv@gmail.com'
     PASS = 'ejpzdtoccyheosri'
+elif SITE == 'lwana':
+    FROM = 'lwa.station.na@gmail.com'
+    PASS = 'jsgxqifhcmnosxvd'
 else:
     raise RuntimeError("Unknown site '%s'" % SITE)
 
