@@ -20,9 +20,7 @@ try:
 except AttributeError:
     pass
 test = test.replace('\n', '')
-if SITE != 'lwasv':
-    test += ',NaN'
-    
+
 # Get the HVAC status
 try:
     t = subprocess.Popen(['/usr/local/bin/lead_lag_status',], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
