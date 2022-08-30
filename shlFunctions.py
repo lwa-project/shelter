@@ -15,7 +15,6 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 
 from lwainflux import LWAInfluxClient
 
-from shlCommon import *
 from shlThreads import *
 
 __version__ = "0.4"
@@ -67,7 +66,7 @@ class ShippingContainer(object):
         
         # SHL system information
         self.subSystem = 'SHL'
-        self.serialNumber = self.config['SERIALNUMBER']
+        self.serialNumber = self.config['serial_number']
         self.version = str(__version__)
         
         # SHL system state
@@ -144,13 +143,13 @@ class ShippingContainer(object):
         nRacks    = fields[2]
         
         # Validate the temperatures
-        if not isHalfIncrements(setPoint) or setPoint < self.config['TEMPMIN'] or setPoint > self.config['TEMPMAX']:
+        if not isHalfIncrements(setPoint) or setPoint < self.config['temp_min'] or setPoint > self.config['temp_max']:
             shlFunctionsLogger.warning("INI command rejected due to invalid set point")
             self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x01]
             return False, 0x01
             
         # Validate differential
-        if not isHalfIncrements(diffPoint) or diffPoint < self.config['DIFFMIN'] or diffPoint > self.config['DIFFMAX']:
+        if not isHalfIncrements(diffPoint) or diffPoint < self.config['diff_min'] or diffPoint > self.config['diff_max']:
             shlFunctionsLogger.warning("INI command rejected due to invalid differential")
             self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x02]
             return False, 0x02
@@ -189,18 +188,18 @@ class ShippingContainer(object):
                 t.stop()
         else:
             self.currentState['tempThreads'] = []
-            for c,k in enumerate(sorted(THERMOMLIST.keys())):
-                v = THERMOMLIST[k]
+            for c,k in enumerate(sorted(self.config['thermometers'].keys())):
+                v = self.config['thermometers'][k]
                 
                 ### Figure out the thermometer type
-                if v['Type'] == 'Comet':
+                if v['type'] == 'Comet':
                     ThermoBaseType = Comet
                 else:
                     ThermoBaseType = HWg
                     
-                nT = ThermoBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
-                                c+1, nSensors=v['nSensors'], description=v['Description'], 
-                                MonitorPeriod=self.config['TEMPMONITORPERIOD'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
+                nT = ThermoBaseType(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
+                                c+1, nSensors=v['nsensor'], description=v['description'], 
+                                MonitorPeriod=self.config['temp_monitor_period'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
                 self.currentState['tempThreads'].append(nT)
         ## PDUs
         if self.currentState['pduThreads'] is not None:
@@ -208,33 +207,33 @@ class ShippingContainer(object):
                 t.stop()
         else:
             self.currentState['pduThreads'] = []
-            for c,k in enumerate(sorted(PDULIST.keys())):
-                v = PDULIST[k]
+            for c,k in enumerate(sorted(self.config['pdus'].keys())):
+                v = self.config['pdus'][k]
                 
                 ### Figure out the PDU type
-                if v['Type'] == 'TrippLite':
+                if v['type'] == 'TrippLite':
                     PDUBaseType = TrippLite
-                elif v['Type'] == 'TrippLiteUPS':
+                elif v['type'] == 'TrippLiteUPS':
                     PDUBaseType = TrippLiteUPS
-                elif v['Type'] == 'Raritan':
+                elif v['type'] == 'Raritan':
                     PDUBaseType = Raritan
-                elif v['Type'] == 'Dominion':
+                elif v['type'] == 'Dominion':
                     PDUBaseType = Dominion
-                elif v['Type'] == 'APC':
+                elif v['type'] == 'APC':
                     PDUBaseType = APC
                 else:
                     PDUBaseType = APCUPS
                     
-                nP = PDUBaseType(v['IP'], v['Port'], cmdgen.CommunityData(*v['SecurityModel']),
-                                 c+1, nOutlets=v['nOutlets'], description=v['Description'], 
-                                 MonitorPeriod=self.config['RACKMONITORPERIOD'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
+                nP = PDUBaseType(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
+                                 c+1, nOutlets=v['noutlet'], description=v['description'], 
+                                 MonitorPeriod=self.config['rack_monitor_period'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
                                 
                 self.currentState['pduThreads'].append(nP)
         ## Weather station
         if self.currentState['wxThread'] is not None:
             self.currentState['wxThread'].stop()
         else:
-            self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['WEATHERMONITORPERIOD'],
+            self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['weather_monitor_period'],
                                                     SHLCallbackInstance=self)
         ## Lightning monitor
         if self.currentState['strikeThread'] is not None:
@@ -273,7 +272,7 @@ class ShippingContainer(object):
         for t,p in zip(self.currentState['pduThreads'], self.currentState['rackPresent']):
             if p:
                 t.start()
-        if self.config['WEATHERMONITORPERIOD'] > 0:
+        if self.config['weather_monitor_period'] > 0:
             self.currentState['wxThread'].start()
         self.currentState['strikeThread'].start()
         self.currentState['outageThread'].start()
@@ -374,7 +373,7 @@ class ShippingContainer(object):
             return False, 0x09
             
         # Validate the temperatures
-        if not isHalfIncrements(setPoint) or setPoint < self.config['TEMPMIN'] or setPoint > self.config['TEMPMAX']:
+        if not isHalfIncrements(setPoint) or setPoint < self.config['temp_min'] or setPoint > self.config['temp_max']:
             shlFunctionsLogger.warning("TMP command rejected due to invalid set point")
             self.currentState['lastLog'] = 'TMP: %s' % commandExitCodes[0x01]
             return False, 0x01
@@ -404,7 +403,7 @@ class ShippingContainer(object):
             return False, 0x09
             
         # Make sure the differential is valid
-        if not isHalfIncrements(diffPoint) or diffPoint < self.config['DIFFMIN'] or diffPoint > self.config['DIFFMAX']:
+        if not isHalfIncrements(diffPoint) or diffPoint < self.config['diff_min'] or diffPoint > self.config['diff_max']:
             shlFunctionsLogger.warning("DIF command rejected due to invalid differential")
             self.currentState['lastLog'] = 'DIF: %s' % commandExitCodes[0x02]
             return False, 0x02
@@ -907,7 +906,7 @@ class ShippingContainer(object):
         Figure out what to do about the shelter temperature.  If things look really bad, take action.
         """
         
-        if currTemp < WARNING_TEMP:
+        if currTemp < self.config['warning_temp']:
             # Everything is OK
             if self.currentState['status'] == 'WARNING':
                 ## From WARNING
@@ -925,7 +924,7 @@ class ShippingContainer(object):
                 
                 shlFunctionsLogger.info('Shelter temperature critical condition cleared')
                 
-        elif currTemp < CRITICAL_TEMP:
+        elif currTemp < self.config['critical_temp']:
             # We are in warning
             if self.currentState['status'] in ('NORMAL', 'WARNING'):
                 ## Escalation
@@ -951,8 +950,8 @@ class ShippingContainer(object):
         else:
             # We are critical, take action
             ## Find out what ports we need to shut down
-            criticalPortList = ','.join(["rack %i - port %i" % (r,p) for r,p in CRITICAL_LIST])
-            if len(CRITICAL_LIST) == 0:
+            criticalPortList = ','.join(["rack %i - port %i" % (r,p) for r,p in self.config['critical_list']])
+            if len(self.config['critical_list']) == 0:
                 criticalPortList = 'None listed'
                 
             ## Change the system state
@@ -960,7 +959,7 @@ class ShippingContainer(object):
             self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f, shutting down critical ports: %s' % (currTemp, criticalPortList)
             
             ## Try to shut off the ports
-            for rack,port in CRITICAL_LIST:
+            for rack,port in self.config['critical_list']:
                 try:
                     good, status = self.getPowerState(rack, port)
                     if status != 'OFF':

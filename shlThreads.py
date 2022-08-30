@@ -23,8 +23,6 @@ from pysnmp.proto import rfc1902
 
 from lwainflux import LWAInfluxClient
 
-from shlCommon import LIGHTNING_IP, LIGHTNING_PORT, OUTAGE_IP, OUTAGE_PORT
-
 __version__ = "0.7"
 __all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
 
@@ -1285,7 +1283,7 @@ class Weather(object):
         # Update the current configuration
         if config is not None:
             self.config = config
-        self.database = self.config['WEATHERDATABASE']
+        self.database = self.config['weather_database']
         self.influxdb = LWAInfluxClient.from_config(self.config)
         
     def start(self):
@@ -1550,8 +1548,8 @@ class Lightning(object):
         self.config = config
         self.SHLCallbackInstance = SHLCallbackInstance
         
-        self.address = LIGHTNING_IP
-        self.port = LIGHTNING_PORT
+        self.address = self.config['lightning_ip']
+        self.port = self.config['lightning_port']
         
         # Update the configuration
         self.updateConfig()
@@ -1739,8 +1737,8 @@ class Outage(object):
         self.config = config
         self.SHLCallbackInstance = SHLCallbackInstance
         
-        self.address = OUTAGE_IP
-        self.port = OUTAGE_PORT
+        self.address = self.config['outage_ip']
+        self.port = self.config['outage_port']
         
         # Update the configuration
         self.updateConfig()
@@ -1899,6 +1897,7 @@ class Outage(object):
                             fh.write(mtch.group('date'))
                             fh.close()
                         except (OSError, IOError) as e:
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
                             shlThreadsLogger.warning("Outage: monitorThread 120VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                             
                     else:
@@ -1910,6 +1909,7 @@ class Outage(object):
                             fh.write(mtch.group('date'))
                             fh.close()
                         except (OSError, IOError) as e:
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
                             shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                             
                     if self.SHLCallbackInstance is not None:
