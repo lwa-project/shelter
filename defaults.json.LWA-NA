@@ -27,7 +27,7 @@
       "description": "Shelter #1 and #2"
     }
   },
-  "pdulist": {
+  "pdus": {
     "1": {
       "type": "APC",
       "ip": "172.16.1.113",
