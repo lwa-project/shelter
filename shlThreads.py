@@ -1841,6 +1841,7 @@ class Outage(object):
                             fh.write(mtch.group('date'))
                             fh.close()
                         except (OSError, IOError) as e:
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
                             shlThreadsLogger.warning("Outage: monitorThread 120VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                             
                     else:
@@ -1852,6 +1853,7 @@ class Outage(object):
                             fh.write(mtch.group('date'))
                             fh.close()
                         except (OSError, IOError) as e:
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
                             shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
                             
                     if self.SHLCallbackInstance is not None:
