@@ -13,7 +13,7 @@
 
 SERVICE_NAME='shl-mcs'
 EXEC_PATH='/lwa/software/'
-EXEC_OPTS='-c /lwa/software/defaults.cfg -d -l /lwa/runtime/runtime.log'
+EXEC_OPTS='-c /lwa/software/defaults.json -d -l /lwa/runtime/runtime.log'
 
 check_self() {
 	output=`service $SERVICE_NAME status`
