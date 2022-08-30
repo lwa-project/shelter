@@ -30,7 +30,6 @@ except ImportError:
 
 from MCS import *
 
-from shlCommon import *
 from shlThreads import *
 from shlFunctions import ShippingContainer
 
