@@ -88,5 +88,5 @@
   "outage_ip": "224.168.2.10",
   "outage_port": 7165,
   
-  "critical__list": []
+  "critical_list": []
 }
