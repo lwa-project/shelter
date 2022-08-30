@@ -15,6 +15,14 @@ SERVICE_NAME='shl-mcs'
 EXEC_PATH='/lwa/software/'
 EXEC_OPTS='-c /lwa/software/defaults.cfg -d -l /lwa/runtime/runtime.log'
 
+check_self() {
+	output=`service $SERVICE_NAME status`
+	if [ "$?" == "0" ]; then
+		log_action_msg "$SERVICE_NAME appears to be running" || true
+		exit 0
+	fi
+}
+
 start() {
 	log_daemon_msg "Starting SHL MCS"
 	logfile=`tempfile -p shl-mcs-`
