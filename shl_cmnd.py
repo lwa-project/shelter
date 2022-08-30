@@ -375,8 +375,9 @@ class MCSCommunicate(Communicate):
             # INI
             elif command == 'INI':
                 # Re-read in the configuration file
-                config = parseConfigFile(self.opts.config)
-        
+                with open(self.opts.config, 'r') as ch:
+                    config = json.loads(ch.read())
+                    
                 # Refresh the configuration for the communicator and ASP
                 self.updateConfig(config)
                 self.SubSystemInstance.updateConfig(config)
