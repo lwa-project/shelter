@@ -193,7 +193,7 @@ class ShippingContainer(object):
                     ThermoBaseType = HWg
                     
                 nT = ThermoBaseType(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
-                                c+1, nSensors=v['n_sensors'], description=v['description'], 
+                                c+1, nSensors=v['nsensor'], description=v['description'], 
                                 MonitorPeriod=self.config['temp_monitor_period'], SHLCallbackInstance=self)
                 self.currentState['tempThreads'].append(nT)
         ## PDUs
@@ -220,7 +220,7 @@ class ShippingContainer(object):
                     PDUBaseType = APCUPS
                     
                 nP = PDUBaseType(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
-                                 c+1, nOutlets=v['n_outlets'], description=v['description'], 
+                                 c+1, nOutlets=v['noutlet'], description=v['description'], 
                                  MonitorPeriod=self.config['rack_monitor_period'], SHLCallbackInstance=self)
                                 
                 self.currentState['pduThreads'].append(nP)
