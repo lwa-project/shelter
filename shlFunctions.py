@@ -141,13 +141,13 @@ class ShippingContainer(object):
         nRacks    = fields[2]
         
         # Validate the temperatures
-        if not isHalfIncrements(setPoint) or setPoint < self.config['TEMPMIN'] or setPoint > self.config['TEMPMAX']:
+        if not isHalfIncrements(setPoint) or setPoint < self.config['temp_min'] or setPoint > self.config['temp_max']:
             shlFunctionsLogger.warning("INI command rejected due to invalid set point")
             self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x01]
             return False, 0x01
             
         # Validate differential
-        if not isHalfIncrements(diffPoint) or diffPoint < self.config['DIFFMIN'] or diffPoint > self.config['DIFFMAX']:
+        if not isHalfIncrements(diffPoint) or diffPoint < self.config['diff_min'] or diffPoint > self.config['diff_max']:
             shlFunctionsLogger.warning("INI command rejected due to invalid differential")
             self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x02]
             return False, 0x02
@@ -203,7 +203,7 @@ class ShippingContainer(object):
         else:
             self.currentState['pduThreads'] = []
             for c,k in enumerate(sorted(self.config['pdus'].keys())):
-                v = PDULIST[k]
+                v = self.config['pdus'][k]
                 
                 ### Figure out the PDU type
                 if v['type'] == 'TrippLite':
@@ -368,7 +368,7 @@ class ShippingContainer(object):
             return False, 0x09
             
         # Validate the temperatures
-        if not isHalfIncrements(setPoint) or setPoint < self.config['TEMPMIN'] or setPoint > self.config['TEMPMAX']:
+        if not isHalfIncrements(setPoint) or setPoint < self.config['temp_min'] or setPoint > self.config['temp_max']:
             shlFunctionsLogger.warning("TMP command rejected due to invalid set point")
             self.currentState['lastLog'] = 'TMP: %s' % commandExitCodes[0x01]
             return False, 0x01
@@ -398,7 +398,7 @@ class ShippingContainer(object):
             return False, 0x09
             
         # Make sure the differential is valid
-        if not isHalfIncrements(diffPoint) or diffPoint < self.config['DIFFMIN'] or diffPoint > self.config['DIFFMAX']:
+        if not isHalfIncrements(diffPoint) or diffPoint < self.config['diff_min'] or diffPoint > self.config['diff_max']:
             shlFunctionsLogger.warning("DIF command rejected due to invalid differential")
             self.currentState['lastLog'] = 'DIF: %s' % commandExitCodes[0x02]
             return False, 0x02

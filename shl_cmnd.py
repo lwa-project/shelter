@@ -499,7 +499,7 @@ def main(args):
     mcsComms.start()
     
     # Initialize shelter
-    lwaSHL.ini("72&1.0&%s" % ''.join(['1' for i in PDULIST]))
+    lwaSHL.ini("72&1.0&%s" % ''.join(['1' for i in config['pdus'].keys()]))
     
     # Setup handler for SIGTERM so that we aren't left in a funny state
     def HandleSignalExit(signum, frame, logger=logger, MCSInstance=mcsComms):
