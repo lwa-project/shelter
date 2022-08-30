@@ -1,5 +1,4 @@
 {
-    hwloc_topology_ignore_type(topology, HWLOC_OBJ_GROUP);
   "serial_number": "SHL03",
   
   "message_host": "10.1.3.2",
