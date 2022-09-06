@@ -1,11 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 """
 shl_cmnd.py -
 """
-
-from __future__ import print_function
 
 import os
 import git
