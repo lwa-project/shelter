@@ -58,12 +58,11 @@
     
   "warning_temp": 80.0,
   "critical_temp": 90.0,
+  "critical_list": [],
   
   "lightning_ip": "224.168.2.9",
   "lightning_port": 7163,
   
   "outage_ip": "224.168.2.10",
-  "outage_port": 7165,
-  
-  "critical_list": []
+  "outage_port": 7165
 }
