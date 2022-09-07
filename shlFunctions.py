@@ -141,13 +141,13 @@ class ShippingContainer(object):
         nRacks    = fields[2]
         
         # Validate the temperatures
-        if not isHalfIncrements(setPoint) or setPoint < self.config['temp_min'] or setPoint > self.config['temp_max']:
+        if not isHalfIncrements(setPoint) or setPoint < self.config['hvac']['temp_min'] or setPoint > self.config['hvac']['temp_max']:
             shlFunctionsLogger.warning("INI command rejected due to invalid set point")
             self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x01]
             return False, 0x01
             
         # Validate differential
-        if not isHalfIncrements(diffPoint) or diffPoint < self.config['diff_min'] or diffPoint > self.config['diff_max']:
+        if not isHalfIncrements(diffPoint) or diffPoint < self.config['hvac']['diff_min'] or diffPoint > self.config['hvac']['diff_max']:
             shlFunctionsLogger.warning("INI command rejected due to invalid differential")
             self.currentState['lastLog'] = 'INI: %s' % commandExitCodes[0x02]
             return False, 0x02
@@ -183,8 +183,8 @@ class ShippingContainer(object):
                 t.stop()
         else:
             self.currentState['tempThreads'] = []
-            for c,k in enumerate(sorted(self.config['thermometers'].keys())):
-                v = self.config['thermometers'][k]
+            for c,k in enumerate(sorted(self.config['thermometers']['devices'].keys())):
+                v = self.config['thermometers']['devices'][k]
                 
                 ### Figure out the thermometer type
                 if v['type'] == 'Comet':
@@ -194,7 +194,7 @@ class ShippingContainer(object):
                     
                 nT = ThermoBaseType(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
                                 c+1, nSensors=v['nsensor'], description=v['description'], 
-                                MonitorPeriod=self.config['temp_monitor_period'], SHLCallbackInstance=self)
+                                MonitorPeriod=self.config['thermometers']['monitor_period'], SHLCallbackInstance=self)
                 self.currentState['tempThreads'].append(nT)
         ## PDUs
         if self.currentState['pduThreads'] is not None:
@@ -202,8 +202,8 @@ class ShippingContainer(object):
                 t.stop()
         else:
             self.currentState['pduThreads'] = []
-            for c,k in enumerate(sorted(self.config['pdus'].keys())):
-                v = self.config['pdus'][k]
+            for c,k in enumerate(sorted(self.config['pdus']['devices'].keys())):
+                v = self.config['pdus']['devices'][k]
                 
                 ### Figure out the PDU type
                 if v['type'] == 'TrippLite':
@@ -221,14 +221,14 @@ class ShippingContainer(object):
                     
                 nP = PDUBaseType(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
                                  c+1, nOutlets=v['noutlet'], description=v['description'], 
-                                 MonitorPeriod=self.config['rack_monitor_period'], SHLCallbackInstance=self)
+                                 MonitorPeriod=self.config['pdus']['monitor_period'], SHLCallbackInstance=self)
                                 
                 self.currentState['pduThreads'].append(nP)
         ## Weather station
         if self.currentState['wxThread'] is not None:
             self.currentState['wxThread'].stop()
         else:
-            self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['weather_monitor_period'],
+            self.currentState['wxThread'] = Weather(self.config, MonitorPeriod=self.config['weather']['monitor_period'],
                                                     SHLCallbackInstance=self)
         ## Lightning monitor
         if self.currentState['strikeThread'] is not None:
@@ -267,7 +267,7 @@ class ShippingContainer(object):
         for t,p in zip(self.currentState['pduThreads'], self.currentState['rackPresent']):
             if p:
                 t.start()
-        if self.config['weather_monitor_period'] > 0:
+        if self.config['weather']['monitor_period'] > 0:
             self.currentState['wxThread'].start()
         self.currentState['strikeThread'].start()
         self.currentState['outageThread'].start()
@@ -901,7 +901,7 @@ class ShippingContainer(object):
         Figure out what to do about the shelter temperature.  If things look really bad, take action.
         """
         
-        if currTemp < self.config['warning_temp']:
+        if currTemp < self.config['thermometers']['warning_temp']:
             # Everything is OK
             if self.currentState['status'] == 'WARNING':
                 ## From WARNING
@@ -919,7 +919,7 @@ class ShippingContainer(object):
                 
                 shlFunctionsLogger.info('Shelter temperature critical condition cleared')
                 
-        elif currTemp < self.config['critical_temp']:
+        elif currTemp < self.config['thermometers']['critical_temp']:
             # We are in warning
             if self.currentState['status'] in ('NORMAL', 'WARNING'):
                 ## Escalation
@@ -945,8 +945,8 @@ class ShippingContainer(object):
         else:
             # We are critical, take action
             ## Find out what ports we need to shut down
-            criticalPortList = ','.join(["rack %i - port %i" % (r,p) for r,p in self.config['critical_list']])
-            if len(self.config['critical_list']) == 0:
+            criticalPortList = ','.join(["rack %i - port %i" % (r,p) for r,p in self.config['thermometers']['critical_list']])
+            if len(self.config['thermometers']['critical_list']) == 0:
                 criticalPortList = 'None listed'
                 
             ## Change the system state
@@ -954,7 +954,7 @@ class ShippingContainer(object):
             self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f, shutting down critical ports: %s' % (currTemp, criticalPortList)
             
             ## Try to shut off the ports
-            for rack,port in self.config['critical_list']:
+            for rack,port in self.config['thermometers']['critical_list']:
                 try:
                     good, status = self.getPowerState(rack, port)
                     if status != 'OFF':

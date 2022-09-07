@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+['outage']['# -*- coding: utf-8 -*-
 """
 Background threads to interacting with temperature sensors and PDUs.
 """
@@ -1245,7 +1245,7 @@ class Weather(object):
         # Update the current configuration
         if config is not None:
             self.config = config
-        self.database = self.config['weather_database']
+        self.database = self.config['weather']['database']
         
     def start(self):
         """
@@ -1494,8 +1494,8 @@ class Lightning(object):
         self.config = config
         self.SHLCallbackInstance = SHLCallbackInstance
         
-        self.address = self.config['lightning_ip']
-        self.port = self.config['lightning_port']
+        self.address = self.config['lightning']['ip']
+        self.port = self.config['lightning']['port']
         
         # Update the configuration
         self.updateConfig()
@@ -1682,8 +1682,8 @@ class Outage(object):
         self.config = config
         self.SHLCallbackInstance = SHLCallbackInstance
         
-        self.address = self.config['outage_ip']
-        self.port = self.config['outage_port']
+        self.address = self.config['outage']['ip']
+        self.port = self.config['outage']['port']
         
         # Update the configuration
         self.updateConfig()
