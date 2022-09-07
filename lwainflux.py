@@ -37,9 +37,9 @@ class LWAInfluxClient(object):
             raise TypeError("Expected a configuration dictionary")
             
         args = []
-        for key in ('influx_user', 'influx_password', 'influx_database'):
+        for key in ('username', 'password', 'database'):
             try:
-                args.append(config[key])
+                args.append(config['influx'][key])
             except KeyError:
                 raise ValueError("Configuration dictionary missing required key: %s" % key)
         for key,default in zip(('influx_host', 'influx_port', 'influx_ssl', 'influx_timeout'), (DEFAULT_INFLUX_HOST, DEFAULT_INFLUX_PORT, DEFAULT_INFLUX_SSL, DEFAULT_INFLUX_TIMEOUT)):

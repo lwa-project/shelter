@@ -1,96 +1,108 @@
 {
   "serial_number": "SHL01",
+
+  "mcs": {
+    "message_host": "10.1.1.2",
+    "message_out_port": 5009,
+    "message_in_port": 5008
+  },
   
-  "message_host": "10.1.1.2",
-  "message_out_port": 5009,
-  "message_in_port": 5008,
-  
-  "temp_min": 60.0,
-  "temp_max": 110.0,
-  "diff_min": 0.5,
-  "diff_max": 5.0,
-  
-  "temp_monitor_period": 60.0,
-  
-  "rack_monitor_period": 20.0,
-  
-  "weather_database": "/var/wview/archive/wview-archive.sdb",
-  "weather_monitor_period": 300.0,
+  "hvac": {
+    "temp_min": 60.0,
+    "temp_max": 110.0,
+    "diff_min": 0.5,
+    "diff_max": 5.0
+  },
   
   "thermometers": {
-    "1": {
-      "type": "HWg",
-      "ip": "172.16.1.111",
-      "port": 161,
-      "security_model": ["arbitrary", "public", 0],
-      "nsensor": 2,
-      "description": "Shelter #1 and #2"
+    "warning_temp": 80.0,
+    "critical_temp": 90.0,
+    "critical_list": [],
+    "monitor_period": 60.0,  
+    "devices": {
+      "1": {
+        "type": "HWg",
+        "ip": "172.16.1.111",
+        "port": 161,
+        "security_model": ["arbitrary", "public", 0],
+        "nsensor": 2,
+        "description": "Shelter #1 and #2"
+      }
     }
   },
   
   "pdus": {
-    "1": {
-      "type": "APC",
-      "ip": "172.16.1.113",
-      "port": 161,
-      "security_model": ["my-agent", "public", 1],
-      "noutlet": 8,
-      "description": "ASP"
-    },
-    "2": {
-      "type": "TrippLite",
-      "ip": "172.16.1.114",
-      "port": 161,
-      "security_model": ["my-agent", "public", 0],
-      "noutlet": 8,
-      "description": "DP - 120VAC"
-    },
-    "3": {
-      "type": "Raritan",
-      "ip": "172.16.1.117",
-      "port": 161,
-      "security_model": ["my-agent", "private", 0],
-      "noutlet": 8,
-      "description": "DP - 240VAC"
-    },
-    "4": {
-      "type": "APC",
-      "ip": "172.16.1.112",
-      "port": 161,
-      "security_model": ["my-agent", "public", 0],
-      "noutlet": 8,
-      "description": "3-Bay - 120VAC - #1"
-    },
-    "5": {
-      "type": "APC",
-      "ip": "172.16.1.115",
-      "port": 161,
-      "security_model": ["my-agent", "public", 0],
-      "noutlet": 8,
-      "description": "3-Bay - 120VAC - #2"
-    },
-    "6": {
-      "type": "TrippLiteUPS",
-      "ip": "172.16.1.118",
-      "port": 161,
-      "security_model": ["my-agent", "public", 0],
-      "noutlet": 3,
-      "description": "UPS #2"
+    "monitor_period": 20.0,
+    "devices": {
+      "1": {
+        "type": "APC",
+        "ip": "172.16.1.113",
+        "port": 161,
+        "security_model": ["my-agent", "public", 1],
+        "noutlet": 8,
+        "description": "ASP"
+      },
+      "2": {
+        "type": "TrippLite",
+        "ip": "172.16.1.114",
+        "port": 161,
+        "security_model": ["my-agent", "public", 0],
+        "noutlet": 8,
+        "description": "DP - 120VAC"
+      },
+      "3": {
+        "type": "Raritan",
+        "ip": "172.16.1.117",
+        "port": 161,
+        "security_model": ["my-agent", "private", 0],
+        "noutlet": 8,
+        "description": "DP - 240VAC"
+      },
+      "4": {
+        "type": "APC",
+        "ip": "172.16.1.112",
+        "port": 161,
+        "security_model": ["my-agent", "public", 0],
+        "noutlet": 8,
+        "description": "3-Bay - 120VAC - #1"
+      },
+      "5": {
+        "type": "APC",
+        "ip": "172.16.1.115",
+        "port": 161,
+        "security_model": ["my-agent", "public", 0],
+        "noutlet": 8,
+        "description": "3-Bay - 120VAC - #2"
+      },
+      "6": {
+        "type": "TrippLiteUPS",
+        "ip": "172.16.1.118",
+        "port": 161,
+        "security_model": ["my-agent", "public", 0],
+        "noutlet": 3,
+        "description": "UPS #2"
+      }
     }
   },
   
-  "warning_temp": 80.0,
-  "critical_temp": 90.0,
+  "weather": {
+    "database": "/var/wview/archive/wview-archive.sdb",
+    "monitor_period": 300.0
+  },
   
-  "lightning_ip": "224.168.2.9",
-  "lightning_port": 7163,
+  "lightning": {
+    "ip": "224.168.2.9",
+    "port": 7163
+  },
   
-  "outage_ip": "224.168.2.10",
-  "outage_port": 7165,
+  "outage": {
+    "ip": "224.168.2.10",
+    "port": 7165
+  },
   
-  "critical_list": [],
-  
-  "influx_user": "lwa1",
-  "influx_password": "logging4Fun@1",
-  "influx_database": "lwa1"
+  "influx": {
+    "username": "lwa1",
+    "password": "logging4Fun@1",
+    "database": "lwa1"
+  }
 }
