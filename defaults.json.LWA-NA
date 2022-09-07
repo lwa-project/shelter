@@ -1,9 +1,11 @@
 {
   "serial_number": "SHL03",
   
-  "message_host": "10.1.3.2",
-  "message_out_port": 5009,
-  "message_in_port": 5008,
+  "mcs": {
+    "message_host": "10.1.3.2",
+    "message_out_port": 5009,
+    "message_in_port": 5008
+  },
   
   "temp_min": 60.0,
   "temp_max": 110.0,
