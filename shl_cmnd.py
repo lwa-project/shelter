@@ -15,6 +15,7 @@ import string
 import struct
 import logging
 import argparse
+import json_minify
 try:
         from logging.handlers import WatchedFileHandler
 except ImportError:
@@ -373,7 +374,7 @@ class MCSCommunicate(Communicate):
             elif command == 'INI':
                 # Re-read in the configuration file
                 with open(self.opts.config, 'r') as ch:
-                    config = json.loads(ch.read())
+                    config = json.loads(json_minify.json_minify(ch.read()))
                     
                 # Refresh the configuration for the communicator and ASP
                 self.updateConfig(config)
@@ -487,7 +488,7 @@ def main(args):
     
     # Read in the configuration file
     with open(args.config, 'r') as ch:
-        config = json.loads(ch.read())
+        config = json.loads(json_minify.json_minify(ch.read()))
         
     # Setup ASP control
     lwaSHL = ShippingContainer(config)

@@ -1,2 +1,3 @@
 git
+json_minify
 pysnmp >= 4.4.3

@@ -7,18 +7,20 @@
     "message_in_port": 5008
   },
   
+  /* HVAC thermostat settings (not actually used) */
   "hvac": {
-    "temp_min": 60.0,
-    "temp_max": 110.0,
-    "diff_min": 0.5,
-    "diff_max": 5.0
+    "temp_min": 60.0,  // degrees F
+    "temp_max": 110.0, // degrees F
+    "diff_min": 0.5,   // degrees F
+    "diff_max": 5.0    // degrees F
   },
   
+  /* Shelter temperature sensors */
   "thermometers": {
-    "warning_temp": 80.0,
-    "critical_temp": 90.0,
+    "warning_temp": 80.0,   // degrees F
+    "critical_temp": 90.0,  // degrees F
     "critical_list": [],
-    "monitor_period": 60.0,
+    "monitor_period": 60.0, // seconds
     "devices": {
       "1": {
         "type": "HWg",
@@ -30,8 +32,10 @@
       }
     }
   },
+  
+  /* Shelter PDUs and UPSs */
   "pdus": {
-    "monitor_period": 20.0,
+    "monitor_period": 20.0,   // seconds
     "devices": {
       "1": {
         "type": "APC",
@@ -60,16 +64,19 @@
     }
   },
   
+  /* Weather information via wview database */
   "weather": {
     "database": "/var/wview/archive/wview-archive.sdb",
     "monitor_period": 300.0
   },
   
+  /* Lightning alerts over UDP multicast */
   "lightning": {
     "ip": "224.168.2.9",
     "port": 7163
   },
   
+  /* Power flicker/outage alerts over UDP multicast */
   "outage": {
     "ip": "224.168.2.10",
     "port": 7165
