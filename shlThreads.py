@@ -1,4 +1,4 @@
-['outage']['# -*- coding: utf-8 -*-
+
 """
 Background threads to interacting with temperature sensors and PDUs.
 """
