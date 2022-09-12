@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 """
 Base module for dealing with MCS communication.  This module provides the
 MCSComminunicate framework that specified how to processes MCS commands that
@@ -10,10 +10,10 @@ MIBs and commands.
 import sys
 import math
 import time
+import select
 import socket
 import string
 import logging
-import threading
 import traceback
 
 try:
@@ -22,9 +22,8 @@ except ImportError:
     from io import StringIO
     
 from datetime import datetime
-from collections import deque
 
-__version__ = "0.2"
+__version__ = "0.3"
 __all__ = ['MCS_RCV_BYTES', 'getTime', 'Communicate']
 
 
@@ -63,7 +62,6 @@ def getTime():
     return (mjd, mpm)
 
 
-
 class Communicate(object):
     """
     Class to deal with the communcating with MCS.
@@ -77,9 +75,8 @@ class Communicate(object):
         # Update the socket configuration
         self.updateConfig()
         
-        # Setup the packet queues using deques
-        self.queueIn  = deque()
-        self.queueOut = deque()
+        # Setup the poller
+        self.poller = None
         
         # Set the logger
         self.logger = logging.getLogger('__main__')
@@ -97,14 +94,6 @@ class Communicate(object):
         """
         Start the recieve thread - send will run only when needed.
         """
-        
-        # Clear the packet queue
-        self.queueIn  = deque()
-        self.queueOut = deque()
-        
-        # Start the packet processing thread
-        op = threading.Thread(target=self.packetProcessor)
-        op.start()
         
         # Setup the various sockets
         ## Receive
@@ -131,17 +120,20 @@ class Communicate(object):
             logging.shutdown()
             sys.exit(1)
             
+        # Create the incoming socket poller
+        self.poller = select.poll()
+        self.poller.register(self.socketIn, select.POLLIN | select.POLLPRI)
+            
     def stop(self):
         """
-        Stop the antenna statistics thread, waiting until it's finished.
+        Stop the receive thread, waiting until it's finished.
         """
         
-        # Clear the packet queue
-        self.queueIn.append('STOP_THREAD')
-        while (len(self.queueIn) + len(self.queueOut)):
-            time.sleep(0.01)
-            
-        # Close the various sockets
+        # Stop the poller
+        self.poller.unregister(self.socketIn)
+        self.poller = None
+        
+        # Close the sockets
         self.socketIn.close()
         self.socketOut.close()
         
@@ -151,80 +143,37 @@ class Communicate(object):
         processing queue.
         """
         
-        data = self.socketIn.recv(MCS_RCV_BYTES)
-        if data:
+        ngood = 0
+        nerr = 0
+        for fd,flag in self.poller.poll(1000):
+            # Read - we are only listening to one socket
+            data, addr = self.socketIn.recvfrom(MCS_RCV_BYTES)
             try:
                 data = data.decode('ascii')
             except AttributeError:
                 pass
-            self.queueIn.append(data)
-            
-    def packetProcessor(self):
-        """
-        Using two deques (one inbound, one outbound), deal with bursty UDP traffic 
-        by having a seperate thread for proccessing commands.
-        """
-        
-        exitCondition = False
-        
-        while True:
-            while len(self.queueIn) > 0:
-                try:
-                    data = self.queueIn.popleft()
-                    if data is 'STOP_THREAD':
-                        exitCondition = True
-                        break
-                        
-                    sender, status, command, reference, packed_data = self.processCommand(data)
-                    self.queueOut.append( (sender, status, command, reference, packed_data) )
-                    
-                    if len(self.queueOut) > 0:
-                        sender, status, command, reference, packed_data = self.queueOut.popleft()
-                        
-                        success = self.sendResponse(sender, status, command, reference, packed_data)
-                        if not success:
-                            self.queueOut.appendleft( (sender, status, command, reference, packed_data) )
-                            
-                except Exception as e:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    self.logger.error("packetProcessor failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
-                        
-                    ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO()
-                    traceback.print_tb(exc_traceback, file=fileObject)
-                    tbString = fileObject.getvalue()
-                    fileObject.close()
-                    ## Print the traceback to the logger as a series of DEBUG messages
-                    for line in tbString.split('\n'):
-                        self.logger.debug("%s", line)
-                        
-            if exitCondition:
-                break
                 
-            while len(self.queueOut) > 0:
-                try:
-                    sender, status, command, reference, packed_data = self.queueOut.popleft()
-                        
-                    success = self.sendResponse(sender, status, command, reference, packed_data)
-                    if not success:
-                        self.queueOut.appendleft( (sender, status, command, reference, packed_data) )
-                        time.sleep(0.001)
-                        
-                except Exception as e:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    self.logger.error("packetProcessor failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
-                        
-                    ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO()
-                    traceback.print_tb(exc_traceback, file=fileObject)
-                    tbString = fileObject.getvalue()
-                    fileObject.close()
-                    ## Print the traceback to the logger as a series of DEBUG messages
-                    for line in tbString.split('\n'):
-                        self.logger.debug("%s", line)
-                    
-            time.sleep(0.010)
+            # Process
+            try:
+                sender, status, command, reference, packed_data = self.processCommand(data)
+            except Exception as e:
+                nerr += 1
+                self.logger.error("processCommand failed with: %s", str(e))
+                continue
+                
+            # Respond
+            try:
+                self.sendResponse(sender, status, command, reference, packed_data)
+            except Exception as e:
+                nerr += 1
+                self.logger.error("sendResponse failed with: %s", str(e))
+                continue
+                
+            # Increment
+            ngood += 1
             
+        return ngood, nerr
+                
     def sendResponse(self, destination, status, command, reference, data):
         """
         Send a response to MCS via UDP.
@@ -246,22 +195,17 @@ class Communicate(object):
         
         # Build the payload
         payload = "%3s%3s%3s%9i" % (destination, sender, command, reference)
-        payload = payload + "%4i%6i%9i" % (len(data)+8, mjd, mpm)
-        payload = payload + ' ' + response + ("%7s" % systemStatus) + data
+        payload += "%4i%6i%9i" % (len(data)+8, mjd, mpm)
+        payload += ' ' + response + ("%7s" % systemStatus) + data
         try:
             payload = bytes(payload, 'ascii')
         except TypeError:
             pass
             
-        try:
-            bytes_sent = self.socketOut.sendto(payload, self.destAddress)
-            self.logger.debug("mcsSend - Sent to MCS '%s'", payload)
-            return True
-            
-        except socket.error:
-            self.logger.warning("mcsSend - Failed to send response to MCS, retrying")
-            return False
-            
+        bytes_sent = self.socketOut.sendto(payload, self.destAddress)
+        self.logger.debug("mcsSend - Sent to MCS '%s'", payload)
+        return True
+        
     def parsePacket(self, data):
         """
         Given a MCS UDP command packet, break it into its various parts and return
