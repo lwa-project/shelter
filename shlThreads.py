@@ -171,10 +171,9 @@ class Thermometer(object):
                             
             # Log the data
             toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nSensors)]))
-            fh = open('/data/thermometer%02i.txt' % self.id, 'a+')
-            fh.write('%s\n' % toDataLog)
-            fh.close()
-           
+            with open('/data/thermometer%02i.txt' % self.id, 'a+') as fh:
+                fh.write('%s\n' % toDataLog)
+                
             if self.InfluxDBClient is not None: 
                 json = [{"measurement": "temperature",
                          "tags": {"subsystem": "shl",
@@ -566,10 +565,9 @@ class PDU(object):
                             self.status[i] = "UNK"
                             
             toDataLog = "%.2f,%.2f,%.2f,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1)
-            fh = open('/data/rack%02i.txt' % self.id, 'a+')
-            fh.write('%s\n' % toDataLog)
-            fh.close()
-            
+            with open('/data/rack%02i.txt' % self.id, 'a+') as fh:
+                fh.write('%s\n' % toDataLog)
+                
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
                 self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
@@ -1165,10 +1163,9 @@ class TrippLiteUPS(PDU):
                             self.status[i] = "UNK"
                             
             toDataLog = "%.2f,%.2f,%.2f,%.2f,%s,%s,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1, self.upsOutput, self.batteryStatus, self.batteryCharge if self.batteryCharge is not None else -1)
-            fh = open('/data/rack%02i.txt' % self.id, 'a+')
-            fh.write('%s\n' % toDataLog)
-            fh.close()
-            
+            with open('/data/rack%02i.txt' % self.id, 'a+') as fh:
+                fh.write('%s\n' % toDataLog)
+                
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
                 self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
@@ -1776,10 +1773,9 @@ class Outage(object):
         # Check for some state
         ## 120 VAC
         try:
-            fh = open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'r')
-            t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
-            fh.close()
-            
+            with open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'r') as fh:
+                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
+                
             self.outage_120 = t
             shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 120VAC')
             
@@ -1788,10 +1784,9 @@ class Outage(object):
             pass
         ### 240 VAC
         try:
-            fh = open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'r')
-            t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
-            fh.close()
-            
+            with open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'r') as fh:
+                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
+                
             self.outage_240 = t
             shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 240VAC')
             
@@ -1893,9 +1888,8 @@ class Outage(object):
                         self.outage_120 = tEvent
                         
                         try:
-                            fh = open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'w')
-                            fh.write(mtch.group('date'))
-                            fh.close()
+                            with open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'w') as fh:
+                                fh.write(mtch.group('date'))
                         except (OSError, IOError) as e:
                             exc_type, exc_value, exc_traceback = sys.exc_info()
                             shlThreadsLogger.warning("Outage: monitorThread 120VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
@@ -1905,9 +1899,8 @@ class Outage(object):
                         self.outage_240 = tEvent
                         
                         try:
-                            fh = open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'w')
-                            fh.write(mtch.group('date'))
-                            fh.close()
+                            with open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'w') as fh:
+                                fh.write(mtch.group('date'))
                         except (OSError, IOError) as e:
                             exc_type, exc_value, exc_traceback = sys.exc_info()
                             shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
