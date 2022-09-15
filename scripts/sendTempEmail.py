@@ -6,6 +6,7 @@ from __future__ import print_function
 import os
 import pytz
 import time
+import uuid
 import subprocess
 from datetime import datetime
 from socket import gethostname
@@ -95,7 +96,7 @@ shlTemp = shlTemp*9./5. + 32.
 if shlTemp >= CRITICAL_TEMP:
     tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
     
-    msg = MIMEText("At %s the shelter temperature reached %.2f F.\n\nWarning temperature value set to %.2f F.\n" % (tNow, shlTemp, CRITICAL_TEMP))
+    msg = MIMEText("At %s the shelter temperature reached %.2f F.\n\nWarning temperature value set to %.2f F.\n\nEmail ID: %s" % (tNow, shlTemp, CRITICAL_TEMP, str(uuid.uuid4())))
     msg['Subject'] = '%s - Shelter Temperature Warning' % (SITE.upper(),)
     msg['From'] = FROM
     msg['To'] = ','.join(TO)
@@ -128,7 +129,7 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTempe
     if age >= CRITICAL_CLEAR_TIME*60:
         tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
         
-        msg = MIMEText("At %s the shelter temperature warning was cleared.\n\nWarning temperature value set to %.2f F.\n" % (tNow, CRITICAL_TEMP))
+        msg = MIMEText("At %s the shelter temperature warning was cleared.\n\nWarning temperature value set to %.2f F.\n\nEmail ID: %s" % (tNow, CRITICAL_TEMP, str(uuid.uuid4())))
         msg['Subject'] = '%s - Shelter Temperature Warning - Cleared' % (SITE.upper(),)
         msg['From'] = FROM
         msg['To'] = ','.join(TO)
@@ -178,7 +179,7 @@ if shlTemp >= RESET_TEMP:
             fh.close()
             
             ## Send the e-mail
-            msg = MIMEText("At %s the shelter temperature reached %.2f F.\n\nCompressor reset temperature value set to %.2f F.\n" % (tNow, shlTemp, RESET_TEMP))
+            msg = MIMEText("At %s the shelter temperature reached %.2f F.\n\nCompressor reset temperature value set to %.2f F.\n\nEmail ID: %s" % (tNow, shlTemp, RESET_TEMP, str(uuid.uuid4())))
             msg['Subject'] = '%s - Shelter HVAC compressor reset' % (SITE.upper(),)
             msg['From'] = FROM
             msg['To'] = ','.join(TO)
