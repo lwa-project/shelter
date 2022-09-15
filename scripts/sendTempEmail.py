@@ -78,6 +78,33 @@ def getLast(filename, N):
     return output
 
 
+def sendEmail(subject, message, debug=False):
+    """
+    Send an e-mail via the LWA1 operator list
+    """
+    
+    message = "%s\n\nEmail ID: %s" % (message, str(uuid.uuid4()))
+    
+    msg = MIMEText(message)
+    msg['Subject'] = subject
+    msg['From'] = FROM
+    msg['To'] = ','.join(TO)
+    msg.add_header('reply-to', TO[0])
+    
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        if debug:
+            server.set_debuglevel(1)
+        server.starttls()
+        server.login(FROM, PASS)
+        server.sendmail(FROM, TO, msg.as_string())
+        server.close()
+        return True
+    except Exception as e:
+        print("ERROR: failed to send message - %s" % str(e))
+        return False
+
+
 ## Read in the shelter temperature
 output = getLast(os.path.join(DATA_DIR, 'thermometer01.txt'), 1)
 output = output[0].split(',')
@@ -96,23 +123,13 @@ shlTemp = shlTemp*9./5. + 32.
 if shlTemp >= CRITICAL_TEMP:
     tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
     
-    msg = MIMEText("At %s the shelter temperature reached %.2f F.\n\nWarning temperature value set to %.2f F.\n\nEmail ID: %s" % (tNow, shlTemp, CRITICAL_TEMP, str(uuid.uuid4())))
-    msg['Subject'] = '%s - Shelter Temperature Warning' % (SITE.upper(),)
-    msg['From'] = FROM
-    msg['To'] = ','.join(TO)
-    msg.add_header('reply-to', TO[0])
+    subject = '%s - Shelter Temperature Warning' % (SITE.upper(),)
+    message = "At %s the shelter temperature reached %.2f F.\n\nWarning temperature value set to %.2f F.\n" % (tNow, shlTemp, CRITICAL_TEMP)
     
     if not os.path.exists(os.path.join(STATE_DIR, 'inTemperatureWarning')):
         # If the holding file does not exist, send out the e-mail
-        try:
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(FROM, PASS)
-            server.sendmail(FROM, TO, msg.as_string())
-            server.close()
-        except Exception as e:
-            print("Critical temperature e-mail send: %s" % str(e))
-            
+        sendEmail(subject, message)
+        
     # Touch the file to update the modification time.  This is used to track
     # when the warning condition is cleared.
     try:
@@ -129,21 +146,10 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTempe
     if age >= CRITICAL_CLEAR_TIME*60:
         tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
         
-        msg = MIMEText("At %s the shelter temperature warning was cleared.\n\nWarning temperature value set to %.2f F.\n\nEmail ID: %s" % (tNow, CRITICAL_TEMP, str(uuid.uuid4())))
-        msg['Subject'] = '%s - Shelter Temperature Warning - Cleared' % (SITE.upper(),)
-        msg['From'] = FROM
-        msg['To'] = ','.join(TO)
-        msg.add_header('reply-to', TO[0])
-
-        try:
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(FROM, PASS)
-            server.sendmail(FROM, TO, msg.as_string())
-            server.close()
-        except Exception as e:
-            print("Critical temperature cleared e-mail send: %s" % str(e))
-            
+        subject = '%s - Shelter Temperature Warning - Cleared' % (SITE.upper(),)
+        message = "At %s the shelter temperature warning was cleared.\n\nWarning temperature value set to %.2f F.\n" % (tNow, CRITICAL_TEMP)
+        sendEmail(subject, message)
+        
         try:
             os.unlink(os.path.join(STATE_DIR, 'inTemperatureWarning'))
         except Exception as e:
@@ -171,29 +177,23 @@ if shlTemp >= RESET_TEMP:
         try:
             ## Reset the compressors
             rst = subprocess.Popen(['/home/ops/reset_compressors.sh', str(tOff)])
-            
-            ## Touch the file to update the modification time.  This is used to track
-            ## when the warning condition is cleared.
+        except Exception as e:
+            print("Reset compressor command: %s" % str(e))
+        
+        ## Touch the file to update the modification time.  This is used to track
+        ## when the warning condition is cleared.
+        try:
             fh = open(os.path.join(STATE_DIR, 'inCompressorReset'), 'w')
             fh.write('%s\n' % tNow)
             fh.close()
-            
-            ## Send the e-mail
-            msg = MIMEText("At %s the shelter temperature reached %.2f F.\n\nCompressor reset temperature value set to %.2f F.\n\nEmail ID: %s" % (tNow, shlTemp, RESET_TEMP, str(uuid.uuid4())))
-            msg['Subject'] = '%s - Shelter HVAC compressor reset' % (SITE.upper(),)
-            msg['From'] = FROM
-            msg['To'] = ','.join(TO)
-            msg.add_header('reply-to', TO[0])
-            
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(FROM, PASS)
-            server.sendmail(FROM, TO, msg.as_string())
-            server.close()
-            
         except Exception as e:
-            print("Reset compressor e-mail send: %s" % str(e))
+            print("Write compresor reset lock file: %s" % str(e))
             
+        ## Send the e-mail
+        subject = '%s - Shelter HVAC compressor reset' % (SITE.upper(),)
+        message = "At %s the shelter temperature reached %.2f F.\n\nCompressor reset temperature value set to %.2f F.\n" % (tNow, shlTemp, RESET_TEMP)
+        sendEmail(subject, message)
+        
 else:
     try:
         os.unlink(os.path.join(STATE_DIR, 'inCompressorReset'))
