@@ -40,6 +40,35 @@ if not os.path.exists(STATE_DIR):
     os.mkdir(STATE_DIR)
 
 
+def _LogThreadException(cls, exception, logger=None):
+    """
+    Function to help with logging exceptions within the monitoring threads.
+    This will add a ERROR line to the logs and print the full traceback as
+    DEBUG.
+    """
+    
+    # Get the logger
+    if logger is None:
+        logger = logging.getLogger('__main__')
+        
+    # Extract the traceback and generate the ERROR message
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    cls_name = type(cls).__name__
+    fnc_name = traceback.extract_tb(exc_traceback, 1)[0][2]
+    lineno = exc_traceback.tb_lineno
+    logger.error("%s: %s failed with: %s at line %i", cls_name, fnc_name, str(exception), lineno)
+    
+    # Grab the full traceback and save it to a string via StringIO so that we
+    # can print it to DEBUG
+    fileObject = StringIO()
+    traceback.print_tb(exc_traceback, file=fileObject)
+    tbString = fileObject.getvalue()
+    fileObject.close()
+    ## Print the traceback to the logger as a series of DEBUG messages
+    for line in tbString.split('\n'):
+        logger.debug("%s", line)
+
+
 class Thermometer(object):
     """
     Class for communicating with a network thermometer via SNMP and regularly polling
@@ -154,18 +183,7 @@ class Thermometer(object):
                             self.lastError = None
                             
                         except Exception as e:
-                            exc_type, exc_value, exc_traceback = sys.exc_info()
-                            shlThreadsLogger.error("%s: monitorThread failed with: %s at line %i", type(self).__name__, str(e), exc_traceback.tb_lineno)
-                            
-                            ## Grab the full traceback and save it to a string via StringIO
-                            fileObject = StringIO()
-                            traceback.print_tb(exc_traceback, file=fileObject)
-                            tbString = fileObject.getvalue()
-                            fileObject.close()
-                            ## Print the traceback to the logger as a series of DEBUG messages
-                            for line in tbString.split('\n'):
-                                shlThreadsLogger.debug("%s", line)
-                                
+                            _LogThreadException(self, e, logger=shlThreadsLogger)
                             self.temp[s] = None
                             self.lastError = str(e)
                             
@@ -380,18 +398,7 @@ class PDU(object):
                         name, self.firmwareVersion = varBinds[0]
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         self.lastError = str(e)
                         self.firmwareVersion = None
                         
@@ -416,18 +423,7 @@ class PDU(object):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         self.frequency = None
                         self.lastError = str(e)
                         
@@ -452,18 +448,7 @@ class PDU(object):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i",  type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         if self.lastError is not None:
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
@@ -495,18 +480,7 @@ class PDU(object):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         if self.lastError is not None:
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
@@ -546,18 +520,7 @@ class PDU(object):
                                 self.lastError = None
                                 
                         except Exception as e:
-                            exc_type, exc_value, exc_traceback = sys.exc_info()
-                            shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                            
-                            ## Grab the full traceback and save it to a string via StringIO
-                            fileObject = StringIO()
-                            traceback.print_tb(exc_traceback, file=fileObject)
-                            tbString = fileObject.getvalue()
-                            fileObject.close()
-                            ## Print the traceback to the logger as a series of DEBUG messages
-                            for line in tbString.split('\n'):
-                                shlThreadsLogger.debug("%s", line)
-                                
+                            _LogThreadException(self, e, logger=shlThreadsLogger)
                             if self.lastError is not None:
                                 self.lastError = "%s; %s" % (self.lastError, str(e))
                             else:
@@ -677,18 +640,7 @@ class PDU(object):
                     errorIndication, errorStatus, errorIndex, varBinds =                                                                          cmd_gen.setCmd(self.community, self.network, (oidOutletChangeEntry, rfc1902.Integer(numericCode)))
                     
                 except Exception as e:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    shlThreadsLogger.error("%s: setStatus failed with: %s at line %i", type(self).__name__, str(e), exc_traceback.tb_lineno)
-                        
-                    ## Grab the full traceback and save it to a string via StringIO
-                    fileObject = StringIO()
-                    traceback.print_tb(exc_traceback, file=fileObject)
-                    tbString = fileObject.getvalue()
-                    fileObject.close()
-                    ## Print the traceback to the logger as a series of DEBUG messages
-                    for line in tbString.split('\n'):
-                        shlThreadsLogger.debug("%s", line)
-                        
+                    _LogThreadException(self, e, logger=shlThreadsLogger)
                     return False
                     
                 return True
@@ -855,18 +807,7 @@ class TrippLiteUPS(PDU):
                         name, self.firmwareVersion = varBinds[0]
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         self.lastError = str(e)
                         self.firmwareVersion = None
                         
@@ -891,18 +832,7 @@ class TrippLiteUPS(PDU):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         self.frequency = None
                         self.lastError = str(e)
                         
@@ -927,18 +857,7 @@ class TrippLiteUPS(PDU):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         if self.lastError is not None:
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
@@ -970,18 +889,7 @@ class TrippLiteUPS(PDU):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         if self.lastError is not None:
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
@@ -1012,18 +920,7 @@ class TrippLiteUPS(PDU):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         if self.lastError is not None:
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
@@ -1051,18 +948,7 @@ class TrippLiteUPS(PDU):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         if self.lastError is not None:
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
@@ -1093,18 +979,7 @@ class TrippLiteUPS(PDU):
                         self.lastError = None
                         
                     except Exception as e:
-                        exc_type, exc_value, exc_traceback = sys.exc_info()
-                        shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                        
-                        ## Grab the full traceback and save it to a string via StringIO
-                        fileObject = StringIO()
-                        traceback.print_tb(exc_traceback, file=fileObject)
-                        tbString = fileObject.getvalue()
-                        fileObject.close()
-                        ## Print the traceback to the logger as a series of DEBUG messages
-                        for line in tbString.split('\n'):
-                            shlThreadsLogger.debug("%s", line)
-                            
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
                         if self.lastError is not None:
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
@@ -1144,18 +1019,7 @@ class TrippLiteUPS(PDU):
                                 self.lastError = None
                                 
                         except Exception as e:
-                            exc_type, exc_value, exc_traceback = sys.exc_info()
-                            shlThreadsLogger.error("%s %s: monitorThread failed with: %s at line %i", type(self).__name__, str(self.id), str(e), exc_traceback.tb_lineno)
-                            
-                            ## Grab the full traceback and save it to a string via StringIO
-                            fileObject = StringIO()
-                            traceback.print_tb(exc_traceback, file=fileObject)
-                            tbString = fileObject.getvalue()
-                            fileObject.close()
-                            ## Print the traceback to the logger as a series of DEBUG messages
-                            for line in tbString.split('\n'):
-                                shlThreadsLogger.debug("%s", line)
-                                
+                            _LogThreadException(self, e, logger=shlThreadsLogger)
                             if self.lastError is not None:
                                 self.lastError = "%s; %s" % (self.lastError, str(e))
                             else:
@@ -1362,18 +1226,8 @@ class Weather(object):
                 conn.close()
                 
             except Exception as e:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                shlThreadsLogger.error("Weather: monitorThread failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
+                _LogThreadException(self, e, logger=shlThreadsLogger)
                 
-                ## Grab the full traceback and save it to a string via StringIO
-                fileObject = StringIO()
-                traceback.print_tb(exc_traceback, file=fileObject)
-                tbString = fileObject.getvalue()
-                fileObject.close()
-                ## Print the traceback to the logger as a series of DEBUG messages
-                for line in tbString.split('\n'):
-                    shlThreadsLogger.debug("%s", line)
-                    
                 try:
                     conn.close()
                 except:
@@ -1671,18 +1525,7 @@ class Lightning(object):
                     tCull = time.time()
                     
             except Exception as e:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                shlThreadsLogger.error("Lightning: monitorThread failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
-                
-                ## Grab the full traceback and save it to a string via StringIO
-                fileObject = StringIO()
-                traceback.print_tb(exc_traceback, file=fileObject)
-                tbString = fileObject.getvalue()
-                fileObject.close()
-                ## Print the traceback to the logger as a series of DEBUG messages
-                for line in tbString.split('\n'):
-                    shlThreadsLogger.debug("%s", line)
-                    
+                _LogThreadException(self, e, logger=shlThreadsLogger)
                 if self.lastError is not None:
                     self.lastError = "%s; %s" % (self.lastError, str(e))
                 else:
@@ -1946,18 +1789,7 @@ class Outage(object):
                         self.SHLCallbackInstance.processPowerFlicker(False)
                         
             except Exception as e:
-                exc_type, exc_value, exc_traceback = sys.exc_info()
-                shlThreadsLogger.error("Outage: monitorThread failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
-                
-                ## Grab the full traceback and save it to a string via StringIO
-                fileObject = StringIO()
-                traceback.print_tb(exc_traceback, file=fileObject)
-                tbString = fileObject.getvalue()
-                fileObject.close()
-                ## Print the traceback to the logger as a series of DEBUG messages
-                for line in tbString.split('\n'):
-                    shlThreadsLogger.debug("%s", line)
-                    
+                _LogThreadException(self, e, logger=shlThreadsLogger)
                 if self.lastError is not None:
                     self.lastError = "%s; %s" % (self.lastError, str(e))
                 else:
