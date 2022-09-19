@@ -22,13 +22,17 @@ SITE = gethostname().split('-', 1)[0]
 
 # Critical shelter temperature (F)
 CRITICAL_TEMP = 80.00
+if SITE == 'lwa1':
+    CRITICAL_TEMP = 83.00
 
 # Time (min) after a warning e-mail is sent for an "all-clear"
 CRITICAL_CLEAR_TIME = 30
 
 # Compressor reset temperature (F)
 RESET_TEMP = 77.00
-
+if SITE == 'lwa1':
+    RESET_TEMP = 80.00
+    
 # Compressor reset clear time (min)
 RESET_CLEAR_TIME = 60
 
