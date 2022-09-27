@@ -14,7 +14,7 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 
 from shlThreads import *
 
-__version__ = "0.4"
+__version__ = "0.5"
 __all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer"]
 
 
