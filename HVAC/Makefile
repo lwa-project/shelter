@@ -89,11 +89,11 @@ compressor2_status.cpp: compressor1_status.cpp
 	sed -e 's/compressor1/compressor2/g;s/COMPRESSOR1/COMPRESSOR2/g' $^ > $@
 	
 compressor%_status: compressor%_status.o hvac_config.hpp
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 
 lead_lag_status: lead_lag_status.o hvac_config.hpp
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 install:
 	cp controller_*able /usr/local/bin/
