@@ -390,13 +390,9 @@ class EnviroMux(object):
     
     oidTemperatureEntry0 = None
     oidTemperatureEntry1 = None
-    oidSmokeEntry = None
-    oidWaterEntry = None
-    oidDoorEntry = None
-    oidAirflowEntry0 = None
-    oidAirflowEntry1 = None
+    oidDigitalBaseEntry  = None
     
-    def __init__(self, ip, port, community, id, nTemperature=2, hasSmoke=False, hasWater=False, hasDoor=False, nAirflow=0, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+    def __init__(self, ip, port, community, id, nTemperature=2, sensorList=None, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
         self.ip = ip
         self.port = port
         self.id = id
@@ -407,16 +403,34 @@ class EnviroMux(object):
         # Setup the sensors
         self.nTemperature = nTemperature
         self.temp = [None for i in range(self.nTemperature)]
-        if not hasSmoke:
-            self.oidSmokeEntry = None
-        self.smoke_detected = None
-        if not hasWater:
-            self.oidWaterEntry = None
-        self.water_detected = None
-        if not hasDoor:
-            self.oidDoorEntry = None
-        self.door_open = None
-        self.nAirflow = nAirflow
+        if sensorList is None:
+            sensorList = [None for i in range(5)]
+        self.oidSmokeEntry = None
+        if 'smoke' in sensorList:
+            idx = sensorList.index('smoke')
+            self.oidSmokeEntry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+        self.oidWaterEntry = None
+        if 'water' in sensorList:
+            idx = sensorList.index('water')
+            self.oidWaterEntry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+        self.oidDoorEntry = None
+        if 'door' in sensorList:
+            idx = sensorList.index('door')
+            self.oidWaterEntry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+        self.nAirflow = 0
+        self.oidAirflowEntry0 = None
+        self.oidAirflowEntry1 = None
+        if 'airflow' in sensorList:
+            idx = sensorList.index('airflow')
+            self.oidAirflowEntry0Entry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+            self.nAirflow += 1
+            sensorList[idx] = '_airflow'
+            
+            if 'airflow' in sensorList:
+                idx = sensorList.index('airflow')
+                self.oidAirflowEntry1Entry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+                self.nAirflow += 1
+                sensorList[idx] = '_airflow'
         self.airflow = [None for i in range(self.nAirflow)]
         
         # Setup the SNMP UDP connection
