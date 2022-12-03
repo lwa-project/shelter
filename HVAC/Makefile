@@ -42,7 +42,7 @@ LDFLAGS += -L/usr/local/lib -lusb-1.0 -lm
 #------------------------------------------------------------------------------
 %.o:	%.c  
 	$(CC) -c $(CFLAGS) -o $@ $<
-%.o:	%.cpp  
+%.o:	%.cpp
 	$(CXX) -c -std=c++11 $(CFLAGS) -o $@ $<
 
 #------------------------------------------------------------------------------
@@ -88,11 +88,11 @@ compressor%_disable: compressor%_disable.o hvac_common.o
 compressor2_status.cpp: compressor1_status.cpp
 	sed -e 's/compressor1/compressor2/g;s/COMPRESSOR1/COMPRESSOR2/g' $^ > $@
 	
-compressor%_status: compressor%_status.o hvac_config.hpp
+compressor%_status: compressor%_status.o hvac_common.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 
-lead_lag_status: lead_lag_status.o hvac_config.hpp
+lead_lag_status: lead_lag_status.o hvac_common.o
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 install:
