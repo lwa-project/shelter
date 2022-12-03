@@ -493,6 +493,42 @@ class ShippingContainer(object):
         
         return True, meanTemp
         
+    def getSmokeDetected(self):
+        if not self.currentState['enviroThread'].alive.isSet():
+            self.currentState['lastLog'] = 'Monitoring thread for the enviromental system is not running'
+            return False, False
+            
+        out = self.currentState['enviroThread'].getSmokeDetected()
+        if out is None:
+            self.currentState['lastLog'] = 'Monitoring thread does not have a smoke detector'
+            return False, False
+        else:
+            return True, out
+            
+    def getWaterDetected(self):
+        if not self.currentState['enviroThread'].alive.isSet():
+            self.currentState['lastLog'] = 'Monitoring thread for the enviromental system is not running'
+            return False, False
+            
+        out = self.currentState['enviroThread'].getWaterDetected()
+        if out is None:
+            self.currentState['lastLog'] = 'Monitoring thread does not have a water sensor'
+            return False, False
+        else:
+            return True, out
+            
+    def getDoorOpen(self):
+        if not self.currentState['enviroThread'].alive.isSet():
+            self.currentState['lastLog'] = 'Monitoring thread for the enviromental system is not running'
+            return False, False
+            
+        out = self.currentState['enviroThread'].getDoorOpen()
+        if out is None:
+            self.currentState['lastLog'] = 'Monitoring thread does not have a door sensor'
+            return False, False
+        else:
+            return True, out
+            
     def getOutletCount(self, rack):
         """
         Given a rack return the current power draw of all outlets as a two-elements 
@@ -967,6 +1003,81 @@ class ShippingContainer(object):
                     
             shlFunctionsLogger.critical('Shelter temperature at %.2f, shutting down critical ports: %s', currTemp, criticalPortList)
             
+        return True
+        
+    def processSmokeDetector(self, smokeDetected):
+        """
+        Figure out what to do about the smoke alarm going off.
+        """
+        
+        if not smokeDetected:
+            # Everything is OK
+            if self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('SMOKE!'):
+                ## From ERROR
+                self.currentState['info'] = 'Error condition cleared, system operating normally'
+                
+                shlFunctionsLogger.info('Shelter smoke detector condition cleared')
+                
+        else:
+            ## Change the system state
+            self.currentState['status'] = 'ERROR'
+            self.currentState['info'] = 'SMOKE! Shelter smoke detector activated'
+            
+            shlFunctionsLogger.critical('Shelter smoke detector activated')
+            
+        return True
+        
+    def processWaterDetector(self, waterDetected):
+        """
+        Figure out what to do about the water sensor finding water.
+        """
+        
+        if not smokeDetected:
+            # Everything is OK
+            if self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('WATER!'):
+                ## From ERROR
+                self.currentState['info'] = 'Error condition cleared, system operating normally'
+                
+                shlFunctionsLogger.info('Shelter water sensor condition cleared')
+                
+        else:
+            ## Change the system state
+            self.currentState['status'] = 'ERROR'
+            self.currentState['info'] = 'WATER! Shelter water sensor activated'
+            
+            shlFunctionsLogger.critical('Shelter water sensor activated')
+            
+        return True
+        
+    def processDoorState(self, state):
+        """
+        Figure out what to do about the shelter temperature.  If things look really bad, take action.
+        """
+        
+        if 'state' == 'closed':
+            # Everything is OK
+            if self.currentState['status'] == 'WARNING':
+                ## From WARNING
+                in_warning, message = self._merge_states(self.currentState['info'],
+                                                         remove='DOOR')
+                if not in_warning:
+                    self.currentState['status'] = 'NORMAL'
+                self.currentState['info'] = message
+                
+                shlFunctionsLogger.info('Shelter door open condition cleared')
+                
+        else:
+            # We are in warning
+            if self.currentState['status'] in ('NORMAL', 'WARNING'):
+                ## Escalation
+                _, message = self._merge_states(self.currentState['info'],
+                                                append=('DOOR',
+                                                        "Shelter door is open")
+                self.currentState['status'] = 'WARNING'
+                self.currentState['info'] = message
+                
+                shlFunctionsLogger.warning('Shelter door open condition')
+                
         return True
         
     def processUnreachable(self, unreachableDevice):

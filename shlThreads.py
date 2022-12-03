@@ -433,6 +433,9 @@ class EnviroMux(object):
                 sensorList[idx] = '_airflow'
         self.airflow = [None for i in range(self.nAirflow)]
         
+        # Door opening tracking variable
+        self.door_first_opened = None
+        
         # Setup the SNMP UDP connection
         self.community = community
         self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
@@ -580,6 +583,14 @@ class EnviroMux(object):
                             self.door_open = bool(int(str(value), 10))
                         self.lastError = None
                         
+                        # Track when the door was first opened
+                        if self.door_open:
+                            if self.door_first_opened is None:
+                                self.door_first_opened = time.time()
+                        else:
+                            if self.door_first_opened is not None:
+                                self.door_first_opened = None
+                                
                     except Exception as e:
                         _LogThreadException(self, e, logger=shlThreadsLogger)
                         self.door_open = None
@@ -633,6 +644,23 @@ class EnviroMux(object):
                 maxTemp = 1.8*max(temps) + 32
                 self.SHLCallbackInstance.processShelterTemperature(maxTemp)
                 
+            # Check for smoke
+            if self.SHLCallbackInstance is not None and self.smoke_detected is not None:
+                self.SHLCallbackInstance.processSmokeDetector(self.smoke_detected)
+                
+            # Check for water
+            if self.SHLCallbackInstance is not None and self.water_detected is not None:
+                self.SHLCallbackInstance.processWaterDetector(self.water_detected)
+                
+            # Check for an open door
+            if self.SHLCallbackInstance is not None:
+                if self.door_first_opened is None:
+                    self.SHLCallbackInstance.processDoorState('closed')
+                else:
+                    door_opened_age = time.time() - self.door_first_opened
+                    if door_opened_age > 15*3600:
+                        self.SHLCallbackInstance.processDoorState('open')
+                        
             # Make sure the device is reachable
             if self.SHLCallbackInstance is not None and nFailures > 0:
                 self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
