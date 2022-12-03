@@ -34,7 +34,7 @@ CFLAGS  := -O2 -Wall
 # Linker Flags 
 #------------------------------------------------------------------------------
 LDFLAGS := -lsub -Llibsub
-CFLAGS += -Ilibsub
+CFLAGS += -Ilibsub -I.
 LDFLAGS += -L/usr/local/lib -lusb-1.0 -lm
 
 #------------------------------------------------------------------------------
