@@ -83,6 +83,7 @@ class ShippingContainer(object):
         
         ## Monitoring and background threads
         self.currentState['tempThreads'] = None
+        self.currentState['enviroThread'] = None
         self.currentState['pduThreads'] = None
         self.currentState['wxThread'] = None
         self.currentState['strikeThread'] = None
@@ -200,6 +201,19 @@ class ShippingContainer(object):
                                 c+1, nSensors=v['nsensor'], description=v['description'], 
                                 MonitorPeriod=self.config['thermometers']['monitor_period'], SHLCallbackInstance=self)
                 self.currentState['tempThreads'].append(nT)
+        ## Enviromenal monitor
+        if self.currentState['enviroThread'] is not None:
+            self.currentState['enviroThread'].stop()
+        else:
+            self.currentState['enviroThread'] = None
+            for c,k in enumerate(sorted(self.config['enviromux']['devices'].keys())):
+                v = self.config['enviromux']['devices'][k]
+                
+                nT = EnviroMux(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
+                               c+1, sensorList=v['sensor_list'], description=v['description'], 
+                               MonitorPeriod=self.config['enviromux']['monitor_period'], SHLCallbackInstance=self)
+                self.currentState['enviroThread'] = nT
+                break
         ## PDUs
         if self.currentState['pduThreads'] is not None:
             for t in self.currentState['pduThreads']:
@@ -268,6 +282,8 @@ class ShippingContainer(object):
         # Start the monitoring threads back up
         for t in self.currentState['tempThreads']:
             t.start()
+        if self.currentState['enviroThread'] is not None:
+            self.currentState['enviroThread'].start()
         for t,p in zip(self.currentState['pduThreads'], self.currentState['rackPresent']):
             if p:
                 t.start()
@@ -331,6 +347,9 @@ class ShippingContainer(object):
         if self.currentState['tempThreads'] is not None:
             for t in self.currentState['tempThreads']:
                 t.stop()
+        ## Enviromenal monitor
+        if self.currentState['enviroThread'] is not None:
+            self.currentState['enviroThread'].stop()
         ## PDUs
         if self.currentState['pduThreads'] is not None:
             for t in self.currentState['pduThreads']:
@@ -494,6 +513,10 @@ class ShippingContainer(object):
         return True, meanTemp
         
     def getSmokeDetected(self):
+        if self.currentState['enviroThread'] is None:
+            self.currentState['lastLog'] = 'No enviromental monitoring system configured'
+            return False, False
+            
         if not self.currentState['enviroThread'].alive.isSet():
             self.currentState['lastLog'] = 'Monitoring thread for the enviromental system is not running'
             return False, False
@@ -506,6 +529,10 @@ class ShippingContainer(object):
             return True, out
             
     def getWaterDetected(self):
+        if self.currentState['enviroThread'] is None:
+            self.currentState['lastLog'] = 'No enviromental monitoring system configured'
+            return False, False
+            
         if not self.currentState['enviroThread'].alive.isSet():
             self.currentState['lastLog'] = 'Monitoring thread for the enviromental system is not running'
             return False, False
@@ -518,6 +545,10 @@ class ShippingContainer(object):
             return True, out
             
     def getDoorOpen(self):
+        if self.currentState['enviroThread'] is None:
+            self.currentState['lastLog'] = 'No enviromental monitoring system configured'
+            return False, False
+            
         if not self.currentState['enviroThread'].alive.isSet():
             self.currentState['lastLog'] = 'Monitoring thread for the enviromental system is not running'
             return False, False
