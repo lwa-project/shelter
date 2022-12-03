@@ -409,13 +409,13 @@ class EnviroMux(object):
         self.temp = [None for i in range(self.nTemperature)]
         if not hasSmoke:
             self.oidSmokeEntry = None
-        self.smoke = None
+        self.smoke_detected = None
         if not hasWater:
             self.oidWaterEntry = None
-        self.water = None
+        self.water_detected = None
         if not hasDoor:
             self.oidDoorEntry = None
-        self.door = None
+        self.door_open = None
         self.nAirflow = nAirflow
         self.airflow = [None for i in range(self.nAirflow)]
         
@@ -511,14 +511,14 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.smoke = bool(int(unicode(value), 10))
+                            self.smoke_detected = bool(int(unicode(value), 10))
                         except NameError:
-                            self.smoke = bool(int(str(value), 10))
+                            self.smoke_detected = bool(int(str(value), 10))
                         self.lastError = None
                         
                     except Exception as e:
                         _LogThreadException(self, e, logger=shlThreadsLogger)
-                        self.smoke = None
+                        self.smoke_detected = None
                         self.lastError = str(e)
                         
                 if self.oidWaterEntry is not None:
@@ -536,14 +536,14 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.water = bool(int(unicode(value), 10))
+                            self.water_detected = bool(int(unicode(value), 10))
                         except NameError:
-                            self.water = bool(int(str(value), 10))
+                            self.water_detected = bool(int(str(value), 10))
                         self.lastError = None
                         
                     except Exception as e:
                         _LogThreadException(self, e, logger=shlThreadsLogger)
-                        self.water = None
+                        self.water_detected = None
                         self.lastError = str(e)
                         
                 if self.oidDoorEntry is not None:
@@ -561,14 +561,14 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.door = bool(int(unicode(value), 10))
+                            self.door_open = bool(int(unicode(value), 10))
                         except NameError:
-                            self.door = bool(int(str(value), 10))
+                            self.door_open = bool(int(str(value), 10))
                         self.lastError = None
                         
                     except Exception as e:
                         _LogThreadException(self, e, logger=shlThreadsLogger)
-                        self.door = None
+                        self.door_open = None
                         self.lastError = str(e)
                         
                 for s,oidEntry in enumerate((self.oidAirflowEntry1,self.oidAirflowEntry1)):
@@ -601,7 +601,15 @@ class EnviroMux(object):
                             self.lastError = str(e)
                             
             # Log the data
-            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nSensors)]))
+            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nTemperature)]))
+            if self.oidSmokeEntry is not None:
+                toDataLog += ',smoke=%s' % str(self.smoke_detected)
+            if self.oidWaterEntry is not None:
+                toDataLog += ',water=%s' % str(self.water_detected)
+            if self.oidDoorEntry is not None:
+                toDataLog += ',door=%s' % str(self.door_open)
+            if self.nAirflow > 0:
+                toDataLog += ',airflow=%s' % ';'.join([str(self.airflow[s]) for s in range(self.nAirflow)])
             with open('/data/enviromux.txt', 'a+') as fh:
                 fh.write('%s\n' % toDataLog)
                 
@@ -664,30 +672,30 @@ class EnviroMux(object):
         Convenience function to get whether or not smoke has been detected.
         """
         
-        if self.smoke is None:
+        if self.smoke_detected is None:
             return None
             
-        return self.smoke
+        return self.smoke_detected
         
     def getWaterDetected(self):
         """
         Convenience function to get whether or not smoke has been detected.
         """
         
-        if self.water is None:
+        if self.water_detected is None:
             return None
             
-        return self.water
+        return self.water_detected
         
     def getDoorOpen(self):
         """
         Convenience function to get whether or not smoke has been detected.
         """
         
-        if self.door is None:
+        if self.door_open is None:
             return None
             
-        return self.door
+        return self.door_open
         
     def getAirflow(self, sensor=0):
         """
