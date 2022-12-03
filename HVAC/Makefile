@@ -109,6 +109,7 @@ install:
                         /usr/local/bin/lead_lag_status
 
 clean:
+	rm -rf compressor2_toggle.cpp compressor2_status.cpp
 	rm -f *.o *.out *.err *.exe *.a *.so
 	rm -f *_enable *_disable *_status
 	make -C libsub clean
