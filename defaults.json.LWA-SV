@@ -33,6 +33,15 @@
     }
   },
   
+  /* Shelter environmental monitoring system */
+  "enviromux": {
+    "warning_temp": 80.0,   // degrees F
+    "critical_temp": 90.0,  // degrees F
+    "critical_list": [],
+    "monitor_period": 60.0, // seconds
+    "devices": {}
+  },
+  
   /* Shelter PDUs and UPSs */
   "pdus": {
     "monitor_period": 20.0,   // seconds
