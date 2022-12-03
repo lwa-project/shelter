@@ -88,11 +88,11 @@ compressor%_disable: compressor%_disable.o hvac_common.o
 compressor2_status.cpp: compressor1_status.cpp
 	sed -e 's/compressor1/compressor2/g;s/COMPRESSOR1/COMPRESSOR2/g' $^ > $@
 	
-compressor%_status: compressor%_status.o utils.o hvac_config.hpp
+compressor%_status: compressor%_status.o hvac_config.hpp
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 
-lead_lag_status: lead_lag_status.o utils.o hvac_config.hpp
+lead_lag_status: lead_lag_status.o hvac_config.hpp
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 install:
