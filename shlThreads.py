@@ -388,9 +388,9 @@ class EnviroMux(object):
     airflow sensor.
     """
     
-    oidTemperatureEntry0 = None
-    oidTemperatureEntry1 = None
-    oidDigitalBaseEntry  = None
+    oidTemperatureEntry0 = (1,3,6,1,4,1,3699,1,1,8,1,5,1,1,7,1)
+    oidTemperatureEntry1 = (1,3,6,1,4,1,3699,1,1,8,1,5,1,1,7,3)
+    oidDigitalBaseEntry  = (1,3,6,1,4,1,3699,1,1,8,1,6,1,1,7)
     
     def __init__(self, ip, port, community, id, nTemperature=2, sensorList=None, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
         self.ip = ip
@@ -408,27 +408,27 @@ class EnviroMux(object):
         self.oidSmokeEntry = None
         if 'smoke' in sensorList:
             idx = sensorList.index('smoke')
-            self.oidSmokeEntry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+            self.oidSmokeEntry = self.oidDigitalBaseEntry+(idx+1,)
         self.oidWaterEntry = None
         if 'water' in sensorList:
             idx = sensorList.index('water')
-            self.oidWaterEntry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+            self.oidWaterEntry = self.oidDigitalBaseEntry+(idx+1,)
         self.oidDoorEntry = None
         if 'door' in sensorList:
             idx = sensorList.index('door')
-            self.oidWaterEntry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+            self.oidWaterEntry = self.oidDigitalBaseEntry+(idx+1,)
         self.nAirflow = 0
         self.oidAirflowEntry0 = None
         self.oidAirflowEntry1 = None
         if 'airflow' in sensorList:
             idx = sensorList.index('airflow')
-            self.oidAirflowEntry0Entry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+            self.oidAirflowEntry0Entry = self.oidDigitalBaseEntry+(idx+1,)
             self.nAirflow += 1
             sensorList[idx] = '_airflow'
             
             if 'airflow' in sensorList:
                 idx = sensorList.index('airflow')
-                self.oidAirflowEntry1Entry = self.oidDigitalBaseEntry+'.%i' % (idx+1)
+                self.oidAirflowEntry1Entry = self.oidDigitalBaseEntry+(idx+1,)
                 self.nAirflow += 1
                 sensorList[idx] = '_airflow'
         self.airflow = [None for i in range(self.nAirflow)]
@@ -503,9 +503,9 @@ class EnviroMux(object):
                             name, value = varBinds[0]
                             
                             try:
-                                self.temp[s] = float(unicode(value))
+                                self.temp[s] = float(unicode(value)) / 10.0
                             except NameError:
-                                self.temp[s] = float(str(value))
+                                self.temp[s] = float(str(value)) / 10.0
                             self.lastError = None
                             
                         except Exception as e:
@@ -528,9 +528,9 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.smoke_detected = bool(int(unicode(value), 10))
+                            self.smoke_detected = bool(1-int(unicode(value), 10))
                         except NameError:
-                            self.smoke_detected = bool(int(str(value), 10))
+                            self.smoke_detected = bool(1-int(str(value), 10))
                         self.lastError = None
                         
                     except Exception as e:
@@ -553,9 +553,9 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.water_detected = bool(int(unicode(value), 10))
+                            self.water_detected = bool(1-int(unicode(value), 10))
                         except NameError:
-                            self.water_detected = bool(int(str(value), 10))
+                            self.water_detected = bool(1-int(str(value), 10))
                         self.lastError = None
                         
                     except Exception as e:
@@ -578,9 +578,9 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.door_open = bool(int(unicode(value), 10))
+                            self.door_open = bool(1-int(unicode(value), 10))
                         except NameError:
-                            self.door_open = bool(int(str(value), 10))
+                            self.door_open = bool(1-int(str(value), 10))
                         self.lastError = None
                         
                         # Track when the door was first opened
@@ -615,9 +615,9 @@ class EnviroMux(object):
                             name, value = varBinds[0]
                             
                             try:
-                                self.airflow[s] = bool(int(unicode(value), 10))
+                                self.airflow[s] = bool(1-int(unicode(value), 10))
                             except NameError:
-                                self.airflow[s] = bool(int(str(value), 10))
+                                self.airflow[s] = bool(1-int(str(value), 10))
                             self.lastError = None
                             
                         except Exception as e:
