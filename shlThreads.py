@@ -391,6 +391,7 @@ class EnviroMux(object):
     oidTemperatureEntry0 = (1,3,6,1,4,1,3699,1,1,8,1,5,1,1,7,1)
     oidTemperatureEntry1 = (1,3,6,1,4,1,3699,1,1,8,1,5,1,1,7,3)
     oidDigitalBaseEntry  = (1,3,6,1,4,1,3699,1,1,8,1,6,1,1,7)
+    oidRelayEntry        = (1,3,6,1,4,1,3699,1,1,8,1,8,1,1,3,1)
     
     def __init__(self, ip, port, community, id, nTemperature=2, sensorList=None, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
         self.ip = ip
