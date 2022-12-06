@@ -406,14 +406,17 @@ class EnviroMux(object):
         if sensorList is None:
             sensorList = [None for i in range(5)]
         self.oidSmokeEntry = None
+        self.smoke_detected = None
         if 'smoke' in sensorList:
             idx = sensorList.index('smoke')
             self.oidSmokeEntry = self.oidDigitalBaseEntry+(idx+1,)
         self.oidWaterEntry = None
+        self.water_detected = None
         if 'water' in sensorList:
             idx = sensorList.index('water')
             self.oidWaterEntry = self.oidDigitalBaseEntry+(idx+1,)
         self.oidDoorEntry = None
+        self.door_open = None
         if 'door' in sensorList:
             idx = sensorList.index('door')
             self.oidWaterEntry = self.oidDigitalBaseEntry+(idx+1,)
@@ -422,13 +425,13 @@ class EnviroMux(object):
         self.oidAirflowEntry1 = None
         if 'airflow' in sensorList:
             idx = sensorList.index('airflow')
-            self.oidAirflowEntry0Entry = self.oidDigitalBaseEntry+(idx+1,)
+            self.oidAirflowEntry0 = self.oidDigitalBaseEntry+(idx+1,)
             self.nAirflow += 1
             sensorList[idx] = '_airflow'
             
             if 'airflow' in sensorList:
                 idx = sensorList.index('airflow')
-                self.oidAirflowEntry1Entry = self.oidDigitalBaseEntry+(idx+1,)
+                self.oidAirflowEntry1 = self.oidDigitalBaseEntry+(idx+1,)
                 self.nAirflow += 1
                 sensorList[idx] = '_airflow'
         self.airflow = [None for i in range(self.nAirflow)]
@@ -596,7 +599,7 @@ class EnviroMux(object):
                         self.door_open = None
                         self.lastError = str(e)
                         
-                for s,oidEntry in enumerate((self.oidAirflowEntry1,self.oidAirflowEntry1)):
+                for s,oidEntry in enumerate((self.oidAirflowEntry0,self.oidAirflowEntry1)):
                     if s >= self.nAirflow:
                         break
                         
@@ -702,8 +705,7 @@ class EnviroMux(object):
         for value in self.temp:
             if value is None:
                 output.append( None )
-                
-            if DegreesF:
+            elif DegreesF:
                 output.append( 1.8*value + 32 )
             else:
                 output.append( value )
