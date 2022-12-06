@@ -182,6 +182,19 @@ class ShippingContainer(object):
             self.scheduler.stop()
         else:
             self.scheduler = EventScheduler()
+        ## Enviromenal monitor
+        if self.currentState['enviroThread'] is not None:
+            self.currentState['enviroThread'].stop()
+        else:
+            self.currentState['enviroThread'] = None
+            for c,k in enumerate(sorted(self.config['enviromux']['devices'].keys())):
+                v = self.config['enviromux']['devices'][k]
+                
+                nT = EnviroMux(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
+                               c+1, sensorList=v['sensor_list'], description=v['description'], 
+                               MonitorPeriod=self.config['enviromux']['monitor_period'], SHLCallbackInstance=self)
+                self.currentState['enviroThread'] = nT
+                break
         ## Temperature
         if self.currentState['tempThreads'] is not None:
             for t in self.currentState['tempThreads']:
@@ -201,19 +214,6 @@ class ShippingContainer(object):
                                 c+1, nSensors=v['nsensor'], description=v['description'], 
                                 MonitorPeriod=self.config['thermometers']['monitor_period'], SHLCallbackInstance=self)
                 self.currentState['tempThreads'].append(nT)
-        ## Enviromenal monitor
-        if self.currentState['enviroThread'] is not None:
-            self.currentState['enviroThread'].stop()
-        else:
-            self.currentState['enviroThread'] = None
-            for c,k in enumerate(sorted(self.config['enviromux']['devices'].keys())):
-                v = self.config['enviromux']['devices'][k]
-                
-                nT = EnviroMux(v['ip'], v['port'], cmdgen.CommunityData(*v['security_model']),
-                               c+1, sensorList=v['sensor_list'], description=v['description'], 
-                               MonitorPeriod=self.config['enviromux']['monitor_period'], SHLCallbackInstance=self)
-                self.currentState['enviroThread'] = nT
-                break
         ## PDUs
         if self.currentState['pduThreads'] is not None:
             for t in self.currentState['pduThreads']:
@@ -280,10 +280,10 @@ class ShippingContainer(object):
         shlFunctionsLogger.info('-----------------')
         
         # Start the monitoring threads back up
-        for t in self.currentState['tempThreads']:
-            t.start()
         if self.currentState['enviroThread'] is not None:
             self.currentState['enviroThread'].start()
+        for t in self.currentState['tempThreads']:
+            t.start()
         for t,p in zip(self.currentState['pduThreads'], self.currentState['rackPresent']):
             if p:
                 t.start()
@@ -343,13 +343,13 @@ class ShippingContainer(object):
         self.currentState['ready'] = False
         
         # Stop all threads.
+        ## Enviromenal monitor
+        if self.currentState['enviroThread'] is not None:
+            self.currentState['enviroThread'].stop()
         ## Temperature
         if self.currentState['tempThreads'] is not None:
             for t in self.currentState['tempThreads']:
                 t.stop()
-        ## Enviromenal monitor
-        if self.currentState['enviroThread'] is not None:
-            self.currentState['enviroThread'].stop()
         ## PDUs
         if self.currentState['pduThreads'] is not None:
             for t in self.currentState['pduThreads']:
@@ -494,6 +494,14 @@ class ShippingContainer(object):
         
         i = 0
         meanTemp = 0
+        if self.currentState['enviroThread'] is not None:
+            if self.currentState['enviroThread'].alive.isSet():
+                try:
+                    meanTemp += self.currentState['enviroThread'].getTemperature(DegreesF=DegreesF)
+                    i += 1
+                except TypeError:
+                    pass
+                    
         for t in self.currentState['tempThreads']:
             # Make sure the monitoring thread is running
             if t.alive.isSet():
