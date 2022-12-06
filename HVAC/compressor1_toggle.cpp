@@ -26,6 +26,8 @@ int main() {
       
       break;
     }
+    
+    delete sub20;
   }
   
   if( !found ) {
