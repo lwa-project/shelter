@@ -31,7 +31,7 @@ int main() {
   }
   
   if( !found ) {
-    std::cout << "No device found, exiting!" << std::endl;
+    std::cerr << "No device found, exiting!" << std::endl;
     std::exit(EXIT_FAILURE);
   }
   
