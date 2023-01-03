@@ -1,5 +1,5 @@
-#ifndef __HVAC_CONFIG_H
-#define __HVAC_CONFIG_H
+#ifndef __HVAC_CONFIG_HPP
+#define __HVAC_CONFIG_HPP
 
 // GPIO setup for the relays
 //// pin 9
@@ -28,4 +28,4 @@
 // Number of times to poll the ADC value
 #define N_POLL_ADC  10
 
-#endif  // __HVAC_CONFIG_H
+#endif  // __HVAC_CONFIG_HPP

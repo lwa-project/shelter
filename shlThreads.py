@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import time
+import sched
 import socket
 import logging
 import sqlite3
@@ -23,8 +24,8 @@ from pysnmp.proto import rfc1902
 
 from lwainflux import LWAInfluxClient
 
-__version__ = "0.7"
-__all__ = ['Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
+__version__ = "0.8"
+__all__ = ['EventScheduler', 'Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -71,6 +72,111 @@ def _LogThreadException(cls, exception, logger=None):
     ## Print the traceback to the logger as a series of DEBUG messages
     for line in tbString.split('\n'):
         logger.debug("%s", line)
+
+
+class EventScheduler(object):
+    """
+    Class for running background functions.
+    """
+    
+    def __init__(self, MonitorPeriod=5.0):
+        # Setup the scheduler and its lock
+        self.lock = threading.Lock()
+        self.scheduler = sched.scheduler(time.time, time.sleep)
+        self.MonitorPeriod = MonitorPeriod
+        
+        # Setup threading
+        self.thread = None
+        self.alive = threading.Event()
+        self.lastError = None
+        
+    def start(self):
+        """
+        Start the scheduler thread.
+        """
+        
+        if self.thread is not None:
+            self.stop()
+            
+        self.thread = threading.Thread(target=self.monitorThread)
+        self.thread.setDaemon(1)
+        self.alive.set()
+        self.thread.start()
+        
+    def stop(self):
+        """
+        Stop the scheduler thread and empty the event queue.
+        """
+        
+        with self.lock:
+            if self.thread is not None:
+                for entry in self.scheduler.queue:
+                    self.scheduler.cancel(entry)
+                    
+                self.alive.clear()          #clear alive event for thread
+                self.thread.join()          #wait until thread has finished
+                self.thread = None
+                self.lastError = None
+                
+    def monitorThread(self):
+        """
+        Create a monitoring thread to run entries in the queue.
+        """
+        
+        while self.alive.isSet():
+            tStart = time.time()
+            
+            with self.lock:
+                try:
+                    self.scheduler.run(blocking=False)
+                except Exception as e:
+                    _LogThreadException(self, e, logger=shlThreadsLogger)
+                    self.lastError = str(e)
+                    
+            tStop = time.time()
+            
+            sleepCount = 0.0
+            sleepTime = max([1.0, self.MonitorPeriod - (tStop - tStart)])
+            while (self.alive.isSet() and sleepCount < sleepTime):
+                time.sleep(0.2)
+                sleepCount += 0.2
+                
+    def empty(self):
+        """
+        Return whether or not the scheduler queue is emtpy.  Raises a
+        RuntimeError if the scheduler is not running.
+        """
+        
+        if self.thread is None:
+            raise RuntimeError("Scheduler is not running")
+            
+        with self.lock:
+            status = self.scheduler.empty()
+        return status
+        
+    def enter(self, delay, priority, action, argument=(), kwargs={}):
+        """
+        Enter a new event into the queue to run at a relative time.  Raises a
+        RuntimeError if the scheduler is not running.
+        """
+        
+        if self.thread is None:
+            raise RuntimeError("Scheduler is not running")
+            
+        with self.lock:
+            self.scheduler.enter(delay, priority, action, argument=argument, kwargs=kwargs)
+            
+    def enterabs(self, time, priority, action, argument=(), kwargs={}):
+        """
+        Enter a new event into the queue to run at an absolute time.  Raises a
+        RuntimeError if the scheduler is not running.
+        """
+        
+        if self.thread is None:
+            raise RuntimeError("Scheduler is not running")
+            
+        with self.lock:
+            self.scheduler.enterabs(delay, priority, action, argument=argument, kwargs=kwargs)
 
 
 class Thermometer(object):

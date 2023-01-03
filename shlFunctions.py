@@ -6,7 +6,6 @@ turning on/off ports, etc.)
 
 import os
 import time
-import sched
 import logging
 import threading
 from functools import reduce
@@ -17,7 +16,7 @@ from lwainflux import LWAInfluxClient
 
 from shlThreads import *
 
-__version__ = "0.4"
+__version__ = "0.5"
 __all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer"]
 
 
@@ -92,7 +91,7 @@ class ShippingContainer(object):
         self.currentState['outageThread'] = None
         
         ## Scheduler for clearing the unreachable device list
-        self.scheduler = sched.scheduler(time.time, time.sleep)
+        self.scheduler = None
         
         # Update the configuration
         self.updateConfig()
@@ -182,6 +181,11 @@ class ShippingContainer(object):
         influxdb = LWAInfluxClient.from_config(self.config)
         
         # Stop all threads.  If the don't exist yet, create them.
+        ## Scheduler
+        if self.scheduler is not None:
+            self.scheduler.stop()
+        else:
+            self.scheduler = EventScheduler()
         ## Temperature
         if self.currentState['tempThreads'] is not None:
             for t in self.currentState['tempThreads']:
@@ -327,10 +331,6 @@ class ShippingContainer(object):
         self.currentState['activeProcess'].append('SHT')
         self.currentState['ready'] = False
         
-        # Stop the scheduler
-        for entry in self.scheduler.queue:
-            self.scheduler.cancel(entry)
-            
         # Stop all threads.
         ## Temperature
         if self.currentState['tempThreads'] is not None:
@@ -350,6 +350,9 @@ class ShippingContainer(object):
         if self.currentState['outageThread'] is not None:
             self.currentState['outageThread'].stop()
             
+        # Stop the scheduler
+        self.scheduler.stop()
+        
         # Update the state
         self.currentState['status'] = 'SHUTDWN'
         self.currentState['info'] = 'System has been shut down'
@@ -981,11 +984,10 @@ class ShippingContainer(object):
         
         # Update the unreachable device list
         if unreachableDevice is not None:
-            ListLock.acquire()
-            self.currentState['unreachableDevices'][unreachableDevice] = tNow
-            ListLock.release()
-            shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
-            
+            with ListLock:
+                self.currentState['unreachableDevices'][unreachableDevice] = tNow
+                shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
+                
         # Count the recently updated (<= 6 minutes since the last failure) entries
         nUnreachable = 0
         unreachable = {}
@@ -996,10 +998,9 @@ class ShippingContainer(object):
                 unreachable[device] = self.currentState['unreachableDevices'][device]
             else:
                 shlFunctionsLogger.info('Updated unreachable list - remove %s', device)
-        ListLock.acquire()
-        self.currentState['unreachableDevices'] = unreachable
-        shlFunctionsLogger.debug('Unreachable list now contains %i entries', len(self.currentState['unreachableDevices']))
-        ListLock.release()
+        with ListLock:
+            self.currentState['unreachableDevices'] = unreachable
+            shlFunctionsLogger.debug('Unreachable list now contains %i entries', len(self.currentState['unreachableDevices']))
             
         # If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
         if nUnreachable == 0:
@@ -1024,7 +1025,6 @@ class ShippingContainer(object):
             ## Make sure to check back later to see if this is still a problem
             if self.scheduler.empty():
                 self.scheduler.enter(420, 1, self.processUnreachable, (None,))
-                self.scheduler.run()
                 shlFunctionsLogger.debug('Scheduling another call of \'processUnreachable\' for seven minutes from now')
                 
             return True
