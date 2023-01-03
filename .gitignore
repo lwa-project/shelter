@@ -12,8 +12,11 @@ defaults.cfg
 *.a
 *.so
 
+# Generated source files
+HVAC/compressor2_status.cpp
+HVAC/compressor2_toggle.cpp
+
 # Executables
-HVAC/adc_read
 HVAC/compressor1_disable
 HVAC/compressor1_enable
 HVAC/compressor1_status
@@ -23,6 +26,4 @@ HVAC/compressor2_status
 HVAC/controller_disable
 HVAC/controller_enable
 HVAC/controller_status
-HVAC/gpio_off
-HVAC/gpio_on
 HVAC/lead_lag_status
