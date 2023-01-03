@@ -1071,6 +1071,7 @@ int sub_spi_transfer_ess( sub_handle hndl,
 }
 */
 
+
 /*
 *-----------------------------------------------------------------------------
 * MDIO
@@ -1588,7 +1589,7 @@ int	sub_lcd_write( sub_handle hndl, char* str )
 	sub_pack	outpk,inpk;
 
 	outpk.tag.code = SUB_LCD_WRITE;
-	strncpy( outpk.tag.LCD_write_req.str, str, SUB_MAX_LCD_STR );
+	strncpy( outpk.tag.LCD_write_req.str, str, SUB_MAX_LCD_STR-1 );
 	outpk.tag.size = (uint8_t)strlen(outpk.tag.LCD_write_req.str)+1;
 
 	inpk.tag.size = 1;
