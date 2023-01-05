@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import os
 import pytz
@@ -70,13 +67,8 @@ def getLast(filename, N):
     Function that takes in a filename and returns the last N lines of the file.
     """
     
-    proc = subprocess.Popen(['tail', '-n%i' % int(N), filename], stdout=subprocess.PIPE)
-    output, error = proc.communicate()
-    try:
-        output = output.decode('ascii')
-        error = error.decode('ascii')
-    except AttributeError:
-        pass
+    output = subprocess.check_output(['tail', '-n%i' % int(N), filename], stderr=subprocess.DEVNULL)
+    output = output.decode('ascii')
     output = output.split('\n')[:-1]
     
     return output
