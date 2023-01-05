@@ -107,8 +107,8 @@
   },
   
   "influx": {
-    "username": "lwa1",
-    "password": "logging4Fun@1",
-    "database": "lwa1"
+    "username": "!LWA_AUTH USERNAME influx",
+    "password": "!LWA_AUTH PASSWORD influx",
+    "database": "!LWA_AUTH URL influx"
   }
 }
