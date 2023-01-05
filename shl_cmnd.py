@@ -51,8 +51,14 @@ def _config_load(json_data):
     config = json.loads(json_minify.json_minify(ch.read()))
     for key,value in config.items():
         if value.startswith('!LWA_AUTH'):
-            _, stype, stag = value.split(None, 2)
-            
+            try:
+                _, stype, stag = value.split(None, 2)
+            except ValueError:
+                raise ValueError("Invalid lwa_auth loader call: '%s'" % value)
+                
+            if stype not in ('USERNAME', 'PASSWORD', 'URL'):
+                raise ValueError("Invalid lwa_auth loader parameter: '%s'" % stype)
+                
             new_value = None
             try:
                 sentry = LWA_AUTH_STORE.get(stag)
@@ -63,7 +69,7 @@ def _config_load(json_data):
                 elif stype == 'URL':
                     new_value = sentry.url
             except TagNotFoundError:
-                pass
+                raise ValueError("Invalid lwa_auth loader tag: '%s'" % stag)
                 
             if new_value is not None:
                 config[key] = new_value
