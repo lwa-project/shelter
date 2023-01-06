@@ -1,4 +1,5 @@
 git
 json_minify
+lwa_auth
 pysnmp >= 4.4.3
 influxdb
