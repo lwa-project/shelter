@@ -26,7 +26,7 @@ try:
 except ImportError:
         from io import StringIO
 
-from lwa_auth import STORE as LWA_AUTH_STORE, TagNotFoundError
+from lwa_auth.tools import load_json_config
 
 from MCS import *
 
@@ -41,40 +41,6 @@ __all__ = ['DEFAULTS_FILENAME', 'MCSCommunicate']
 # Default Configuration File
 #
 DEFAULTS_FILENAME = '/lwa/software/defaults.json'
-
-
-def _config_load(json_data):
-    """
-    Wrapper around json.loads that deals with secret loading.
-    """
-    
-    config = json.loads(json_minify.json_minify(ch.read()))
-    for key,value in config.items():
-        if value.startswith('!LWA_AUTH'):
-            try:
-                _, stype, stag = value.split(None, 2)
-            except ValueError:
-                raise ValueError("Invalid lwa_auth loader call: '%s'" % value)
-                
-            if stype not in ('USERNAME', 'PASSWORD', 'URL'):
-                raise ValueError("Invalid lwa_auth loader parameter: '%s'" % stype)
-                
-            new_value = None
-            try:
-                sentry = LWA_AUTH_STORE.get(stag)
-                if stype == 'USERNAME':
-                    new_value = sentry.username
-                elif stype == 'PASSWORD':
-                    new_value = sentry.password
-                elif stype == 'URL':
-                    new_value = sentry.url
-            except TagNotFoundError:
-                raise ValueError("Invalid lwa_auth loader tag: '%s'" % stag)
-                
-            if new_value is not None:
-                config[key] = new_value
-                
-    return config
 
 
 class MCSCommunicate(Communicate):
@@ -409,9 +375,8 @@ class MCSCommunicate(Communicate):
             # INI
             elif command == 'INI':
                 # Re-read in the configuration file
-                with open(self.opts.config, 'r') as ch:
-                    config = _config_load(ch.read())
-                    
+                config = load_json_config(self.opts.config)
+                
                 # Refresh the configuration for the communicator and ASP
                 self.updateConfig(config)
                 self.SubSystemInstance.updateConfig(config)
@@ -523,9 +488,8 @@ def main(args):
     logger.info('All dates and times are in UTC except where noted')
     
     # Read in the configuration file
-    with open(args.config, 'r') as ch:
-        config = _config_load(ch.read())
-        
+    config = load_json_config(args.config)
+    
     # Setup ASP control
     lwaSHL = ShippingContainer(config)
 
