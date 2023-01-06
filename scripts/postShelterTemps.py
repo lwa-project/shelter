@@ -9,8 +9,7 @@ from lwa_auth import KEYS as LWA_AUTH_KEYS
 from lwa_auth.signed_requests import post as signed_post
 
 
-URL = "https://lwalab.phys.unm.edu/OpScreen/update.php"
-KEY = "c0843461abe746a4608dd9c897f9b261"
+URL = "https://lwalab.phys.unm.edu/OpScreen/update"
 SITE = gethostname().split("-",1)[0]
 SUBSYSTEM = "SHL"
 
@@ -59,5 +58,5 @@ if time.time() > lastUpdated + 300:
     
 # Send the update to lwalab
 f = signed_post(LWA_AUTH_KEYS.get('shl', kind='private'), URL,
-                data={'key': KEY, 'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
+                data={'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
 f.close()
