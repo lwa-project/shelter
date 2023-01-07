@@ -11,6 +11,8 @@ from socket import gethostname
 import smtplib
 from email.mime.text import MIMEText
 
+from lwa_auth import STORE as LWA_AUTH_STORE
+
 # Timezones
 UTC = pytz.utc
 MST = pytz.timezone('US/Mountain')
@@ -38,17 +40,10 @@ RESET_CLEAR_TIME = 60
 TO = ['lwa1ops-l@list.unm.edu',]
 
 # SMTP user and password
-if SITE == 'lwa1':
-    FROM = 'lwa.station.1@gmail.com'
-    PASS = 'wbubhbroobadytww'
-elif SITE == 'lwasv':
-    FROM = 'lwa.station.sv@gmail.com'
-    PASS = 'ejpzdtoccyheosri'
-elif SITE == 'lwana':
-    FROM = 'lwa.station.na@gmail.com'
-    PASS = 'jsgxqifhcmnosxvd'
-else:
-    raise RuntimeError("Unknown site '%s'" % SITE)
+store_entry = LWA_AUTH_STORE.get('email')
+FROM = store_entry.username
+PASS = store_entry.password
+ESRV = store_entry.url
 
 # State directory
 STATE_DIR = '/home/ops/.shl-state/'
@@ -88,7 +83,7 @@ def sendEmail(subject, message, debug=False):
     msg.add_header('reply-to', TO[0])
     
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP(ESRV, 587)
         if debug:
             server.set_debuglevel(1)
         server.starttls()
