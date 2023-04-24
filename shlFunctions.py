@@ -266,6 +266,7 @@ class ShippingContainer(object):
         shlFunctionsLogger.info('-----------------')
         
         # Start the monitoring threads back up
+        self.scheduler.start()
         for t in self.currentState['tempThreads']:
             t.start()
         for t,p in zip(self.currentState['pduThreads'], self.currentState['rackPresent']):
