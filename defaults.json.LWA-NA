@@ -80,5 +80,11 @@
   "outage": {
     "ip": "224.168.2.10",
     "port": 7165
+  },
+  
+  "influx": {
+    "username": "!LWA_AUTH USERNAME influx",
+    "password": "!LWA_AUTH PASSWORD influx",
+    "database": "!LWA_AUTH URL influx"
   }
 }
