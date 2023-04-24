@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import os
 import pytz
@@ -12,6 +9,8 @@ from socket import gethostname
 
 import smtplib
 from email.mime.text import MIMEText
+
+from lwa_auth import STORE as LWA_AUTH_STORE
 
 # Timezones
 UTC = pytz.utc
@@ -40,17 +39,10 @@ RESET_CLEAR_TIME = 60
 TO = ['lwa1ops-l@list.unm.edu',]
 
 # SMTP user and password
-if SITE == 'lwa1':
-    FROM = 'lwa.station.1@gmail.com'
-    PASS = 'wbubhbroobadytww'
-elif SITE == 'lwasv':
-    FROM = 'lwa.station.sv@gmail.com'
-    PASS = 'ejpzdtoccyheosri'
-elif SITE == 'lwana':
-    FROM = 'lwa.station.na@gmail.com'
-    PASS = 'jsgxqifhcmnosxvd'
-else:
-    raise RuntimeError("Unknown site '%s'" % SITE)
+store_entry = LWA_AUTH_STORE.get('email')
+FROM = store_entry.username
+PASS = store_entry.password
+ESRV = store_entry.url
 
 # State directory
 STATE_DIR = '/home/ops/.shl-state/'
@@ -69,13 +61,8 @@ def getLast(filename, N):
     Function that takes in a filename and returns the last N lines of the file.
     """
     
-    proc = subprocess.Popen(['tail', '-n%i' % int(N), filename], stdout=subprocess.PIPE)
-    output, error = proc.communicate()
-    try:
-        output = output.decode('ascii')
-        error = error.decode('ascii')
-    except AttributeError:
-        pass
+    output = subprocess.check_output(['tail', '-n%i' % int(N), filename], stderr=subprocess.DEVNULL)
+    output = output.decode('ascii')
     output = output.split('\n')[:-1]
     
     return output
@@ -95,7 +82,7 @@ def sendEmail(subject, message, debug=False):
     msg.add_header('reply-to', TO[0])
     
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP(ESRV, 587)
         if debug:
             server.set_debuglevel(1)
         server.starttls()
