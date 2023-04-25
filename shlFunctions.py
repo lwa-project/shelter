@@ -430,9 +430,15 @@ class ShippingContainer(object):
                 if not response.startwith('Settings have been updated'):
                     raise RuntimeError("Unexpected response: %s" % response)
                     
-            self.currentState['setPoint'] = (((9*value / 5.) + 64) / 2.)
             time.sleep(1)
             
+            with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
+                value = uh.read()
+                value = value.decode()
+                _, value = value.split('<br>')
+                value = value.replace('F', '')
+                self.currentState['setPoint'] = float(value)
+                
         except (KeyError, ValueError, RuntimeError) as e:
             shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
         except Exception as e:
