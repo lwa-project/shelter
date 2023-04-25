@@ -9,6 +9,7 @@ import time
 import logging
 import threading
 from functools import reduce
+from urllib.request import urlopen
 
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 
@@ -406,8 +407,24 @@ class ShippingContainer(object):
         Thread base to set the temperature set point.
         """
         
-        self.currentState['setPoint'] = setPoint
-        
+        try:
+            ip_address = self.config['hvac']['ip'][0]
+            value = round(((setPoint * 2) - 64) * 5 / 9.)
+            
+            with urlopen(f"http://{ip_address}/1?07={value}&30=1&2F=1) as uh:
+                response = uh.read()
+                response = response.decode()
+                if not response.startwith('Settings have been updated'):
+                    raise RuntimeError("Unexpected response: %s" % response)
+                    
+            self.currentState['setPoint'] = (((9*value / 5.) + 64) / 2.)
+            time.sleep(1)
+            
+        except (KeyError, ValueError, RuntimeError) as e:
+            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
+        except Exception as e:
+            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
+            
         return True, 0
         
     def dif(self, diffPoint):
