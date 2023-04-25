@@ -313,7 +313,6 @@ class ShippingContainer(object):
                 
             time.sleep(1)
             
-        
         except Exception as e:
             pass
             
