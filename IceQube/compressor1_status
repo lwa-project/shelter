@@ -25,15 +25,18 @@ def main(args):
         raise RuntimeError("No configuration info. found for HVAC #%i" % 1)
         
     # Query the unit
-    with urlopen(f"http://{ip_address}/ledstate.cgi", timeout=20) as uh:
-        status = uh.read()
-        status = status.decode()
-        status = int(status)
-        
-        if status & 8:
-            print('compressor1: enabled on')
-        else:
-            print('compressor1: enabled off')
+    try:
+        with urlopen(f"http://{ip_address}/ledstate.cgi", timeout=20) as uh:
+            status = uh.read()
+            status = status.decode()
+            status = int(status)
+            
+            if status & 8:
+                print('compressor1: enabled on')
+            else:
+                print('compressor1: enabled off')
+    except Exception as e:
+        print('compressor1: disabled off')
 
 
 if __name__ == '__main__':

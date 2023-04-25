@@ -25,14 +25,17 @@ def main(args):
         raise RuntimeError("No configuration info. found for HVAC #%i" % 1)
         
     # Query the unit
-    with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
-        status = uh.read()
-        status = status.decode()
-        
-        if status.find('LEAD') != -1:
-            print('lead: 1')
-        else:
-            print('lead: 2')
+    try:
+        with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
+            status = uh.read()
+            status = status.decode()
+            
+            if status.find('LEAD') != -1:
+                print('lead: 1')
+            else:
+                print('lead: 2')
+    except Exception as e:
+        print('lead: unk')
 
 
 if __name__ == '__main__':
