@@ -280,6 +280,19 @@ class ShippingContainer(object):
         shlFunctionsLogger.info('Total Number of Racks: %i', self.currentState['nRacks'])
         shlFunctionsLogger.info('-----------------')
         
+        # Update the HVAC set point
+        try:
+            ip_address = self.config['hvac']['ip'][0]
+            
+            with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
+                value = uh.read()
+                value = value.decode()
+                _, value = value.split('<br>')
+                value = value.replace('F', '')
+                self.currentState['setPoint'] = float(value)
+        except Exception as e:
+            pass
+            
         # Start the monitoring threads back up
         self.scheduler.start()
         if self.currentState['enviroThread'] is not None:
@@ -411,7 +424,7 @@ class ShippingContainer(object):
             ip_address = self.config['hvac']['ip'][0]
             value = round(((setPoint * 2) - 64) * 5 / 9.)
             
-            with urlopen(f"http://{ip_address}/1?07={value}&30=1&2F=1) as uh:
+            with urlopen(f"http://{ip_address}/1?07={value}&30=1&2F=1", timeout=20) as uh:
                 response = uh.read()
                 response = response.decode()
                 if not response.startwith('Settings have been updated'):
