@@ -420,7 +420,7 @@ class EnviroMux(object):
         self.door_open = None
         if 'door' in sensorList:
             idx = sensorList.index('door')
-            self.oidWaterEntry = self.oidDigitalBaseEntry+(idx+1,)
+            self.oidDoorEntry = self.oidDigitalBaseEntry+(idx+1,)
         self.nAirflow = 0
         self.oidAirflowEntry0 = None
         self.oidAirflowEntry1 = None
