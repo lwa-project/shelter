@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import json
+import argparse
+import json_minify
+from urllib.request import urlopen
+
+#
+# Default Configuration File
+#
+DEFAULTS_FILENAME = '/lwa/software/defaults.json'
+
+
+def main(args):
+    # Parse the config. file
+    with open(args.config, 'r') as ch:
+        config = json.loads(json_minify.json_minify(ch.read()))
+        
+    # Load in the IP address to use
+    try:
+        ip_address = config['hvac']['ip'][0]
+    except (KeyError, IndexError):
+        raise RuntimeError("No configuration info. found for HVAC #%i" % 1)
+        
+    # Query the unit
+    with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
+        status = uh.read()
+        status = status.decode()
+        
+        if status.find('LEAD') != -1:
+            print('lead: 1')
+        else:
+            print('lead: 2')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='determine which IceQube HVAC unit is lead',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('-c', '--config', type=str, default=DEFAULTS_FILENAME,
+                        help='name of the SHL configuration file to use')
+    args = parser.parse_args()
+    main(args)
