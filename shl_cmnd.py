@@ -472,7 +472,7 @@ def main(args):
         hexsha = repo.active_branch.commit.hexsha
         shortsha = hexsha[-7:]
         dirty = ' (dirty)' if repo.is_dirty() else ''
-    except git.exc.GitError:
+    except (git.exc.GitError, ValueError):
         branch = 'unknown'
         hexsha = 'unknown'
         shortsha = 'unknown'
