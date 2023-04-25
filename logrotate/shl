@@ -18,6 +18,17 @@
 	copytruncate
 }
 
+# Enviromux sensor data
+/data/enviromux*.txt {
+	weekly
+	rotate 52
+	compress
+	delaycompress
+	ifempty
+	copytruncate
+	dateext
+}
+
 # Shelter temperature
 /data/thermometer*.txt {
 	weekly
@@ -38,4 +49,3 @@
 	ifempty
 	copytruncate
 }
-
