@@ -203,6 +203,7 @@ class Thermometer(object):
         # Setup the sensors
         self.nSensors = nSensors
         self.temp = [None for i in range(self.nSensors)]
+        self.influx_sensor_offset = 0
         
         # Setup the SNMP UDP connection
         self.community = community
@@ -302,14 +303,14 @@ class Thermometer(object):
             with open('/data/thermometer%02i.txt' % self.id, 'a+') as fh:
                 fh.write('%s\n' % toDataLog)
                 
-            if self.InfluxDBClient is not None: 
+            if self.InfluxDBClient is not None:
                 json = [{"measurement": "temperature",
                          "tags": {"subsystem": "shl",
                                   "monitorpoint": "temperature"},
                          "time": self.InfluxDBClient.now(),
                          "fields": {}},]
                 for s in range(self.nSensors):
-                    json[0]['fields']['sensor%i' % s] = self.temp[s]
+                    json[0]['fields']['sensor%i' % (s + self.influx_sensor_offset)] = self.temp[s]
                 self.InfluxDBClient.write(json)
                 
             # Make sure we aren't critical
@@ -406,12 +407,13 @@ class EnviroMux(object):
     oidDigitalBaseEntry  = (1,3,6,1,4,1,3699,1,1,8,1,6,1,1,7)
     oidRelayEntry        = (1,3,6,1,4,1,3699,1,1,8,1,8,1,1,3,1)
     
-    def __init__(self, ip, port, community, id, nTemperature=2, sensorList=None, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+    def __init__(self, ip, port, community, id, nTemperature=2, sensorList=None, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=5.0):
         self.ip = ip
         self.port = port
         self.id = id
         self.description = description
         self.SHLCallbackInstance = SHLCallbackInstance
+        self.InfluxDBClient = InfluxDBClient
         self.MonitorPeriod = MonitorPeriod
         
         # Setup the sensors
@@ -655,6 +657,24 @@ class EnviroMux(object):
             with open('/data/enviromux.txt', 'a+') as fh:
                 fh.write('%s\n' % toDataLog)
                 
+            if self.InfluxDBClient is not None:
+                json = [{"measurement": "temperature",
+                         "tags": {"subsystem": "shl",
+                                  "monitorpoint": "temperature"},
+                         "time": self.InfluxDBClient.now(),
+                         "fields": {}},]
+                for s in range(self.nSensors):
+                    json[0]['fields']['sensor%i' % s] = self.temp[s]
+                self.InfluxDBClient.write(json)
+                
+                if self.oidDoorEntry is not None:
+                    json = [{"measurement": "temperature",
+                             "tags": {"subsystem": "shl",
+                                      "monitorpoint": "door"},
+                             "time": self.InfluxDBClient.now(),
+                             "fields": {'open': int(self.door_open)}},]
+                    self.InfluxDBClient.write(json)
+                    
             # Make sure we aren't critical
             temps = [value for value in self.temp if value is not None]
             if self.SHLCallbackInstance is not None and len(temps) != 0:

@@ -206,6 +206,7 @@ class ShippingContainer(object):
                 t.stop()
         else:
             self.currentState['tempThreads'] = []
+            influx_sensor_offset = 2 if self.currentState['enviroThread'] is not None else 0
             for c,k in enumerate(sorted(self.config['thermometers']['devices'].keys())):
                 v = self.config['thermometers']['devices'][k]
                 
@@ -219,6 +220,9 @@ class ShippingContainer(object):
                                 c+1, nSensors=v['nsensor'], description=v['description'], 
                                 MonitorPeriod=self.config['thermometers']['monitor_period'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
                 self.currentState['tempThreads'].append(nT)
+                
+                self.currentState['tempThreads'].influx_sensor_offset = influx_sensor_offset
+                influx_sensor_offset += v['nsensor']
         ## PDUs
         if self.currentState['pduThreads'] is not None:
             for t in self.currentState['pduThreads']:
