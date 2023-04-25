@@ -11,7 +11,7 @@
   "hvac": {
     "temp_min": 70.0,  // degrees F
     "temp_max": 100.0, // degrees F
-    "diff_min": 0.5,   // degrees F
+    "diff_min": 0.0,   // degrees F
     "diff_max": 5.0,   // degrees F
     "ip": ["172.16.1.150", "172.16.1.151"]
   },
