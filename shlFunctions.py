@@ -290,6 +290,30 @@ class ShippingContainer(object):
                 _, value = value.split('<br>')
                 value = value.replace('F', '')
                 self.currentState['setPoint'] = float(value)
+                
+            time.sleep(1)
+            
+        except Exception as e:
+            pass
+            
+        # Update the HVAC cooling offset
+        try:
+            ip_address = self.config['hvac']['ip'][0]
+            
+            with urlopen(f"http://{ip_address}/usersettings.xml", timeout=20) as uh:
+                value = uh.read()
+                value = value.decode()
+                _, value, _ = value.split('COOL_OFFSET')
+                value = value.replace('<', '').replace('/', '').replace('>', '')
+                if value == 'T':
+                    value = 0.0
+                else:
+                    value = float(value) * 9 / 10.
+                self.currentState['diffPoint'] = value
+                
+            time.sleep(1)
+            
+        
         except Exception as e:
             pass
             
@@ -471,6 +495,36 @@ class ShippingContainer(object):
         """
         Thread base to set the temperature differential set point.
         """
+        
+        try:
+            ip_address = self.config['hvac']['ip'][0]
+            value = round((diffPoint * 10 / 9.))
+            
+            with urlopen(f"http://{ip_address}/1?92={value}&30=1&2F=1", timeout=20) as uh:
+                response = uh.read()
+                response = response.decode()
+                if not response.startwith('Settings have been updated'):
+                    raise RuntimeError("Unexpected response: %s" % response)
+                    
+            time.sleep(1)
+            
+            with urlopen(f"http://{ip_address}/usersettings.xml", timeout=20) as uh:
+                value = uh.read()
+                value = value.decode()
+                _, value, _ = value.split('COOL_OFFSET')
+                value = value.replace('<', '').replace('/', '').replace('>', '')
+                if value == 'T':
+                    value = 0.0
+                else:
+                    value = float(value) * 9 / 10.
+                self.currentState['diffPoint'] = value
+                
+        except (KeyError, ValueError, RuntimeError) as e:
+            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
+        except Exception as e:
+            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
+            
+        return True, 0
         
         self.currentState['diffPoint'] = diffPoint
         
