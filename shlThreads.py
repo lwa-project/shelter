@@ -532,9 +532,9 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.smoke_detected = bool(1-int(unicode(value), 10))
+                            self.smoke_detected = bool(int(unicode(value), 10))
                         except NameError:
-                            self.smoke_detected = bool(1-int(str(value), 10))
+                            self.smoke_detected = bool(int(str(value), 10))
                         self.lastError = None
                         
                     except Exception as e:
@@ -582,9 +582,9 @@ class EnviroMux(object):
                         name, value = varBinds[0]
                         
                         try:
-                            self.door_open = bool(1-int(unicode(value), 10))
+                            self.door_open = bool(int(unicode(value), 10))
                         except NameError:
-                            self.door_open = bool(1-int(str(value), 10))
+                            self.door_open = bool(int(str(value), 10))
                         self.lastError = None
                         
                         # Track when the door was first opened
