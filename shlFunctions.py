@@ -520,14 +520,10 @@ class ShippingContainer(object):
                 self.currentState['diffPoint'] = value
                 
         except (KeyError, ValueError, RuntimeError) as e:
-            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
+            shlFunctionsLogger.warning("DIF command failed with '%s'", str(e))
         except Exception as e:
-            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
+            shlFunctionsLogger.warning("DIF command failed with '%s'", str(e))
             
-        return True, 0
-        
-        self.currentState['diffPoint'] = diffPoint
-        
         return True, 0
         
     def pwr(self, rack, port, control):
