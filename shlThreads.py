@@ -24,8 +24,8 @@ from pysnmp.proto import rfc1902
 
 from lwainflux import LWAInfluxClient
 
-__version__ = "0.8"
-__all__ = ['EventScheduler', 'Thermometer', 'Comet', 'HWg', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
+__version__ = "0.9"
+__all__ = ['EventScheduler', 'Thermometer', 'Comet', 'HWg', 'EnviroMux', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -393,6 +393,395 @@ class HWg(Thermometer):
         self.oidTemperatureEntry0 = (1,3,6,1,4,1,21796,4,1,3,1,4,1)
         self.oidTemperatureEntry1 = (1,3,6,1,4,1,21796,4,1,3,1,4,2)
 
+
+class EnviroMux(object):
+    """
+    Class for communicating with a network environmental monitor via SNMP and
+    regularly polling the temperature, smoke detector, water detector, door, and
+    airflow sensor.
+    """
+    
+    oidTemperatureEntry0 = (1,3,6,1,4,1,3699,1,1,8,1,5,1,1,7,1)
+    oidTemperatureEntry1 = (1,3,6,1,4,1,3699,1,1,8,1,5,1,1,7,3)
+    oidDigitalBaseEntry  = (1,3,6,1,4,1,3699,1,1,8,1,6,1,1,7)
+    oidRelayEntry        = (1,3,6,1,4,1,3699,1,1,8,1,8,1,1,3,1)
+    
+    def __init__(self, ip, port, community, id, nTemperature=2, sensorList=None, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
+        self.ip = ip
+        self.port = port
+        self.id = id
+        self.description = description
+        self.SHLCallbackInstance = SHLCallbackInstance
+        self.MonitorPeriod = MonitorPeriod
+        
+        # Setup the sensors
+        self.nTemperature = nTemperature
+        self.temp = [None for i in range(self.nTemperature)]
+        if sensorList is None:
+            sensorList = [None for i in range(5)]
+        self.oidSmokeEntry = None
+        self.smoke_detected = None
+        if 'smoke' in sensorList:
+            idx = sensorList.index('smoke')
+            self.oidSmokeEntry = self.oidDigitalBaseEntry+(idx+1,)
+        self.oidWaterEntry = None
+        self.water_detected = None
+        if 'water' in sensorList:
+            idx = sensorList.index('water')
+            self.oidWaterEntry = self.oidDigitalBaseEntry+(idx+1,)
+        self.oidDoorEntry = None
+        self.door_open = None
+        if 'door' in sensorList:
+            idx = sensorList.index('door')
+            self.oidDoorEntry = self.oidDigitalBaseEntry+(idx+1,)
+        self.nAirflow = 0
+        self.oidAirflowEntry0 = None
+        self.oidAirflowEntry1 = None
+        if 'airflow' in sensorList:
+            idx = sensorList.index('airflow')
+            self.oidAirflowEntry0 = self.oidDigitalBaseEntry+(idx+1,)
+            self.nAirflow += 1
+            sensorList[idx] = '_airflow'
+            
+            if 'airflow' in sensorList:
+                idx = sensorList.index('airflow')
+                self.oidAirflowEntry1 = self.oidDigitalBaseEntry+(idx+1,)
+                self.nAirflow += 1
+                sensorList[idx] = '_airflow'
+        self.airflow = [None for i in range(self.nAirflow)]
+        
+        # Door opening tracking variable
+        self.door_first_opened = None
+        
+        # Setup the SNMP UDP connection
+        self.community = community
+        self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
+        
+        # Setup threading
+        self.thread = None
+        self.alive = threading.Event()
+        self.lastError = None
+        
+    def start(self):
+        """
+        Start the monitoring thread.
+        """
+        
+        if self.thread is not None:
+            self.stop()
+            
+        self.thread = threading.Thread(target=self.monitorThread)
+        self.thread.setDaemon(1)
+        self.alive.set()
+        self.thread.start()
+        
+    def stop(self):
+        """
+        Stop the monitor thread, waiting until it's finished.
+        """
+        
+        if self.thread is not None:
+            self.alive.clear()          #clear alive event for thread
+            self.thread.join()          #wait until thread has finished
+            self.thread = None
+            self.lastError = None
+            
+    def monitorThread(self):
+        """
+        Create a monitoring thread for the temperature.
+        """
+        
+        cmd_gen = cmdgen.CommandGenerator()
+        
+        while self.alive.isSet():
+            tStart = time.time()
+            
+            with SNMPLock:
+                # Read the networked thermometers and store values to temp.
+                # NOTE: self.temp is in Celsius
+                nAttempts = 0
+                nFailures = 0
+                for s,oidEntry in enumerate((self.oidTemperatureEntry0,self.oidTemperatureEntry1)):
+                    if s >= self.nTemperature:
+                        break
+                        
+                    if oidEntry is not None:
+                        try:
+                            nAttempts += 1
+                            errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, oidEntry)
+                            
+                            # Check for SNMP errors
+                            if errorIndication:
+                                nFailures += 1
+                                raise RuntimeError("SNMP error indication: %s" % errorIndication)
+                            if errorStatus:
+                                raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+                                
+                            name, value = varBinds[0]
+                            
+                            try:
+                                self.temp[s] = float(unicode(value)) / 10.0
+                            except NameError:
+                                self.temp[s] = float(str(value)) / 10.0
+                            self.lastError = None
+                            
+                        except Exception as e:
+                            _LogThreadException(self, e, logger=shlThreadsLogger)
+                            self.temp[s] = None
+                            self.lastError = str(e)
+                            
+                if self.oidSmokeEntry is not None:
+                    try:
+                        nAttempts += 1
+                        errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidSmokeEntry)
+                        
+                        # Check for SNMP errors
+                        if errorIndication:
+                            nFailures += 1
+                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
+                        if errorStatus:
+                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+                            
+                        name, value = varBinds[0]
+                        
+                        try:
+                            self.smoke_detected = bool(int(unicode(value), 10))
+                        except NameError:
+                            self.smoke_detected = bool(int(str(value), 10))
+                        self.lastError = None
+                        
+                    except Exception as e:
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
+                        self.smoke_detected = None
+                        self.lastError = str(e)
+                        
+                if self.oidWaterEntry is not None:
+                    try:
+                        nAttempts += 1
+                        errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidWaterEntry)
+                        
+                        # Check for SNMP errors
+                        if errorIndication:
+                            nFailures += 1
+                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
+                        if errorStatus:
+                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+                            
+                        name, value = varBinds[0]
+                        
+                        try:
+                            self.water_detected = bool(1-int(unicode(value), 10))
+                        except NameError:
+                            self.water_detected = bool(1-int(str(value), 10))
+                        self.lastError = None
+                        
+                    except Exception as e:
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
+                        self.water_detected = None
+                        self.lastError = str(e)
+                        
+                if self.oidDoorEntry is not None:
+                    try:
+                        nAttempts += 1
+                        errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, self.oidDoorEntry)
+                        
+                        # Check for SNMP errors
+                        if errorIndication:
+                            nFailures += 1
+                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
+                        if errorStatus:
+                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+                            
+                        name, value = varBinds[0]
+                        
+                        try:
+                            self.door_open = bool(int(unicode(value), 10))
+                        except NameError:
+                            self.door_open = bool(int(str(value), 10))
+                        self.lastError = None
+                        
+                        # Track when the door was first opened
+                        if self.door_open:
+                            if self.door_first_opened is None:
+                                self.door_first_opened = time.time()
+                        else:
+                            if self.door_first_opened is not None:
+                                self.door_first_opened = None
+                                
+                    except Exception as e:
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
+                        self.door_open = None
+                        self.lastError = str(e)
+                        
+                for s,oidEntry in enumerate((self.oidAirflowEntry0,self.oidAirflowEntry1)):
+                    if s >= self.nAirflow:
+                        break
+                        
+                    if oidEntry is not None:
+                        try:
+                            nAttempts += 1
+                            errorIndication, errorStatus, errorIndex, varBinds = cmd_gen.getCmd(self.community, self.network, oidEntry)
+                            
+                            # Check for SNMP errors
+                            if errorIndication:
+                                nFailures += 1
+                                raise RuntimeError("SNMP error indication: %s" % errorIndication)
+                            if errorStatus:
+                                raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+                                
+                            name, value = varBinds[0]
+                            
+                            try:
+                                self.airflow[s] = bool(1-int(unicode(value), 10))
+                            except NameError:
+                                self.airflow[s] = bool(1-int(str(value), 10))
+                            self.lastError = None
+                            
+                        except Exception as e:
+                            _LogThreadException(self, e, logger=shlThreadsLogger)
+                            self.airflow[s] = None
+                            self.lastError = str(e)
+                            
+            # Log the data
+            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nTemperature)]))
+            if self.oidSmokeEntry is not None:
+                toDataLog += ',smoke=%s' % str(self.smoke_detected)
+            if self.oidWaterEntry is not None:
+                toDataLog += ',water=%s' % str(self.water_detected)
+            if self.oidDoorEntry is not None:
+                toDataLog += ',door=%s' % str(self.door_open)
+            if self.nAirflow > 0:
+                toDataLog += ',airflow=%s' % ';'.join([str(self.airflow[s]) for s in range(self.nAirflow)])
+            with open('/data/enviromux.txt', 'a+') as fh:
+                fh.write('%s\n' % toDataLog)
+                
+            # Make sure we aren't critical
+            temps = [value for value in self.temp if value is not None]
+            if self.SHLCallbackInstance is not None and len(temps) != 0:
+                maxTemp = 1.8*max(temps) + 32
+                self.SHLCallbackInstance.processShelterTemperature(maxTemp)
+                
+            # Check for smoke
+            if self.SHLCallbackInstance is not None and self.smoke_detected is not None:
+                self.SHLCallbackInstance.processSmokeDetector(self.smoke_detected)
+                
+            # Check for water
+            if self.SHLCallbackInstance is not None and self.water_detected is not None:
+                self.SHLCallbackInstance.processWaterDetector(self.water_detected)
+                
+            # Check for an open door
+            if self.SHLCallbackInstance is not None:
+                if self.door_first_opened is None:
+                    self.SHLCallbackInstance.processDoorState('closed')
+                else:
+                    door_opened_age = time.time() - self.door_first_opened
+                    if door_opened_age > 15*3600:
+                        self.SHLCallbackInstance.processDoorState('open')
+                        
+            # Make sure the device is reachable
+            if self.SHLCallbackInstance is not None and nFailures > 0:
+                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                
+            # Stop time
+            tStop = time.time()
+            shlThreadsLogger.debug('Finished updating enviromental conditions in %.3f seconds', tStop - tStart)
+            
+            # Sleep for a bit
+            sleepCount = 0
+            sleepTime = self.MonitorPeriod - (tStop - tStart)
+            while (self.alive.isSet() and sleepCount < sleepTime):
+                time.sleep(0.2)
+                sleepCount += 0.2
+                
+    def getTemperature(self, sensor=0, DegreesF=True):
+        """
+        Convenience function to get the temperature.  The 'sensor' keyword 
+        controls which sensor to poll if multple sensors are supported.  
+        This is a zero-based index and, by default, the first sensor is 
+        returned.
+        """
+        
+        if self.temp[sensor] is None:
+            return None
+
+        if DegreesF:
+            return 1.8*self.temp[sensor] + 32
+        else:
+            return self.temp[sensor]
+            
+    def getAllTemperatures(self, DegreesF=True):
+        """
+        Similar to getTemperature() but returns a list with values for all 
+        sensors.
+        """
+        
+        output = []
+        for value in self.temp:
+            if value is None:
+                output.append( None )
+            elif DegreesF:
+                output.append( 1.8*value + 32 )
+            else:
+                output.append( value )
+        return output
+        
+    def getSmokeDetected(self):
+        """
+        Convenience function to get whether or not smoke has been detected.
+        """
+        
+        if self.smoke_detected is None:
+            return None
+            
+        return self.smoke_detected
+        
+    def getWaterDetected(self):
+        """
+        Convenience function to get whether or not smoke has been detected.
+        """
+        
+        if self.water_detected is None:
+            return None
+            
+        return self.water_detected
+        
+    def getDoorOpen(self):
+        """
+        Convenience function to get whether or not smoke has been detected.
+        """
+        
+        if self.door_open is None:
+            return None
+            
+        return self.door_open
+        
+    def getAirflow(self, sensor=0):
+        """
+        Convenience function to get whether or not airflow is detected.  The
+        'sensor' keyword controls which sensor to poll if multple sensors are
+        supported.  This is a zero-based index and, by default, the first sensor
+        is returned.
+        """
+        
+        if self.airflow[sensor] is None:
+            return None
+
+        return self.airflow[sensor]
+            
+    def getAllAirflow(self):
+        """
+        Similar to getAirflow() but returns a list with values for all 
+        sensors.
+        """
+        
+        output = []
+        for value in self.airflow:
+            if value is None:
+                output.append( None )
+                
+            output.append( value )
+        return output
+        
 
 class PDU(object):
     """

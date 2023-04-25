@@ -362,12 +362,46 @@ class MCSCommunicate(Communicate):
                     
                     self.logger.debug('%s = exited with status %s', data, str(status))
                     
+                ## Smoke detector status
+                elif data == 'SMOKE':
+                    status, smoke = self.SubSystemInstance.getSmokeDetected()
+                    
+                    if status:
+                        packed_data = str(smoke)
+                    else:
+                        packed_data = self.SubSystemInstance.currentState['lastLog']
+                    
+                    self.logger.debug('%s = exited with status %s', data, str(status))
+                    
+                ## Water sensor status
+            elif data == 'WATER':
+                    status, water = self.SubSystemInstance.getWaterDetected()
+                    
+                    if status:
+                        packed_data = str(water)
+                    else:
+                        packed_data = self.SubSystemInstance.currentState['lastLog']
+                    
+                    self.logger.debug('%s = exited with status %s', data, str(status))
+                    
+                ## Smoke detector status
+            elif data == 'DOOR':
+                    status, opened = self.SubSystemInstance.getDoorOpen()
+                    
+                    if status:
+                        packed_data = 'OPEN' if opened else 'CLOSED'
+                    else:
+                        packed_data = self.SubSystemInstance.currentState['lastLog']
+                    
+                    self.logger.debug('%s = exited with status %s', data, str(status))
+                    
                 else:
                     status = False
                     packed_data = 'Unknown MIB entry: %s' % data
                     
                     self.logger.debug('%s = exited with status %s', data, str(status))
                     
+                
             #
             # Control Commands
             #
@@ -473,7 +507,7 @@ def main(args):
         hexsha = repo.active_branch.commit.hexsha
         shortsha = hexsha[-7:]
         dirty = ' (dirty)' if repo.is_dirty() else ''
-    except git.exc.GitError:
+    except (git.exc.GitError, ValueError):
         branch = 'unknown'
         hexsha = 'unknown'
         shortsha = 'unknown'

@@ -33,6 +33,23 @@
     }
   },
   
+  /* Shelter environmental monitoring system */
+  "enviromux": {
+    "warning_temp": 80.0,   // degrees F
+    "critical_temp": 90.0,  // degrees F
+    "critical_list": [],
+    "monitor_period": 60.0, // seconds
+    "devices": {
+      "1": {
+        "ip": "172.16.1.130",
+        "port": 161,
+        "security_model": ["my-agent", "public", 0],
+        "sensor_list": ["door", "water", "smoke"],
+        "description": "LWA-NA Shelter Sensor Suite"
+      }
+    }
+  },
+  
   /* Shelter PDUs and UPSs */
   "pdus": {
     "monitor_period": 20.0,   // seconds
@@ -58,7 +75,7 @@
         "ip": "172.16.1.115",
         "port": 161,
         "security_model": ["my-agent", "private", 0],
-        "noutlet": 8,
+        "noutlet": 3,
         "description": "UPS"
       }
     }
