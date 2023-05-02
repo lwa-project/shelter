@@ -436,6 +436,15 @@ class ShippingContainer(object):
                 if setPoint is not None:
                     self.currentState['setPoint'] = setPoint
                     
+                    influxdb = LWAInfluxClient.from_config(self.config)
+                    json = [{"measurement": "temperature",
+                             "tags": {"subsystem": "shl",
+                                      "monitorpoint": "hvac"},
+                             "time": influxdb.now(),
+                             "fields": {}},]
+                    json[0]['fields']['set_point'] = setPoint
+                    influxdb.write(json)
+                    
         return status, self.currentState['setPoint']
         
     def dif(self, diffPoint):
@@ -471,6 +480,15 @@ class ShippingContainer(object):
                 diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
                 if diffPoint is not None:
                     self.currentState['diffPoint'] = value
+                    
+                    influxdb = LWAInfluxClient.from_config(self.config)
+                    json = [{"measurement": "temperature",
+                             "tags": {"subsystem": "shl",
+                                      "monitorpoint": "hvac"},
+                             "time": influxdb.now(),
+                             "fields": {}},]
+                    json[0]['fields']['diff_point'] = diffPoint
+                    influxdb.write(json)
                     
         return status, self.currentState['diffPoint']
         
