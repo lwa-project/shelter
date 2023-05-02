@@ -222,7 +222,7 @@ class ShippingContainer(object):
                                 MonitorPeriod=self.config['thermometers']['monitor_period'], SHLCallbackInstance=self, InfluxDBClient=influxdb)
                 self.currentState['tempThreads'].append(nT)
                 
-                self.currentState['tempThreads'].influx_sensor_offset = influx_sensor_offset
+                self.currentState['tempThreads'][-1].influx_sensor_offset = influx_sensor_offset
                 influx_sensor_offset += v['nsensor']
         ## PDUs
         if self.currentState['pduThreads'] is not None:
