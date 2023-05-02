@@ -724,7 +724,7 @@ class EnviroMux(object):
         
     def getWaterDetected(self):
         """
-        Convenience function to get whether or not smoke has been detected.
+        Convenience function to get whether or not water has been detected.
         """
         
         if self.water_detected is None:
@@ -734,7 +734,7 @@ class EnviroMux(object):
         
     def getDoorOpen(self):
         """
-        Convenience function to get whether or not smoke has been detected.
+        Convenience function to get whether or not the door is open.
         """
         
         if self.door_open is None:
