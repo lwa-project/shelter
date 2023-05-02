@@ -281,15 +281,17 @@ class ShippingContainer(object):
         shlFunctionsLogger.info('-----------------')
         
         # Update the HVAC set point
-        setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
-        if setPoint is not None:
-            self.currentState['setPoint'] = setPoint
-            
+        if 'ip' in self.config['hvac'].keys():
+            setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+            if setPoint is not None:
+                self.currentState['setPoint'] = setPoint
+                
         # Update the HVAC cooling offset
-        diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
-        if diffPoint is not None:
-            self.currentState['diffPoint'] = value
-            
+        if 'ip' in self.config['hvac'].keys():
+            diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+            if diffPoint is not None:
+                self.currentState['diffPoint'] = value
+                
         # Start the monitoring threads back up
         self.scheduler.start()
         if self.currentState['enviroThread'] is not None:
@@ -417,12 +419,14 @@ class ShippingContainer(object):
         Thread base to set the temperature set point.
         """
         
-        status = set_icecube_setpoint(setPoint)
-        if status:
-            setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
-            if setPoint is not None:
-                self.currentState['setPoint'] = setPoint
-                
+        status = False
+        if 'ip' in self.config['hvac'].keys():
+            status = set_icecube_setpoint(setPoint)
+            if status:
+                setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+                if setPoint is not None:
+                    self.currentState['setPoint'] = setPoint
+                    
         return status, self.currentState['setPoint']
         
     def dif(self, diffPoint):
@@ -451,12 +455,14 @@ class ShippingContainer(object):
         Thread base to set the temperature differential set point.
         """
         
-        status = set_icecube_cooling_offset(diffPoint)
-        if status:
-            diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
-            if diffPoint is not None:
-                self.currentState['diffPoint'] = value
-                
+        status = False
+        if 'ip' in self.config['hvac'].keys():
+            status = set_icecube_cooling_offset(diffPoint)
+            if status:
+                diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+                if diffPoint is not None:
+                    self.currentState['diffPoint'] = value
+                    
         return status, self.currentState['diffPoint']
         
     def pwr(self, rack, port, control):
