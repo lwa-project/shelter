@@ -13,6 +13,7 @@ from functools import reduce
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 
 from shlThreads import *
+from shlQube import *
 
 __version__ = "0.5"
 __all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer"]
@@ -279,6 +280,18 @@ class ShippingContainer(object):
         shlFunctionsLogger.info('Total Number of Racks: %i', self.currentState['nRacks'])
         shlFunctionsLogger.info('-----------------')
         
+        # Update the HVAC set point
+        if 'ip' in self.config['hvac'].keys():
+            setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+            if setPoint is not None:
+                self.currentState['setPoint'] = setPoint
+                
+        # Update the HVAC cooling offset
+        if 'ip' in self.config['hvac'].keys():
+            diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+            if diffPoint is not None:
+                self.currentState['diffPoint'] = value
+                
         # Start the monitoring threads back up
         self.scheduler.start()
         if self.currentState['enviroThread'] is not None:
@@ -406,9 +419,15 @@ class ShippingContainer(object):
         Thread base to set the temperature set point.
         """
         
-        self.currentState['setPoint'] = setPoint
-        
-        return True, 0
+        status = False
+        if 'ip' in self.config['hvac'].keys():
+            status = set_iceqube_setpoint(setPoint)
+            if status:
+                setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+                if setPoint is not None:
+                    self.currentState['setPoint'] = setPoint
+                    
+        return status, self.currentState['setPoint']
         
     def dif(self, diffPoint):
         """
@@ -436,9 +455,15 @@ class ShippingContainer(object):
         Thread base to set the temperature differential set point.
         """
         
-        self.currentState['diffPoint'] = diffPoint
-        
-        return True, 0
+        status = False
+        if 'ip' in self.config['hvac'].keys():
+            status = set_iceqube_cooling_offset(diffPoint)
+            if status:
+                diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+                if diffPoint is not None:
+                    self.currentState['diffPoint'] = value
+                    
+        return status, self.currentState['diffPoint']
         
     def pwr(self, rack, port, control):
         """
@@ -522,6 +547,13 @@ class ShippingContainer(object):
         return True, meanTemp
         
     def getSmokeDetected(self):
+        """
+        Poll the EnivroMux for the state of the smoke detector and return a two-
+        element tuple (sucess, value) where success is a boolean related to if
+        the smoke detector state was found.  See the currentState['lastLog']
+        entry for the reason for failure if the returned success value is False.
+        """
+        
         if self.currentState['enviroThread'] is None:
             self.currentState['lastLog'] = 'No enviromental monitoring system configured'
             return False, False
@@ -538,6 +570,14 @@ class ShippingContainer(object):
             return True, out
             
     def getWaterDetected(self):
+        """
+        Poll the EnivroMux for the state of the water leak detector and return a
+        two-element tuple (sucess, value) where success is a boolean related to
+        if the water leak detector state was found.  See the
+        currentState['lastLog'] entry for the reason for failure if the returned
+        success value is False.
+        """
+        
         if self.currentState['enviroThread'] is None:
             self.currentState['lastLog'] = 'No enviromental monitoring system configured'
             return False, False
@@ -554,6 +594,13 @@ class ShippingContainer(object):
             return True, out
             
     def getDoorOpen(self):
+        """
+        Poll the EnivroMux for the state of the door and return a two-element
+        tuple (sucess, value) where success is a boolean related to if the door
+        state was found.  See the currentState['lastLog'] entry for the reason
+        for failure if the returned success value is False.
+        """
+        
         if self.currentState['enviroThread'] is None:
             self.currentState['lastLog'] = 'No enviromental monitoring system configured'
             return False, False
