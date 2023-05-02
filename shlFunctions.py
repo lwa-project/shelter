@@ -1159,7 +1159,7 @@ class ShippingContainer(object):
                 ## Escalation
                 _, message = self._merge_states(self.currentState['info'],
                                                 append=('DOOR',
-                                                        "Shelter door is open")
+                                                        "Shelter door is open"))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
                 
