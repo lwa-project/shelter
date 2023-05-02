@@ -9,11 +9,11 @@ import time
 import logging
 import threading
 from functools import reduce
-from urllib.request import urlopen
 
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 
 from shlThreads import *
+from shlQube import *
 
 __version__ = "0.5"
 __all__ = ["commandExitCodes", "isHalfIncrements", "ShippingContainer"]
@@ -281,40 +281,14 @@ class ShippingContainer(object):
         shlFunctionsLogger.info('-----------------')
         
         # Update the HVAC set point
-        try:
-            ip_address = self.config['hvac']['ip'][0]
-            
-            with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
-                value = uh.read()
-                value = value.decode()
-                _, value = value.split('<br>')
-                value = value.replace('F', '')
-                self.currentState['setPoint'] = float(value)
-                
-            time.sleep(1)
-            
-        except Exception as e:
-            pass
+        setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+        if setPoint is not None:
+            self.currentState['setPoint'] = setPoint
             
         # Update the HVAC cooling offset
-        try:
-            ip_address = self.config['hvac']['ip'][0]
-            
-            with urlopen(f"http://{ip_address}/usersettings.xml", timeout=20) as uh:
-                value = uh.read()
-                value = value.decode()
-                _, value, _ = value.split('COOL_OFFSET')
-                value = value.replace('<', '').replace('/', '').replace('>', '')
-                if value == 'T':
-                    value = 0.0
-                else:
-                    value = float(value) * 9 / 10.
-                self.currentState['diffPoint'] = value
-                
-            time.sleep(1)
-            
-        except Exception as e:
-            pass
+        diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+        if diffPoint is not None:
+            self.currentState['diffPoint'] = value
             
         # Start the monitoring threads back up
         self.scheduler.start()
@@ -443,31 +417,13 @@ class ShippingContainer(object):
         Thread base to set the temperature set point.
         """
         
-        try:
-            ip_address = self.config['hvac']['ip'][0]
-            value = round(((setPoint * 2) - 64) * 5 / 9.)
-            
-            with urlopen(f"http://{ip_address}/1?07={value}&30=1&2F=1", timeout=20) as uh:
-                response = uh.read()
-                response = response.decode()
-                if not response.startwith('Settings have been updated'):
-                    raise RuntimeError("Unexpected response: %s" % response)
-                    
-            time.sleep(1)
-            
-            with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
-                value = uh.read()
-                value = value.decode()
-                _, value = value.split('<br>')
-                value = value.replace('F', '')
-                self.currentState['setPoint'] = float(value)
+        status = set_icecube_setpoint(setPoint)
+        if status:
+            setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+            if setPoint is not None:
+                self.currentState['setPoint'] = setPoint
                 
-        except (KeyError, ValueError, RuntimeError) as e:
-            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
-        except Exception as e:
-            shlFunctionsLogger.warning("TMP command failed with '%s'", str(e))
-            
-        return True, 0
+        return status, self.currentState['setPoint']
         
     def dif(self, diffPoint):
         """
@@ -495,35 +451,13 @@ class ShippingContainer(object):
         Thread base to set the temperature differential set point.
         """
         
-        try:
-            ip_address = self.config['hvac']['ip'][0]
-            value = round((diffPoint * 10 / 9.))
-            
-            with urlopen(f"http://{ip_address}/1?92={value}&30=1&2F=1", timeout=20) as uh:
-                response = uh.read()
-                response = response.decode()
-                if not response.startwith('Settings have been updated'):
-                    raise RuntimeError("Unexpected response: %s" % response)
-                    
-            time.sleep(1)
-            
-            with urlopen(f"http://{ip_address}/usersettings.xml", timeout=20) as uh:
-                value = uh.read()
-                value = value.decode()
-                _, value, _ = value.split('COOL_OFFSET')
-                value = value.replace('<', '').replace('/', '').replace('>', '')
-                if value == 'T':
-                    value = 0.0
-                else:
-                    value = float(value) * 9 / 10.
+        status = set_icecube_cooling_offset(diffPoint)
+        if status:
+            diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+            if diffPoint is not None:
                 self.currentState['diffPoint'] = value
                 
-        except (KeyError, ValueError, RuntimeError) as e:
-            shlFunctionsLogger.warning("DIF command failed with '%s'", str(e))
-        except Exception as e:
-            shlFunctionsLogger.warning("DIF command failed with '%s'", str(e))
-            
-        return True, 0
+        return status, self.currentState['diffPoint']
         
     def pwr(self, rack, port, control):
         """
