@@ -290,7 +290,7 @@ class ShippingContainer(object):
         if 'ip' in self.config['hvac'].keys():
             diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
             if diffPoint is not None:
-                self.currentState['diffPoint'] = value
+                self.currentState['diffPoint'] = diffPoint
                 
         # Start the monitoring threads back up
         self.scheduler.start()
