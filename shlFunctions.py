@@ -479,7 +479,7 @@ class ShippingContainer(object):
             if status:
                 diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
                 if diffPoint is not None:
-                    self.currentState['diffPoint'] = value
+                    self.currentState['diffPoint'] = diffPoint
                     
                     influxdb = LWAInfluxClient.from_config(self.config)
                     json = [{"measurement": "temperature",
