@@ -393,11 +393,11 @@ class MCSCommunicate(Communicate):
                     
                     self.logger.debug('%s = exited with status %s', data, str(status))
                     
-                else:
-                    status = False
-                    packed_data = 'Unknown MIB entry: %s' % data
-                    
-                    self.logger.debug('%s = exited with status %s', data, str(status))
+            else:
+                status = False
+                packed_data = 'Unknown MIB entry: %s' % data
+                
+                self.logger.debug('%s = exited with status %s', data, str(status))
                     
                 
             #
