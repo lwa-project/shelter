@@ -1141,7 +1141,7 @@ class ShippingContainer(object):
         Figure out what to do about the shelter temperature.  If things look really bad, take action.
         """
         
-        if 'state' == 'closed':
+        if state == 'closed':
             # Everything is OK
             if self.currentState['status'] == 'WARNING':
                 ## From WARNING
