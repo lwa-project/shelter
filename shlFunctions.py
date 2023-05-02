@@ -1119,7 +1119,7 @@ class ShippingContainer(object):
         Figure out what to do about the water sensor finding water.
         """
         
-        if not smokeDetected:
+        if not waterDetected:
             # Everything is OK
             if self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('WATER!'):
                 ## From ERROR
