@@ -19,6 +19,9 @@ sys.path.append(os.path.dirname(DEFAULTS_FILENAME))
 from shlQube import get_iceqube_status
 
 
+HVAC_UNIT_ID = 1
+
+
 def main(args):
     # Parse the config. file
     with open(args.config, 'r') as ch:
@@ -26,22 +29,22 @@ def main(args):
         
     # Load in the IP address to use
     try:
-        ip_address = config['hvac']['ip'][0]
+        ip_address = config['hvac']['ip'][HVAC_UNIT_ID-1]
     except (KeyError, IndexError):
-        raise RuntimeError("No configuration info. found for HVAC #%i" % 1)
+        raise RuntimeError(f"No configuration info. found for HVAC #{HVAC_UNIT_ID}")
         
     # Query the unit
     status = set_iceqube_status(ip_address)
     if status is None:
-        print('compressor1: disabled off')
+        print(f"compressor{HVAC_UNIT_ID}: disabled off")
     elif status['cooling']:
-        print('compressor1: enabled on')
+        print(f"compressor{HVAC_UNIT_ID}: enabled on")
     else:
-        print('compressor1: enabled off')
+        print(f"compressor{HVAC_UNIT_ID}: enabled off")
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='read the compressor status of the first IceQube HVAC unit',
+    parser = argparse.ArgumentParser(description=f"read the compressor status of IceQube HVAC #{HVAC_UNIT_ID}",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
     parser.add_argument('-c', '--config', type=str, default=DEFAULTS_FILENAME,

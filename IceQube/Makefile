@@ -1,3 +1,8 @@
+all: compressor2_status
+
+compressor2_status: compressor1_status
+	sed -e 's/HVAC_UNIT_ID = 1/HVAC_UNIT_ID = 2/;' compressor1_status > compressor2_status
+	chmod +x compressor2_status
 
 install:
 	ln -sf controller_status /usr/local/bin/controller_status
