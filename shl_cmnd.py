@@ -372,34 +372,34 @@ class MCSCommunicate(Communicate):
                     self.logger.debug('%s = exited with status %s', data, str(status))
                     
                 ## Water sensor status
-            elif data == 'WATER':
-                    status, water = self.SubSystemInstance.getWaterDetected()
-                    
-                    if status:
-                        packed_data = str(water)
-                    else:
-                        packed_data = self.SubSystemInstance.currentState['lastLog']
+                elif data == 'WATER':
+                        status, water = self.SubSystemInstance.getWaterDetected()
+                        
+                        if status:
+                            packed_data = str(water)
+                        else:
+                            packed_data = self.SubSystemInstance.currentState['lastLog']
+                        
+                        self.logger.debug('%s = exited with status %s', data, str(status))
+                        
+                    ## Smoke detector status
+                elif data == 'DOOR':
+                        status, opened = self.SubSystemInstance.getDoorOpen()
+                        
+                        if status:
+                            packed_data = 'OPEN' if opened else 'CLOSED'
+                        else:
+                            packed_data = self.SubSystemInstance.currentState['lastLog']
+                        
+                        self.logger.debug('%s = exited with status %s', data, str(status))
+                        
+                else:
+                    status = False
+                    packed_data = 'Unknown MIB entry: %s' % data
                     
                     self.logger.debug('%s = exited with status %s', data, str(status))
                     
-                ## Smoke detector status
-            elif data == 'DOOR':
-                    status, opened = self.SubSystemInstance.getDoorOpen()
                     
-                    if status:
-                        packed_data = 'OPEN' if opened else 'CLOSED'
-                    else:
-                        packed_data = self.SubSystemInstance.currentState['lastLog']
-                    
-                    self.logger.debug('%s = exited with status %s', data, str(status))
-                    
-            else:
-                status = False
-                packed_data = 'Unknown MIB entry: %s' % data
-                
-                self.logger.debug('%s = exited with status %s', data, str(status))
-                    
-                
             #
             # Control Commands
             #
