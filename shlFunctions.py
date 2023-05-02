@@ -299,7 +299,7 @@ class ShippingContainer(object):
         if 'ip' in self.config['hvac'].keys():
             diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
             if diffPoint is not None:
-                self.currentState['diffPoint'] = value
+                self.currentState['diffPoint'] = diffPoint
                 
         # Start the monitoring threads back up
         self.scheduler.start()
@@ -1128,7 +1128,7 @@ class ShippingContainer(object):
         Figure out what to do about the water sensor finding water.
         """
         
-        if not smokeDetected:
+        if not waterDetected:
             # Everything is OK
             if self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('WATER!'):
                 ## From ERROR
@@ -1150,7 +1150,7 @@ class ShippingContainer(object):
         Figure out what to do about the shelter temperature.  If things look really bad, take action.
         """
         
-        if 'state' == 'closed':
+        if state == 'closed':
             # Everything is OK
             if self.currentState['status'] == 'WARNING':
                 ## From WARNING
@@ -1168,7 +1168,7 @@ class ShippingContainer(object):
                 ## Escalation
                 _, message = self._merge_states(self.currentState['info'],
                                                 append=('DOOR',
-                                                        "Shelter door is open")
+                                                        "Shelter door is open"))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
                 

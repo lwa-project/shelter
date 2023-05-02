@@ -197,7 +197,7 @@ def get_iceqube_cooling_offset(ip_address):
     
     settings = get_iceqube_settings(ip_address)
     if settings is not None:
-        offset = root.find('COOL_OFFSET').text
+        offset = settings.find('COOL_OFFSET').text
         if offset == 'T':
             offset = 0.0
         else:
