@@ -11,6 +11,13 @@ from urllib.request import urlopen
 # Default Configuration File
 #
 DEFAULTS_FILENAME = '/lwa/software/defaults.json'
+from shlQube import get_iceqube_status
+
+#
+# Make sure shlQube.py is in our path
+#
+sys.path.append(os.path.dirname(DEFAULTS_FILENAME))
+from shlQube import get_iceqube_status
 
 
 def main(args):
@@ -28,13 +35,9 @@ def main(args):
             raise RuntimeError("No configuration info. found for HVAC #%i" % (i+1,))
             
         ## Query the unit
-        try:
-            with urlopen(f"http://{ip_address}/ledstate.cgi", timeout=20) as uh:
-                uh.read()
-                status[i] = 'on'
-                
-        except Exception as e:
-            pass
+        status = get_iceqube_status(ip_address)
+        if status is not None:
+            status[i] = 'on'
             
     # Report
     print(f"controller: enabled {status[0]} {status[1]}")
