@@ -59,7 +59,7 @@ class IceQubeAccessLimiter(object):
         self._wait_time = float(wait_time)
         self._last_request = 0.0
         self._lock = threading.RLock()
-    
+        
     def __enter__(self):
         self._lock.acquire()
         while time.time() - self._last_request < self._wait_time:
@@ -185,7 +185,7 @@ def set_icecube_setpoint(ip_address, setpoint):
             shlQubeLogger.error("Failed to set setpoint on %s: %s", ip_address, str(e))
             
     return status
-    
+
 
 def get_iceqube_cooling_offset(ip_address):
     """
@@ -226,5 +226,3 @@ def set_icecube_cooling_offset(ip_address, offset):
             shlQubeLogger.error("Failed to set cooling offset on %s: %s", ip_address, str(e))
             
     return status
-            
-    
