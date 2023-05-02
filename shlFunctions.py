@@ -421,7 +421,7 @@ class ShippingContainer(object):
         
         status = False
         if 'ip' in self.config['hvac'].keys():
-            status = set_icecube_setpoint(setPoint)
+            status = set_iceqube_setpoint(setPoint)
             if status:
                 setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
                 if setPoint is not None:
@@ -457,7 +457,7 @@ class ShippingContainer(object):
         
         status = False
         if 'ip' in self.config['hvac'].keys():
-            status = set_icecube_cooling_offset(diffPoint)
+            status = set_iceqube_cooling_offset(diffPoint)
             if status:
                 diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
                 if diffPoint is not None:

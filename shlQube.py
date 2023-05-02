@@ -10,8 +10,8 @@ shlQubeLogger = logging.getLogger('__main__')
 
 __version__ = '0.1'
 __all__ = ['get_iceqube_status', 'get_iceqube_lead_status', 'get_iceqube_settings',
-           'get_iceqube_setpoint', 'set_icecube_setpoint',
-           'get_iceqube_cooling_offset', 'set_icecube_cooling_offset']
+           'get_iceqube_setpoint', 'set_iceqube_setpoint',
+           'get_iceqube_cooling_offset', 'set_iceqube_cooling_offset']
 
 
 def _temp_to_value(degreesF):
@@ -165,7 +165,7 @@ def get_iceqube_setpoint(ip_address):
     return value
 
 
-def set_icecube_setpoint(ip_address, setpoint):
+def set_iceqube_setpoint(ip_address, setpoint):
     """
     Set the setpoint (in degrees F) of the IceQube controller at the provided
     address.  Return True if successful, False otherwise.
@@ -206,7 +206,7 @@ def get_iceqube_cooling_offset(ip_address):
     return _value_to_tdiff(offset)
  
  
-def set_icecube_cooling_offset(ip_address, offset):
+def set_iceqube_cooling_offset(ip_address, offset):
     """
     Set the cooling offset (in degrees F) of the IceQube controller at the
     provided address.  Return True if successful, False otherwise.
