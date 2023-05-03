@@ -86,7 +86,7 @@ def sendEmail(subject, message, debug=False):
 output = getLast(os.path.join(DATA_DIR, 'enviromux.txt'), 1)
 output = output[0].split(',', 1)
 shlTime = float(output[0])
-shlFire = (output[1].find('water=True') != -1)
+shlLeak = (output[1].find('water=True') != -1)
 
 ## Timestamp to time
 shlTime = datetime.utcfromtimestamp(shlTime)
@@ -94,7 +94,7 @@ shlTime = UTC.localize(shlTime)
 shlTime = shlTime.astimezone(MST)
 
 ## If critical, e-mail
-if shlFire:
+if shlLeak:
     tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
     
     subject = '%s - Shelter Leak' % (SITE.upper(),)
