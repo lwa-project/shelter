@@ -86,7 +86,7 @@ def sendEmail(subject, message, debug=False):
 output = getLast(os.path.join(DATA_DIR, 'enviromux.txt'), 1)
 output = output[0].split(',', 1)
 shlTime = float(output[0])
-shlFire = (output[1].find('smoke=True') != -1)
+shlFire = (output[1].find('water=True') != -1)
 
 ## Timestamp to time
 shlTime = datetime.utcfromtimestamp(shlTime)
