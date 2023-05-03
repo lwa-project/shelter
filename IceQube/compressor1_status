@@ -34,7 +34,7 @@ def main(args):
         raise RuntimeError(f"No configuration info. found for HVAC #{HVAC_UNIT_ID}")
         
     # Query the unit
-    status = set_iceqube_status(ip_address)
+    status = get_iceqube_status(ip_address)
     if status is None:
         print(f"compressor{HVAC_UNIT_ID}: disabled off")
     elif status['cooling']:
