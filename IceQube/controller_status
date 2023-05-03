@@ -34,8 +34,8 @@ def main(args):
             raise RuntimeError("No configuration info. found for HVAC #%i" % (i+1,))
             
         ## Query the unit
-        status = get_iceqube_status(ip_address)
-        if status is not None:
+        this_status = get_iceqube_status(ip_address)
+        if this_status is not None:
             status[i] = 'on'
             
     # Report
