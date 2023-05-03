@@ -11,7 +11,6 @@ from urllib.request import urlopen
 # Default Configuration File
 #
 DEFAULTS_FILENAME = '/lwa/software/defaults.json'
-from shlQube import get_iceqube_status
 
 #
 # Make sure shlQube.py is in our path
