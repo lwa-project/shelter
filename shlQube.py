@@ -202,8 +202,9 @@ def get_iceqube_cooling_offset(ip_address):
             offset = 0.0
         else:
             offset = float(offset)
+        offset = _value_to_tdiff(offset)
             
-    return _value_to_tdiff(offset)
+    return offset
  
  
 def set_iceqube_cooling_offset(ip_address, offset):
