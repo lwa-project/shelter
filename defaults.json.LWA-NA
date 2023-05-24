@@ -22,16 +22,7 @@
     "critical_temp": 90.0,  // degrees F
     "critical_list": [],
     "monitor_period": 60.0, // seconds
-    "devices": {
-      "1": {
-        "type": "HWg",
-        "ip": "172.16.1.111",
-        "port": 161,
-        "security_model": ["arbitrary", "public", 0],
-        "nsensor": 2,
-        "description": "Shelter #1 and #2"
-      }
-    }
+    "devices": {}
   },
   
   /* Shelter environmental monitoring system */

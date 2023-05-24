@@ -14,10 +14,19 @@ SITE = gethostname().split("-",1)[0]
 SUBSYSTEM = "SHL"
 
 # Get the last line of the log file
-test = subprocess.check_output(["tail", "-n1", '/data/thermometer01.txt'], stderr=subprocess.DEVNULL)
-test = test.decode('ascii')
-test = test.replace('\n', '')
-
+if os.path.exists('/data/enviromux.txt'):
+    ## Prefer to report enviromux data
+    test = subprocess.check_output(["tail", "-n1", '/data/enviromux.txt'], stderr=subprocess.DEVNULL)
+    test = test.decode('ascii')
+    test = test.replace('\n', '')
+    ## Only keep the first three entries that should contain the time and temperatures
+    fields = test.split(',')[:3]
+    test = ','.join(fields)
+else:
+    test = subprocess.check_output(["tail", "-n1", '/data/thermometer01.txt'], stderr=subprocess.DEVNULL)
+    test = test.decode('ascii')
+    test = test.replace('\n', '')
+    
 # Get the HVAC status
 try:
     lls = subprocess.check_output(['/usr/local/bin/lead_lag_status',], stderr=subprocess.DEVNULL)
