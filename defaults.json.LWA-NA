@@ -75,7 +75,7 @@
   
   /* Weather information via wview database */
   "weather": {
-    "database": "/var/wview/archive/wview-archive.sdb",
+    "database": "/usr/local/var/wview/archive/wview-archive.sdb",
     "monitor_period": 300.0
   },
   
