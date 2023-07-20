@@ -523,7 +523,7 @@ class ShippingContainer(object):
         if self.currentState['enviroThread'] is not None:
             if self.currentState['enviroThread'].alive.isSet():
                 try:
-                    for temp in self.currentState['enviroThread'].getAllTemperatures(DegreesF=DegreesF)
+                    for temp in self.currentState['enviroThread'].getAllTemperatures(DegreesF=DegreesF):
                         meanTemp += temp
                         i += 1
                 except TypeError:
@@ -533,7 +533,7 @@ class ShippingContainer(object):
             # Make sure the monitoring thread is running
             if t.alive.isSet():
                 try:
-                    for temp in t.getAllTemperatures(DegreesF=DegreesF)
+                    for temp in t.getAllTemperatures(DegreesF=DegreesF):
                         meanTemp += temp
                         i += 1
                 except TypeError:
