@@ -29,10 +29,6 @@ __all__ = ['EventScheduler', 'Thermometer', 'Comet', 'HWg', 'EnviroMux', 'PDU', 
 shlThreadsLogger = logging.getLogger('__main__')
 
 
-# Create a semaphore to make sure not too many threads poll all at once
-SNMPLock = threading.Semaphore(2)
-
-
 # State directory
 STATE_DIR = os.path.join(os.path.dirname(__file__), '.shl-state')
 if not os.path.exists(STATE_DIR):
@@ -204,6 +200,7 @@ class Thermometer(object):
         # Setup the SNMP UDP connection
         self.community = community
         self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
+        self.lock = threading.RLock()
         
         # Setup threading
         self.thread = None
@@ -260,7 +257,7 @@ class Thermometer(object):
         while self.alive.isSet():
             tStart = time.time()
             
-            with SNMPLock:
+            with self.lock:
                 # Read the networked thermometers and store values to temp.
                 # NOTE: self.temp is in Celsius
                 nAttempts = 0
@@ -443,6 +440,7 @@ class EnviroMux(object):
         # Setup the SNMP UDP connection
         self.community = community
         self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
+        self.lock = threading.RLock()
         
         # Setup threading
         self.thread = None
@@ -483,7 +481,7 @@ class EnviroMux(object):
         while self.alive.isSet():
             tStart = time.time()
             
-            with SNMPLock:
+            with self.lock:
                 # Read the networked thermometers and store values to temp.
                 # NOTE: self.temp is in Celsius
                 nAttempts = 0
@@ -813,6 +811,7 @@ class PDU(object):
         # Setup the SNMP UDP connection
         self.community = community
         self.network = cmdgen.UdpTransportTarget((self.ip, self.port), timeout=1.0, retries=3)
+        self.lock = threading.RLock()
         
         # Setup threading
         self.thread = None
@@ -864,7 +863,7 @@ class PDU(object):
         while self.alive.isSet():
             tStart = time.time()
             
-            with SNMPLock:
+            with self.lock:
                 nAttempts = 0
                 nFailures = 0
                 if self.oidFirmwareEntry is not None:
@@ -1259,7 +1258,7 @@ class TrippLiteUPS(PDU):
         while self.alive.isSet():
             tStart = time.time()
             
-            with SNMPLock:
+            with self.lock:
                 nAttempts = 0
                 nFailures = 0
                 if self.oidFirmwareEntry is not None:
