@@ -237,12 +237,7 @@ class Thermometer(object):
     oidTemperatureEntry2 = None
     oidTemperatureEntry3 = None
     
-<<<<<<< HEAD
     def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=5.0):
-=======
-    def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
-        super(Thermometer, self).__init__(ip, port, community)
->>>>>>> main
         self.ip = ip
         self.port = port
         self.id = id
