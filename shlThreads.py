@@ -236,7 +236,6 @@ class Thermometer(object):
     oidTemperatureEntry3 = None
     
     def __init__(self, ip, port, community, id, nSensors=1, description=None, SHLCallbackInstance=None, MonitorPeriod=5.0):
-        super(Thermometer, self).__init__(ip, port, community)
         self.ip = ip
         self.port = port
         self.id = id
