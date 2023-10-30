@@ -1105,15 +1105,17 @@ class PDU(object):
                 # it
                 oidOutletChangeEntry = self.oidOutletChangeBaseEntry + (outlet,)
                 
-                try:
-                    cmd_gen = cmdgen.CommandGenerator()
-                    errorIndication, errorStatus, errorIndex, varBinds =                                                                          cmd_gen.setCmd(self.community, self.network, (oidOutletChangeEntry, rfc1902.Integer(numericCode)))
-                    
-                except Exception as e:
-                    _LogThreadException(self, e, logger=shlThreadsLogger)
-                    return False
-                    
-                return True
+                success = False
+                with self.lock:
+                    try:
+                        cmd_gen = cmdgen.CommandGenerator()
+                        errorIndication, errorStatus, errorIndex, varBinds =                                                                          cmd_gen.setCmd(self.community, self.network, (oidOutletChangeEntry, rfc1902.Integer(numericCode)))
+                        success = True
+                        
+                    except Exception as e:
+                        _LogThreadException(self, e, logger=shlThreadsLogger)
+                        
+                return success
 
 
 class TrippLite(PDU):
