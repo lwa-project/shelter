@@ -185,14 +185,25 @@ class SNMPControl(object):
         self.generator = cmdgen.CommandGenerator()
         self.lock = threading.Lock()
         
+        self.nfailure = 0
+        
     def get(self, oid):
         """
         Query the given OID and return the results.
         """
         
         with self.lock:
-            output = self.generator.getCmd(self.community, self.network, oid)
-        return output
+            errorIndication, errorStatus, errorIndex, varBinds = \
+              self.generator.getCmd(self.community, self.network, oid)
+            
+        # Check for SNMP errors
+        if errorIndication:
+            self.nfailure += 1
+            raise RuntimeError("SNMP error indication: %s" % errorIndication)
+        elif errorStatus:
+            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+            
+        return varBinds[0]
         
     def set(self, oid, value):
         """
@@ -200,8 +211,16 @@ class SNMPControl(object):
         """
         
         with self.lock:
-            output = self.generator.setCmd(self.community, self.network, (oid, value))
-        return output
+            errorIndication, errorStatus, errorIndex, varBinds = \
+              self.generator.setCmd(self.community, self.network, (oid, value))
+              
+        if errorIndication:
+            self.nfailure += 1
+            raise RuntimeError("SNMP error indication: %s" % errorIndication)
+        elif errorStatus:
+            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
+            
+        return varBinds[0]
 
 
 class Thermometer(object):
@@ -287,7 +306,6 @@ class Thermometer(object):
             
             # Read the networked thermometers and store values to temp.
             # NOTE: self.temp is in Celsius
-            nAttempts = 0
             nFailures = 0
             for s,oidEntry in enumerate((self.oidTemperatureEntry0,self.oidTemperatureEntry1,self.oidTemperatureEntry2,self.oidTemperatureEntry3)):
                 if s >= self.nSensors:
@@ -295,18 +313,7 @@ class Thermometer(object):
                     
                 if oidEntry is not None:
                     try:
-                        nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(oidEntry)
-                        
-                        # Check for SNMP errors
-                        if errorIndication:
-                            nFailures += 1
-                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                        if errorStatus:
-                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                            
-                        name, value = varBinds[0]
-                        
+                        _, value = self.snmp.get(oidEntry)
                         try:
                             self.temp[s] = float(unicode(value))
                         except NameError:
@@ -315,9 +322,10 @@ class Thermometer(object):
                         
                     except Exception as e:
                         _LogThreadException(self, e, logger=shlThreadsLogger)
-                        self.temp[s] = None
                         self.lastError = str(e)
-                            
+                        nFailures += 1
+                        self.temp[s] = None
+                        
             # Log the data
             toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nSensors)]))
             with open('/data/thermometer%02i.txt' % self.id, 'a+') as fh:
@@ -506,7 +514,6 @@ class EnviroMux(object):
             
             # Read the networked thermometers and store values to temp.
             # NOTE: self.temp is in Celsius
-            nAttempts = 0
             nFailures = 0
             for s,oidEntry in enumerate((self.oidTemperatureEntry0,self.oidTemperatureEntry1)):
                 if s >= self.nTemperature:
@@ -514,18 +521,7 @@ class EnviroMux(object):
                     
                 if oidEntry is not None:
                     try:
-                        nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(oidEntry)
-                        
-                        # Check for SNMP errors
-                        if errorIndication:
-                            nFailures += 1
-                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                        if errorStatus:
-                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                            
-                        name, value = varBinds[0]
-                        
+                        _, value = self.snmp.get(oidEntry)
                         try:
                             self.temp[s] = float(unicode(value)) / 10.0
                         except NameError:
@@ -534,23 +530,13 @@ class EnviroMux(object):
                         
                     except Exception as e:
                         _LogThreadException(self, e, logger=shlThreadsLogger)
-                        self.temp[s] = None
                         self.lastError = str(e)
+                        nFailures += 1
+                        self.temp[s] = None
                         
             if self.oidSmokeEntry is not None:
                 try:
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidSmokeEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, value = varBinds[0]
-                    
+                    _, value = self.snmp.get(self.oidSmokeEntry)
                     try:
                         self.smoke_detected = bool(1-int(unicode(value), 10))
                     except NameError:
@@ -559,23 +545,13 @@ class EnviroMux(object):
                     
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
-                    self.smoke_detected = None
                     self.lastError = str(e)
+                    nFailures += 1
+                    self.smoke_detected = None
                     
             if self.oidWaterEntry is not None:
                 try:
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidWaterEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, value = varBinds[0]
-                    
+                    _, value = self.snmp.get(self.oidWaterEntry)
                     try:
                         self.water_detected = bool(1-int(unicode(value), 10))
                     except NameError:
@@ -584,23 +560,13 @@ class EnviroMux(object):
                     
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
-                    self.water_detected = None
                     self.lastError = str(e)
+                    nFailures += 1
+                    self.water_detected = None
                     
             if self.oidDoorEntry is not None:
                 try:
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidDoorEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, value = varBinds[0]
-                    
+                    _, value = self.snmp.get(self.oidDoorEntry)
                     try:
                         self.door_open = bool(int(unicode(value), 10))
                     except NameError:
@@ -617,8 +583,9 @@ class EnviroMux(object):
                             
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
-                    self.door_open = None
                     self.lastError = str(e)
+                    nFailures += 1
+                    self.door_open = None
                     
             for s,oidEntry in enumerate((self.oidAirflowEntry0,self.oidAirflowEntry1)):
                 if s >= self.nAirflow:
@@ -626,18 +593,7 @@ class EnviroMux(object):
                     
                 if oidEntry is not None:
                     try:
-                        nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(oidEntry)
-                        
-                        # Check for SNMP errors
-                        if errorIndication:
-                            nFailures += 1
-                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                        if errorStatus:
-                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                            
-                        name, value = varBinds[0]
-                        
+                        _, value = self.snmp.get(oidEntry)
                         try:
                             self.airflow[s] = bool(1-int(unicode(value), 10))
                         except NameError:
@@ -646,9 +602,10 @@ class EnviroMux(object):
                         
                     except Exception as e:
                         _LogThreadException(self, e, logger=shlThreadsLogger)
-                        self.airflow[s] = None
                         self.lastError = str(e)
-                            
+                        nFailures += 1
+                        self.airflow[s] = None
+                        
             # Log the data
             toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nTemperature)]))
             if self.oidSmokeEntry is not None:
@@ -881,42 +838,22 @@ class PDU(object):
         while self.alive.isSet():
             tStart = time.time()
             
-            nAttempts = 0
             nFailures = 0
             if self.oidFirmwareEntry is not None:
                 try:
                     # Get the system firmware
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidFirmwareEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, self.firmwareVersion = varBinds[0]
+                    _, self.firmwareVersion = self.snmp.get(self.oidFirmwareEntry)
                     
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
                     self.lastError = str(e)
+                    nFailures += 1
                     self.firmwareVersion = None
                     
             if self.oidFrequencyEntry is not None:
                 try:
                     # Get the current input frequency
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidFrequencyEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, PWRfreq = varBinds[0]
+                    _, PWRfreq = self.snmp.get(self.oidFrequencyEntry)
                     try:
                         self.frequency = float(unicode(PWRfreq)) / 10.0
                     except NameError:
@@ -925,23 +862,14 @@ class PDU(object):
                     
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
-                    self.frequency = None
                     self.lastError = str(e)
+                    nFailures += 1
+                    self.frequency = None
                     
             if self.oidVoltageEntry is not None:
                 try:
                     # Get the current input voltage
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidVoltageEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, PWRvoltage = varBinds[0]
+                    _, PWRvoltage = self.snmp.get(self.oidVoltageEntry)
                     try:
                         self.voltage = float(unicode(PWRvoltage))
                     except NameError:
@@ -954,22 +882,13 @@ class PDU(object):
                         self.lastError = "%s; %s" % (self.lastError, str(e))
                     else:
                         self.lastError = str(e)
+                    nFailures += 1
                     self.voltage = None
                     
             if self.oidCurrentEntry is not None:
                 try:
                     # Get the current draw of outlet #(i+1)
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidCurrentEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, PWRcurrent = varBinds[0]
+                    _, PWRcurrent = self.snmp.get(self.oidCurrentEntry)
                     try:
                         self.current = float(unicode(PWRcurrent))
                     except NameError:
@@ -986,6 +905,7 @@ class PDU(object):
                         self.lastError = "%s; %s" % (self.lastError, str(e))
                     else:
                         self.lastError = str(e)
+                    nFailures += 1
                     self.current = None
                     
             if self.oidOutletStatusBaseEntry is not None:
@@ -997,17 +917,7 @@ class PDU(object):
                     oidOutletStatusEntry = self.oidOutletStatusBaseEntry+(i,)
                     
                     try:
-                        nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(oidOutletStatusEntry)
-                        
-                        # Check for SNMP errors
-                        if errorIndication:
-                            nFailures += 1
-                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                        if errorStatus:
-                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                            
-                        name, PortStatus = varBinds[0]
+                        _, PortStatus = self.snmp.get(oidOutletStatusEntry)
                         try:
                             PortStatus = int(unicode(PortStatus))
                         except NameError:
@@ -1026,6 +936,7 @@ class PDU(object):
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
                             self.lastError = str(e)
+                        nFailures += 1
                         self.status[i] = "UNK"
                         
             toDataLog = "%.2f,%.2f,%.2f,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1)
@@ -1124,7 +1035,7 @@ class PDU(object):
                 
                 success = False
                 try:
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.set(oidOutletChangeEntry, rfc1902.Integer(numericCode))
+                    _, value = self.snmp.set(oidOutletChangeEntry, rfc1902.Integer(numericCode))
                     success = True
                     
                 except Exception as e:
@@ -1273,42 +1184,22 @@ class TrippLiteUPS(PDU):
         while self.alive.isSet():
             tStart = time.time()
             
-            nAttempts = 0
             nFailures = 0
             if self.oidFirmwareEntry is not None:
                 try:
                     # Get the system firmware
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidFirmwareEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, self.firmwareVersion = varBinds[0]
+                    _, self.firmwareVersion = self.snmp.get(self.oidFirmwareEntry)
                     
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
                     self.lastError = str(e)
+                    nFailures += 1
                     self.firmwareVersion = None
                     
             if self.oidFrequencyEntry is not None:
                 try:
                     # Get the current input frequency
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidFrequencyEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, PWRfreq = varBinds[0]
+                    _, PWRfreq = self.snmp.get(self.oidFrequencyEntry)
                     try:
                         self.frequency = float(unicode(PWRfreq)) / 10.0
                     except NameError:
@@ -1317,23 +1208,14 @@ class TrippLiteUPS(PDU):
                     
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
-                    self.frequency = None
                     self.lastError = str(e)
+                    nFailures += 1
+                    self.frequency = None
                     
             if self.oidVoltageEntry is not None:
                 try:
                     # Get the current input voltage
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidVoltageEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, PWRvoltage = varBinds[0]
+                    _, PWRvoltage = self.snmp.get(self.oidVoltageEntry)
                     try:
                         self.voltage = float(unicode(PWRvoltage))
                     except NameError:
@@ -1346,22 +1228,13 @@ class TrippLiteUPS(PDU):
                         self.lastError = "%s; %s" % (self.lastError, str(e))
                     else:
                         self.lastError = str(e)
+                    nFailures += 1
                     self.voltage = None
                     
             if self.oidCurrentEntry is not None:
                 try:
                     # Get the current draw of outlet #(i+1)
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidCurrentEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, PWRcurrent = varBinds[0]
+                    _, PWRcurrent = self.snmp.get(self.oidCurrentEntry)
                     try:
                         self.current = float(unicode(PWRcurrent))
                     except NameError:
@@ -1378,22 +1251,13 @@ class TrippLiteUPS(PDU):
                         self.lastError = "%s; %s" % (self.lastError, str(e))
                     else:
                         self.lastError = str(e)
+                    nFailures += 1
                     self.current = None
                     
             if self.oidUPSOutputEntry is not None:
                 try:
                     # Get the current draw of outlet #(i+1)
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidUPSOutputEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, UPSoutput = varBinds[0]
+                    _, UPSoutput = self.snmp.get(self.oidUPSOutputEntry)
                     try:
                         try:
                             self.upsOutput = self.upsOutputCodes[int(unicode(UPSoutput))]
@@ -1409,22 +1273,13 @@ class TrippLiteUPS(PDU):
                         self.lastError = "%s; %s" % (self.lastError, str(e))
                     else:
                         self.lastError = str(e)
+                    nFailures += 1
                     self.upsOutput = None
                     
             if self.oidBatteryChargeEntry is not None:
                 try:
                     # Get the current draw of outlet #(i+1)
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidBatteryChargeEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, BTYcharge = varBinds[0]
+                    _, BTYcharge = self.snmp.get(self.oidBatteryChargeEntry)
                     try:
                         self.batteryCharge = float(unicode(BTYcharge))
                     except NameError:
@@ -1437,22 +1292,13 @@ class TrippLiteUPS(PDU):
                         self.lastError = "%s; %s" % (self.lastError, str(e))
                     else:
                         self.lastError = str(e)
+                    nFailures += 1
                     self.batteryCharge = None
                     
             if self.oidBatteryStatusEntry is not None:
                 try:
                     # Get the current draw of outlet #(i+1)
-                    nAttempts += 1
-                    errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(self.oidBatteryStatusEntry)
-                    
-                    # Check for SNMP errors
-                    if errorIndication:
-                        nFailures += 1
-                        raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                    if errorStatus:
-                        raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                        
-                    name, BTYstatus = varBinds[0]
+                    _, BTYstatus = self.snmp.get(self.oidBatteryStatusEntry)
                     try:
                         try:
                             self.batteryStatus = self.batteryStatusCodes[int(unicode(BTYstatus))]
@@ -1468,6 +1314,7 @@ class TrippLiteUPS(PDU):
                         self.lastError = "%s; %s" % (self.lastError, str(e))
                     else:
                         self.lastError = str(e)
+                    nFailures += 1
                     self.batteryStatus = None
                     
             if self.oidOutletStatusBaseEntry is not None:
@@ -1479,17 +1326,7 @@ class TrippLiteUPS(PDU):
                     oidOutletStatusEntry = self.oidOutletStatusBaseEntry+(i,)
                     
                     try:
-                        nAttempts += 1
-                        errorIndication, errorStatus, errorIndex, varBinds = self.snmp.get(oidOutletStatusEntry)
-                        
-                        # Check for SNMP errors
-                        if errorIndication:
-                            nFailures += 1
-                            raise RuntimeError("SNMP error indication: %s" % errorIndication)
-                        if errorStatus:
-                            raise RuntimeError("SNMP error status: %s" % errorStatus.prettyPrint())
-                            
-                        name, PortStatus = varBinds[0]
+                        _, PortStatus = self.snmp.get(oidOutletStatusEntry)
                         try:
                             PortStatus = int(unicode(PortStatus))
                         except NameError:
@@ -1508,6 +1345,7 @@ class TrippLiteUPS(PDU):
                             self.lastError = "%s; %s" % (self.lastError, str(e))
                         else:
                             self.lastError = str(e)
+                        nFailures += 1
                         self.status[i] = "UNK"
                             
             toDataLog = "%.2f,%.2f,%.2f,%.2f,%s,%s,%.2f" % (time.time(), self.frequency if self.frequency is not None else -1, self.voltage if self.voltage is not None else -1, self.current if self.current is not None else -1, self.upsOutput, self.batteryStatus, self.batteryCharge if self.batteryCharge is not None else -1)
