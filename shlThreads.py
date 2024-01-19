@@ -300,6 +300,8 @@ class Thermometer(object):
         Create a monitoring thread for the temperature.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -337,9 +339,17 @@ class Thermometer(object):
                 self.SHLCallbackInstance.processShelterTemperature(maxTemp)
                 
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating temperature in %.3f seconds', tStop - tStart)
@@ -508,6 +518,8 @@ class EnviroMux(object):
         Create a monitoring thread for the temperature.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -642,9 +654,17 @@ class EnviroMux(object):
                         self.SHLCallbackInstance.processDoorState('open')
                         
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating enviromental conditions in %.3f seconds', tStop - tStart)
@@ -834,6 +854,8 @@ class PDU(object):
         attribute.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -943,9 +965,17 @@ class PDU(object):
                 fh.write('%s\n' % toDataLog)
                 
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -1180,6 +1210,8 @@ class TrippLiteUPS(PDU):
         attribute.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -1352,9 +1384,17 @@ class TrippLiteUPS(PDU):
                 fh.write('%s\n' % toDataLog)
                 
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating current and port status in %.3f seconds', tStop - tStart)
@@ -1486,6 +1526,8 @@ class Weather(object):
         Create a monitoring thread for the temperature.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -1571,9 +1613,17 @@ class Weather(object):
                 if 'rainRate' not in updated_list:
                     self.rainRate = None
                     
-            if self.SHLCallbackInstance is not None and updated_age > 900:
-                self.SHLCallbackInstance.processUnreachable('weather-station')
-                
+            if self.SHLCallbackInstance is not None:
+                if updated_age > 900:
+                    was_unreachable = 2
+                    self.SHLCallbackInstance.processUnreachable('weather-station')
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating weather station data in %.3f seconds', tStop - tStart)
@@ -1778,15 +1828,25 @@ class Lightning(object):
         #create a UDP socket
         sock = self._connect()
         
+        was_unreachable = 0
+        
         tCull = time.time()
         while self.alive.isSet():
             try:
                 tNow = time.time()
                 try:
                     data, addr = sock.recvfrom(1024)
+                    
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
                 except socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
                     if self.SHLCallbackInstance is not None:
+                        was_unreachable = 5
                         self.SHLCallbackInstance.processUnreachable('lightning-detector')
                         
                     sock = self._connect(sock)
@@ -1985,14 +2045,23 @@ class Outage(object):
         deltaCull = timedelta(minutes=2)
         deltaAging = timedelta(seconds=int(self.aging))
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             try:
                 tNow = datetime.utcnow()
                 try:
                     data, addr = sock.recvfrom(1024)
+                    
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
                 except socket.timeout:
                     shlThreadsLogger.warning('Outage: monitorThread timeout on socket, re-trying')
                     if self.SHLCallbackInstance is not None:
+                        was_unreachable = 5
                         self.SHLCallbackInstance.processUnreachable('voltage-monitor')
                         
                     sock = self._connect(sock)
