@@ -21,6 +21,8 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
+from lwainflux import LWAInfluxClient
+
 __version__ = "1.0"
 __all__ = ['Thermometer', 'Comet', 'HWg', 'EnviroMux', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
 
