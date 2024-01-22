@@ -90,9 +90,6 @@ class ShippingContainer(object):
         self.currentState['strikeThread'] = None
         self.currentState['outageThread'] = None
         
-        ## Scheduler for clearing the unreachable device list
-        self.scheduler = None
-        
         # Update the configuration
         self.updateConfig()
         
@@ -178,11 +175,6 @@ class ShippingContainer(object):
         self.currentState['activeProcess'].append('INI')
         
         # Stop all threads.  If the don't exist yet, create them.
-        ## Scheduler
-        if self.scheduler is not None:
-            self.scheduler.stop()
-        else:
-            self.scheduler = EventScheduler()
         ## Enviromenal monitor
         if self.currentState['enviroThread'] is not None:
             self.currentState['enviroThread'].stop()
@@ -293,7 +285,6 @@ class ShippingContainer(object):
                 self.currentState['diffPoint'] = diffPoint
                 
         # Start the monitoring threads back up
-        self.scheduler.start()
         if self.currentState['enviroThread'] is not None:
             self.currentState['enviroThread'].start()
         for t in self.currentState['tempThreads']:
@@ -378,9 +369,6 @@ class ShippingContainer(object):
         if self.currentState['outageThread'] is not None:
             self.currentState['outageThread'].stop()
             
-        # Stop the scheduler
-        self.scheduler.stop()
-        
         # Update the state
         self.currentState['status'] = 'SHUTDWN'
         self.currentState['info'] = 'System has been shut down'
@@ -1216,11 +1204,6 @@ class ShippingContainer(object):
                                                                                         ', '.join(unreachable))))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
-                
-            ## Make sure to check back later to see if this is still a problem
-            if self.scheduler.empty():
-                self.scheduler.enter(420, 1, self.processUnreachable, (None,))
-                shlFunctionsLogger.debug('Scheduling another call of \'processUnreachable\' for seven minutes from now')
                 
             return True
             
