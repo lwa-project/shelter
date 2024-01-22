@@ -7,7 +7,6 @@ import os
 import re
 import sys
 import time
-import sched
 import socket
 import logging
 import sqlite3
@@ -22,10 +21,8 @@ except ImportError:
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pysnmp.proto import rfc1902
 
-from lwainflux import LWAInfluxClient
-
-__version__ = "0.9"
-__all__ = ['EventScheduler', 'Thermometer', 'Comet', 'HWg', 'EnviroMux', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
+__version__ = "1.0"
+__all__ = ['Thermometer', 'Comet', 'HWg', 'EnviroMux', 'PDU', 'TrippLite', 'APC', 'Raritan', 'Dominion', 'TrippLiteUPS', 'APCUPS', 'Weather', 'Lightning', 'Outage']
 
 
 shlThreadsLogger = logging.getLogger('__main__')
@@ -68,111 +65,6 @@ def _LogThreadException(cls, exception, logger=None):
     ## Print the traceback to the logger as a series of DEBUG messages
     for line in tbString.split('\n'):
         logger.debug("%s", line)
-
-
-class EventScheduler(object):
-    """
-    Class for running background functions.
-    """
-    
-    def __init__(self, MonitorPeriod=5.0):
-        # Setup the scheduler and its lock
-        self.lock = threading.Lock()
-        self.scheduler = sched.scheduler(time.time, time.sleep)
-        self.MonitorPeriod = MonitorPeriod
-        
-        # Setup threading
-        self.thread = None
-        self.alive = threading.Event()
-        self.lastError = None
-        
-    def start(self):
-        """
-        Start the scheduler thread.
-        """
-        
-        if self.thread is not None:
-            self.stop()
-            
-        self.thread = threading.Thread(target=self.monitorThread)
-        self.thread.setDaemon(1)
-        self.alive.set()
-        self.thread.start()
-        
-    def stop(self):
-        """
-        Stop the scheduler thread and empty the event queue.
-        """
-        
-        with self.lock:
-            if self.thread is not None:
-                for entry in self.scheduler.queue:
-                    self.scheduler.cancel(entry)
-                    
-                self.alive.clear()          #clear alive event for thread
-                self.thread.join()          #wait until thread has finished
-                self.thread = None
-                self.lastError = None
-                
-    def monitorThread(self):
-        """
-        Create a monitoring thread to run entries in the queue.
-        """
-        
-        while self.alive.isSet():
-            tStart = time.time()
-            
-            with self.lock:
-                try:
-                    self.scheduler.run(blocking=False)
-                except Exception as e:
-                    _LogThreadException(self, e, logger=shlThreadsLogger)
-                    self.lastError = str(e)
-                    
-            tStop = time.time()
-            
-            sleepCount = 0.0
-            sleepTime = max([1.0, self.MonitorPeriod - (tStop - tStart)])
-            while (self.alive.isSet() and sleepCount < sleepTime):
-                time.sleep(0.2)
-                sleepCount += 0.2
-                
-    def empty(self):
-        """
-        Return whether or not the scheduler queue is emtpy.  Raises a
-        RuntimeError if the scheduler is not running.
-        """
-        
-        if self.thread is None:
-            raise RuntimeError("Scheduler is not running")
-            
-        with self.lock:
-            status = self.scheduler.empty()
-        return status
-        
-    def enter(self, delay, priority, action, argument=(), kwargs={}):
-        """
-        Enter a new event into the queue to run at a relative time.  Raises a
-        RuntimeError if the scheduler is not running.
-        """
-        
-        if self.thread is None:
-            raise RuntimeError("Scheduler is not running")
-            
-        with self.lock:
-            self.scheduler.enter(delay, priority, action, argument=argument, kwargs=kwargs)
-            
-    def enterabs(self, time, priority, action, argument=(), kwargs={}):
-        """
-        Enter a new event into the queue to run at an absolute time.  Raises a
-        RuntimeError if the scheduler is not running.
-        """
-        
-        if self.thread is None:
-            raise RuntimeError("Scheduler is not running")
-            
-        with self.lock:
-            self.scheduler.enterabs(delay, priority, action, argument=argument, kwargs=kwargs)
 
 
 class SNMPControl(object):
@@ -304,6 +196,8 @@ class Thermometer(object):
         Create a monitoring thread for the temperature.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -351,9 +245,17 @@ class Thermometer(object):
                 self.SHLCallbackInstance.processShelterTemperature(maxTemp)
                 
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating temperature in %.3f seconds', tStop - tStart)
@@ -523,6 +425,8 @@ class EnviroMux(object):
         Create a monitoring thread for the temperature.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -675,9 +579,17 @@ class EnviroMux(object):
                         self.SHLCallbackInstance.processDoorState('open')
                         
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating enviromental conditions in %.3f seconds', tStop - tStart)
@@ -868,6 +780,8 @@ class PDU(object):
         attribute.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -977,9 +891,17 @@ class PDU(object):
                 fh.write('%s\n' % toDataLog)
                 
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
                          "tags": {"subsystem": "shl",
@@ -1228,6 +1150,8 @@ class TrippLiteUPS(PDU):
         attribute.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -1400,9 +1324,17 @@ class TrippLiteUPS(PDU):
                 fh.write('%s\n' % toDataLog)
                 
             # Make sure the device is reachable
-            if self.SHLCallbackInstance is not None and nFailures > 0:
-                self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
-                
+            if self.SHLCallbackInstance is not None:
+                if nFailures > 0:
+                    was_unreachable = 5
+                    self.SHLCallbackInstance.processUnreachable('%s-%s' % (type(self).__name__, str(self.id)))
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
                          "tags": {"subsystem": "shl",
@@ -1545,6 +1477,8 @@ class Weather(object):
         Create a monitoring thread for the temperature.
         """
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             tStart = time.time()
             
@@ -1632,6 +1566,17 @@ class Weather(object):
                 if 'rainRate' not in updated_list:
                     self.rainRate = None
                     
+            if self.SHLCallbackInstance is not None:
+                if updated_age > 900:
+                    was_unreachable = 2
+                    self.SHLCallbackInstance.processUnreachable('weather-station')
+                else:
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
             if 'updatetime' in updated_list:
                 json = [{"measurement": "weather",
                          "tags": {"subsystem": "shl",
@@ -1645,9 +1590,6 @@ class Weather(object):
                 if len(json[0]['fields']) > 0:
                     self.influxdb.write(json)
                     
-            if self.SHLCallbackInstance is not None and updated_age > 900:
-                self.SHLCallbackInstance.processUnreachable('weather-station')
-                
             # Stop time
             tStop = time.time()
             shlThreadsLogger.debug('Finished updating weather station data in %.3f seconds', tStop - tStart)
@@ -1853,15 +1795,25 @@ class Lightning(object):
         #create a UDP socket
         sock = self._connect()
         
+        was_unreachable = 0
+        
         tCull = time.time()
         while self.alive.isSet():
             try:
                 tNow = time.time()
                 try:
                     data, addr = sock.recvfrom(1024)
+                    
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
+                        
                 except socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
                     if self.SHLCallbackInstance is not None:
+                        was_unreachable = 5
                         self.SHLCallbackInstance.processUnreachable('lightning-detector')
                         
                     sock = self._connect(sock)
@@ -2061,14 +2013,23 @@ class Outage(object):
         deltaCull = timedelta(minutes=2)
         deltaAging = timedelta(seconds=int(self.aging))
         
+        was_unreachable = 0
+        
         while self.alive.isSet():
             try:
                 tNow = datetime.utcnow()
                 try:
                     data, addr = sock.recvfrom(1024)
+                    
+                    if was_unreachable > 1:
+                        was_unreachable -= 1
+                    elif was_unreachable == 1:
+                        was_unreachable = 0
+                        self.SHLCallbackInstance.processUnreachable(None)
                 except socket.timeout:
                     shlThreadsLogger.warning('Outage: monitorThread timeout on socket, re-trying')
                     if self.SHLCallbackInstance is not None:
+                        was_unreachable = 5
                         self.SHLCallbackInstance.processUnreachable('voltage-monitor')
                         
                     sock = self._connect(sock)
