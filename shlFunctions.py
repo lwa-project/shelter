@@ -1168,7 +1168,12 @@ class ShippingContainer(object):
         # Update the unreachable device list
         if unreachableDevice is not None:
             with ListLock:
-                self.currentState['unreachableDevices'][unreachableDevice] = tNow
+                tUse = tNow
+                if unreachableDevice.startswith('cleared'):
+                    tUse = 0
+                    unreachableDevice = unreachableDevice.replace'cleared-', '')
+                    
+                self.currentState['unreachableDevices'][unreachableDevice] = tUse
                 shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
                 
         # Count the recently updated (<= 6 minutes since the last failure) entries
