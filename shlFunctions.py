@@ -1169,7 +1169,7 @@ class ShippingContainer(object):
         if unreachableDevice is not None:
             with ListLock:
                 if unreachableDevice.startswith('cleared'):
-                    unreachableDevice = unreachableDevice.replace'cleared-', '')
+                    unreachableDevice = unreachableDevice.replace('cleared-', '')
                     
                     try:
                         del self.currentState['unreachableDevices'][unreachableDevice]
