@@ -17,8 +17,8 @@
   
   /* Shelter temperature sensors */
   "thermometers": {
-    "warning_temp": 80.0,   // degrees F
-    "critical_temp": 90.0,  // degrees F
+    "warning_temp": 85.0,   // degrees F
+    "critical_temp": 95.0,  // degrees F
     "critical_list": [],
     "monitor_period": 60.0, // seconds
     "devices": {
