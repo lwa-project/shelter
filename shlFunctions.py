@@ -1195,23 +1195,22 @@ class ShippingContainer(object):
         # Update the unreachable device list
         if unreachableDevice is not None:
             with ListLock:
-                self.currentState['unreachableDevices'][unreachableDevice] = tNow
-                shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
-                
-        # Count the recently updated (<= 6 minutes since the last failure) entries
-        nUnreachable = 0
-        unreachable = {}
-        for device in self.currentState['unreachableDevices']:
-            age = tNow - self.currentState['unreachableDevices'][device]
-            if age <= 360:
-                nUnreachable += 1
-                unreachable[device] = self.currentState['unreachableDevices'][device]
-            else:
-                shlFunctionsLogger.info('Updated unreachable list - remove %s', device)
-        with ListLock:
-            self.currentState['unreachableDevices'] = unreachable
-            shlFunctionsLogger.debug('Unreachable list now contains %i entries', len(self.currentState['unreachableDevices']))
-            
+                if unreachableDevice.startswith('cleared'):
+                    unreachableDevice = unreachableDevice.replace('cleared-', '')
+                    
+                    try:
+                        del self.currentState['unreachableDevices'][unreachableDevice]
+                        shlFunctionsLogger.info('Updated unreachable list - remove %s', unreachableDevice)
+                    except KeyError:
+                        shlFunctionsLogger.warning("Failed to remove unknown device '%s' from unreacable list", unreachableDevice)
+                else:
+                    self.currentState['unreachableDevices'][unreachableDevice] = tUse
+                    shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
+                    
+        # Count the number of unreachable devices
+        nUnreachable = len(self.currentState['unreachableDevices'])
+        shlFunctionsLogger.debug('Unreachable list now contains %i entries', nUnreachable)
+        
         # If there isn't anything in the unreachable list, quietly ignore it and clear the WARNING condition
         if nUnreachable == 0:
             if self.currentState['status'] == 'WARNING':

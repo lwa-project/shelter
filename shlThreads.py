@@ -256,7 +256,7 @@ class Thermometer(object):
                         was_unreachable -= 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
-                        self.SHLCallbackInstance.processUnreachable(None)
+                        self.SHLCallbackInstance.processUnreachable('cleared-%s-%s' % (type(self).__name__, str(self.id)))
                         
             # Stop time
             tStop = time.time()
@@ -590,7 +590,7 @@ class EnviroMux(object):
                         was_unreachable -= 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
-                        self.SHLCallbackInstance.processUnreachable(None)
+                        self.SHLCallbackInstance.processUnreachable('cleared-%s-%s' % (type(self).__name__, str(self.id)))
                         
             # Stop time
             tStop = time.time()
@@ -902,7 +902,7 @@ class PDU(object):
                         was_unreachable -= 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
-                        self.SHLCallbackInstance.processUnreachable(None)
+                        self.SHLCallbackInstance.processUnreachable('cleared-%s-%s' % (type(self).__name__, str(self.id)))
                         
             if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
@@ -1335,7 +1335,7 @@ class TrippLiteUPS(PDU):
                         was_unreachable -= 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
-                        self.SHLCallbackInstance.processUnreachable(None)
+                        self.SHLCallbackInstance.processUnreachable('cleared-%s-%s' % (type(self).__name__, str(self.id)))
                         
             if self.InfluxDBClient is not None and self.voltage is not None and self.current is not None:
                 json = [{"measurement": "power",
@@ -1577,7 +1577,7 @@ class Weather(object):
                         was_unreachable -= 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
-                        self.SHLCallbackInstance.processUnreachable(None)
+                        self.SHLCallbackInstance.processUnreachable('cleared-weather-station')
                         
             if 'updatetime' in updated_list:
                 json = [{"measurement": "weather",
@@ -1810,7 +1810,7 @@ class Lightning(object):
                         was_unreachable -= 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
-                        self.SHLCallbackInstance.processUnreachable(None)
+                        self.SHLCallbackInstance.processUnreachable('cleared-lightning-detector')
                         
                 except socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
@@ -2027,7 +2027,7 @@ class Outage(object):
                         was_unreachable -= 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
-                        self.SHLCallbackInstance.processUnreachable(None)
+                        self.SHLCallbackInstance.processUnreachable('cleared-voltage-monitor')
                 except socket.timeout:
                     shlThreadsLogger.warning('Outage: monitorThread timeout on socket, re-trying')
                     if self.SHLCallbackInstance is not None:
