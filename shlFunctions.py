@@ -479,7 +479,7 @@ class ShippingContainer(object):
             self.currentState['lastLog'] = 'PWR: %s - port' % commandExitCodes[0x04]
             return False, 0x04
         ## Control word
-        if control not in ('ON ', 'OFF'):
+        if control not in ('ON ', 'OFF', 'CYC'):
             shlFunctionsLogger.warning("PWR command rejected due to invalid control word")
             self.currentState['lastLog'] = 'PWR: %s' % commandExitCodes[0x05]
             return False, 0x05
