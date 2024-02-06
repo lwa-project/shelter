@@ -713,7 +713,7 @@ class PDU(object):
     oidOutletStatusBaseEntry = None
     oidOutletChangeBaseEntry = None
     
-    outletStatusCodes = {1: "OFF", 2: "ON"}
+    outletStatusCodes = {1: "OFF", 2: "ON", 3: "CYC"}
     
     def __init__(self, ip, port, community, id, nOutlets=8, description=None, SHLCallbackInstance=None, InfluxDBClient=None, MonitorPeriod=1.0):
         self.ip = ip
@@ -1032,7 +1032,7 @@ class TrippLite(PDU):
         self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,850,100,1,10,2,1,4,)
         
         # Setup the status codes
-        self.outletStatusCodes = {1: "OFF", 2: "ON"}
+        self.outletStatusCodes = {1: "OFF", 2: "ON", 3: "CYC"}
 
 
 class APC(PDU):
@@ -1052,7 +1052,7 @@ class APC(PDU):
         self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,318,1,1,4,4,2,1,3,)
         
         # Setup the status codes
-        self.outletStatusCodes = {1: "ON", 2: "OFF"}
+        self.outletStatusCodes = {1: "ON", 2: "OFF", 3:"CYC"}
 
 
 class Raritan(PDU):
@@ -1072,7 +1072,7 @@ class Raritan(PDU):
         self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,13742,6,4,1,2,1,2,1,)
         
         # Setup the status codes
-        self.outletStatusCodes = {1: "ON", 0: "OFF"}
+        self.outletStatusCodes = {1: "ON", 0: "OFF", 2: "CYC"}
 
 
 class Dominion(PDU):
@@ -1092,7 +1092,7 @@ class Dominion(PDU):
         self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,13742,4,1,2,2,1,3,)
         
         # Setup the status codes
-        self.outletStatusCodes = {1: "ON", 0: "OFF"}
+        self.outletStatusCodes = {1: "ON", 0: "OFF", 2: "CYC"}
         
     def getVoltage(self):
         """
@@ -1138,7 +1138,7 @@ class TrippLiteUPS(PDU):
         # Setup the status codes
         self.batteryStatusCodes = {1: "Unknown", 2: "Normal", 3: "Low", 4: "Depleted"}
         self.upsOutputCodes = {1: "Other", 2: "None", 3: "Normal", 4: "Bypass", 5: "Battery", 6: "Booster", 7: "Reducer"}
-        self.outletStatusCodes = {1: "OFF", 2: "ON"}
+        self.outletStatusCodes = {1: "OFF", 2: "ON", 3: "CYC"}
         
         # Setup holders
         self.upsOutput = 'UNK'
@@ -1405,7 +1405,7 @@ class APCUPS(TrippLiteUPS):
         self.oidOutletChangeBaseEntry = (1,3,6,1,4,1,318,1,1,1,12,3,2,1,3,)
         
         # Setup the status codes
-        self.outletStatusCodes = {1: "ON", 2: "OFF"}
+        self.outletStatusCodes = {1: "ON", 2: "OFF", 3: "CYC"}
 
 
 class Weather(object):
