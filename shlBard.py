@@ -39,19 +39,6 @@ class MC4002AccessLimiter(object):
 _MCAL = MC4002AccessLimiter()
 
 
-def _start_session(ip_address, username, password):
-    session = requests.Session()
-    data = session.post(f"http://{ip_address}/index.htm",
-                        data={'user': username,
-                              'password': password},
-                        verify=False)
-    return session
-
-
-def _stop_session(session, ip_address):
-    session.get(f"http://{ip_address}/logout.htm")
-
-
 def get_mc4002_status(ip_address):
     """
     Poll the MC4002 controller at the provided address and return dictionary of
