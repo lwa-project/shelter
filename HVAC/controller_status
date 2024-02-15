@@ -67,7 +67,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='read the on/off status of both IceQube HVAC unit',
+    parser = argparse.ArgumentParser(description='read the on/off status of both IceQube/Bard MC4002 HVAC units',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
     parser.add_argument('-c', '--config', type=str, default=DEFAULTS_FILENAME,

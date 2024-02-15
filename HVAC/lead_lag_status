@@ -59,7 +59,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='determine which IceQube HVAC unit is lead',
+    parser = argparse.ArgumentParser(description='determine which IceQube/Bard MC4002 HVAC unit is lead',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
     parser.add_argument('-c', '--config', type=str, default=DEFAULTS_FILENAME,
