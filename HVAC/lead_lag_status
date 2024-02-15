@@ -42,10 +42,8 @@ def main(args):
         status = get_iceqube_lead_status(ip_address)
         if status is None:
             print('lead: unk')
-        elif status:
-            print('lead: 1')
         else:
-            print('lead: 2')
+            print(f"lead: {2-status}")
             
     elif hvac_type == 'bard':
         status = get_mc4002_lead_status(ip_address)
