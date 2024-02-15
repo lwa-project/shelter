@@ -16,6 +16,7 @@ DEFAULTS_FILENAME = '/lwa/software/defaults.json'
 # Make sure shlQube.py is in our path
 #
 sys.path.append(os.path.dirname(DEFAULTS_FILENAME))
+from shlBard import get_mc4002_status
 from shlQube import get_iceqube_status
 
 
@@ -27,20 +28,44 @@ def main(args):
     with open(args.config, 'r') as ch:
         config = json.loads(json_minify.json_minify(ch.read()))
         
+    # Load in the controller type
+    try:
+        hvac_type = config['hvac']['type']
+        HVAC_IP_ID = HVAC_UNIT_ID
+        if hvac_type == 'bard':
+            HVAC_IP_ID = 1
+            
+    except KeyError:
+        raise RuntimeError("No configuration info. found about the controller")
+        
     # Load in the IP address to use
     try:
-        ip_address = config['hvac']['ip'][HVAC_UNIT_ID-1]
+        ip_address = config['hvac']['ip'][HVAC_IP_ID-1]
     except (KeyError, IndexError):
         raise RuntimeError(f"No configuration info. found for HVAC #{HVAC_UNIT_ID}")
         
     # Query the unit
-    status = get_iceqube_status(ip_address)
-    if status is None:
-        print(f"compressor{HVAC_UNIT_ID}: disabled off")
-    elif status['cooling']:
-        print(f"compressor{HVAC_UNIT_ID}: enabled on")
+    if hvac_type == 'iceqube':
+        status = get_iceqube_status(ip_address)
+        if status is None:
+            print(f"compressor{HVAC_UNIT_ID}: disabled off")
+        elif status['cooling']:
+            print(f"compressor{HVAC_UNIT_ID}: enabled on")
+        else:
+            print(f"compressor{HVAC_UNIT_ID}: enabled off")
+            
+    elif hvac_type == 'bard':
+        status = get_mc4002_status(ip_address)
+        if status is None:
+            print(f"compressor{HVAC_UNIT_ID}: disabled off")
+        elif status['cooling']:
+            status = "on" if ((status['cooling_stage'] - 1) & HVAC_UNIT_ID) else "off"
+            print(f"compressor{HVAC_UNIT_ID}: enabled {status}")
+        else:
+            print(f"compressor{HVAC_UNIT_ID}: enabled off")
+            
     else:
-        print(f"compressor{HVAC_UNIT_ID}: enabled off")
+        raise RuntimeError("No configuration info. found about the controller")
 
 
 if __name__ == '__main__':

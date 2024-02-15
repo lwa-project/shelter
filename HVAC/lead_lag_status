@@ -16,6 +16,7 @@ DEFAULTS_FILENAME = '/lwa/software/defaults.json'
 # Make sure shlQube.py is in our path
 #
 sys.path.append(os.path.dirname(DEFAULTS_FILENAME))
+from shlBard import get_mc4002_lead_status
 from shlQube import get_iceqube_lead_status
 
 
@@ -24,6 +25,12 @@ def main(args):
     with open(args.config, 'r') as ch:
         config = json.loads(json_minify.json_minify(ch.read()))
         
+    # Load in the controller type
+    try:
+        hvac_type = config['hvac']['type']
+    except KeyError:
+        raise RuntimeError("No configuration info. found about the controller")
+        
     # Load in the IP address to use
     try:
         ip_address = config['hvac']['ip'][0]
@@ -31,13 +38,24 @@ def main(args):
         raise RuntimeError("No configuration info. found for HVAC #%i" % 1)
         
     # Query the unit
-    status = get_iceqube_lead_status(ip_address)
-    if status is None:
-        print('lead: unk')
-    elif status:
-        print('lead: 1')
+    if hvac_type == 'iceqube':
+        status = get_iceqube_lead_status(ip_address)
+        if status is None:
+            print('lead: unk')
+        elif status:
+            print('lead: 1')
+        else:
+            print('lead: 2')
+            
+    elif hvac_type == 'bard':
+        status = get_mc4002_lead_status(ip_address)
+        if status is None:
+            print('lead: unk')
+        else:
+            print(f"lead: {status}")
+            
     else:
-        print('lead: 2')
+        raise RuntimeError("No configuration info. found about the controller")
 
 
 if __name__ == '__main__':

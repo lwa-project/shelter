@@ -16,6 +16,7 @@ DEFAULTS_FILENAME = '/lwa/software/defaults.json'
 # Make sure shlQube.py is in our path
 #
 sys.path.append(os.path.dirname(DEFAULTS_FILENAME))
+from shlBard import get_mc4002_alarms
 from shlQube import get_iceqube_status
 
 
@@ -24,20 +25,43 @@ def main(args):
     with open(args.config, 'r') as ch:
         config = json.loads(json_minify.json_minify(ch.read()))
         
-    # Loop over the two units
+    # Load in the controller type
+    try:
+        hvac_type = config['hvac']['type']
+    except KeyError:
+        raise RuntimeError("No configuration info. found about the controller")
+        
     status = ['off', 'off']
-    for i in range(2):
-        ## Load in the IP address to use
+    if hvac_type == 'iceqube':
+        # Loop over the two units
+        for i in range(2):
+            ## Load in the IP address to use
+            try:
+                ip_address = config['hvac']['ip'][i]
+            except (KeyError, IndexError):
+                raise RuntimeError("No configuration info. found for HVAC #%i" % (i+1,))
+                
+            ## Query the unit
+            this_status = get_iceqube_status(ip_address)
+            if this_status is not None:
+                status[i] = 'on'
+                
+    elif hvac_type == 'bard':
         try:
-            ip_address = config['hvac']['ip'][i]
+            ip_address = config['hvac']['ip'][0]
         except (KeyError, IndexError):
-            raise RuntimeError("No configuration info. found for HVAC #%i" % (i+1,))
+            raise RuntimeError("No configuration info. found for HVAC #1")
             
-        ## Query the unit
-        this_status = get_iceqube_status(ip_address)
-        if this_status is not None:
-            status[i] = 'on'
-            
+        alarms = get_mc4002_alarms(ip_address)
+        if alarms is not None:
+            if 'power loss 1' not in alarms:
+                status[0] = 'on'
+            if 'power loss 2' not in alarms:
+                status[1] = 'on'
+                
+    else:
+        raise RuntimeError("No configuration info. found about the controller")
+                
     # Report
     print(f"controller: enabled {status[0]} {status[1]}")
 
