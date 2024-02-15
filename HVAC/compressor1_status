@@ -59,7 +59,7 @@ def main(args):
         if status is None:
             print(f"compressor{HVAC_UNIT_ID}: disabled off")
         elif status['cooling']:
-            status = "on" if ((status['cooling_stage'] - 1) & HVAC_UNIT_ID) else "off"
+            status = "on" if status['cooling_stage'] > (2*(HVAC_UNIT_ID - 1)) else "off"
             print(f"compressor{HVAC_UNIT_ID}: enabled {status}")
         else:
             print(f"compressor{HVAC_UNIT_ID}: enabled off")
@@ -69,7 +69,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=f"read the compressor status of IceQube HVAC #{HVAC_UNIT_ID}",
+    parser = argparse.ArgumentParser(description=f"read the compressor status of IceQube/Bard MC4002 HVAC #{HVAC_UNIT_ID}",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
     parser.add_argument('-c', '--config', type=str, default=DEFAULTS_FILENAME,
