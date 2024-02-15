@@ -29,4 +29,3 @@ jobs:
       - name: "Build"
         run: |
           make -C HVAC all
-          make -C IceQube all
