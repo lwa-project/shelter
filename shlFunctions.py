@@ -1204,7 +1204,7 @@ class ShippingContainer(object):
                     except KeyError:
                         shlFunctionsLogger.warning("Failed to remove unknown device '%s' from unreacable list", unreachableDevice)
                 else:
-                    self.currentState['unreachableDevices'][unreachableDevice] = tUse
+                    self.currentState['unreachableDevices'][unreachableDevice] = tNow
                     shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
                     
         # Count the number of unreachable devices
