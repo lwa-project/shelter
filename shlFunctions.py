@@ -1211,6 +1211,8 @@ class ShippingContainer(object):
                     self.currentState['unreachableDevices'][unreachableDevice] = tNow
                     shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
                     
+                unreachable = ', '.join(list(self.currentState['unreachableDevices'].keys()))
+                    
         # Count the number of unreachable devices
         nUnreachable = len(self.currentState['unreachableDevices'])
         shlFunctionsLogger.debug('Unreachable list now contains %i entries', nUnreachable)
@@ -1231,7 +1233,7 @@ class ShippingContainer(object):
                 _, message = self._merge_states(self.currentState['info'],
                                                 append=('SUMMARY',
                                                         "%i Devices unreachable: %s" % (nUnreachable,
-                                                                                        ', '.join(unreachable))))
+                                                                                        unreachable)))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
                 
