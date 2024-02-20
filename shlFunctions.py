@@ -1212,7 +1212,7 @@ class ShippingContainer(object):
                     shlFunctionsLogger.warning('Updated unreachable list - add %s', unreachableDevice)
                     
                 unreachable = ', '.join(list(self.currentState['unreachableDevices'].keys()))
-                    
+                
         # Count the number of unreachable devices
         nUnreachable = len(self.currentState['unreachableDevices'])
         shlFunctionsLogger.debug('Unreachable list now contains %i entries', nUnreachable)
