@@ -1084,7 +1084,7 @@ class Dominion(PDU):
         super(Dominion, self).__init__(ip, port, community, id, nOutlets=nOutlets, description=description, SHLCallbackInstance=SHLCallbackInstance, InfluxDBClient=InfluxDBClient, MonitorPeriod=MonitorPeriod)
         
         # Setup the OID values
-        self.oidFirmwareEntry = (1,3,6,1,4,1,13742,4,1,1,1)
+        self.oidFirmwareEntry = None
         self.oidFrequencyEntry = None
         self.oidVoltageEntry = (1,3,6,1,4,1,13742,4,1,20,2,1,8)
         self.oidCurrentEntry = (1,3,6,1,4,1,13742,4,1,20,2,1,7)
