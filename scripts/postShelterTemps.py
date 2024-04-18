@@ -18,33 +18,35 @@ SUBSYSTEM = "SHL"
 if os.path.exists('/data/enviromux.txt'):
     ## Prefer to report enviromux data
     test = subprocess.check_output(["tail", "-n1", '/data/enviromux.txt'], stderr=subprocess.DEVNULL)
-    test = test.decode('ascii')
+    test = test.decode('ascii', errors='ignore')
     test = test.replace('\n', '')
     ## Only keep the first three entries that should contain the time and temperatures
     fields = test.split(',')[:3]
     test = ','.join(fields)
 else:
     test = subprocess.check_output(["tail", "-n1", '/data/thermometer01.txt'], stderr=subprocess.DEVNULL)
-    test = test.decode('ascii')
+    test = test.decode('ascii', errors='ignore')
     test = test.replace('\n', '')
     
 # Get the HVAC status
 try:
     lls = subprocess.check_output(['/usr/local/bin/lead_lag_status',], stderr=subprocess.DEVNULL)
-    lls = lls.decode('ascii')
+    lls = lls.decode('ascii', errors='ignore')
     lls = lls.strip().rstrip().split(None, 1)[1]
     if lls.find('unk') != -1:
         lls = 'NaN'
         
     c1s = subprocess.check_output(['/usr/local/bin/compressor1_status',], stderr=subprocess.DEVNULL)
-    c1s = c1s.decode('ascii')
+    c1s = c1s.decode('ascii', errors='ignore')
+    c1s = '2' if c1s.find('both') != -1 else c1s
     c1s = '1' if c1s.find('on') != -1 else c1s
     c1s = '-1' if c1s.find('disabled') != -1 else c1s
     c1s = '0' if c1s.find('off') != -1 else c1s
     c1s = 'NaN' if c1s.find('unk') != -1 else c1s
     
     c2s = subprocess.check_output(['/usr/local/bin/compressor2_status',], stderr=subprocess.DEVNULL)
-    c2s = c2s.decode('ascii')
+    c2s = c2s.decode('ascii', errors='ignore')
+    c2s = '2' if c2s.find('both') != -1 else c2s
     c2s = '1' if c2s.find('on') != -1 else c2s
     c2s = '-1' if c2s.find('disabled') != -1 else c2s
     c2s = '0' if c2s.find('off') != -1 else c2s

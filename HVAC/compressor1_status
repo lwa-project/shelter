@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import json
+import argparse
+import json_minify
+from urllib.request import urlopen
+
+#
+# Default Configuration File
+#
+DEFAULTS_FILENAME = '/lwa/software/defaults.json'
+
+#
+# Make sure shlQube.py is in our path
+#
+sys.path.append(os.path.dirname(DEFAULTS_FILENAME))
+from shlBard import get_mc4002_status, get_mc4002_lead_status
+from shlQube import get_iceqube_status
+
+
+HVAC_UNIT_ID = 1
+
+
+def main(args):
+    # Parse the config. file
+    with open(args.config, 'r') as ch:
+        config = json.loads(json_minify.json_minify(ch.read()))
+        
+    # Load in the controller type
+    try:
+        hvac_type = config['hvac']['type']
+        HVAC_IP_ID = HVAC_UNIT_ID
+        if hvac_type == 'bard':
+            HVAC_IP_ID = 1
+            
+    except KeyError:
+        raise RuntimeError("No configuration info. found about the controller")
+        
+    # Load in the IP address to use
+    try:
+        ip_address = config['hvac']['ip'][HVAC_IP_ID-1]
+    except (KeyError, IndexError):
+        raise RuntimeError(f"No configuration info. found for HVAC #{HVAC_UNIT_ID}")
+        
+    # Query the unit
+    if hvac_type == 'iceqube':
+        status = get_iceqube_status(ip_address)
+        if status is None:
+            print(f"compressor{HVAC_UNIT_ID}: disabled off")
+        elif status['cooling']:
+            print(f"compressor{HVAC_UNIT_ID}: enabled on")
+        else:
+            print(f"compressor{HVAC_UNIT_ID}: enabled off")
+            
+    elif hvac_type == 'bard':
+        status = get_mc4002_status(ip_address)
+        lead = get_mc4002_lead_status(ip_address)
+        if status is None or lead is None:
+            print(f"compressor{HVAC_UNIT_ID}: disabled off")
+        elif status['cooling']:
+            status_str = 'off'
+            if HVAC_UNIT_ID == lead:
+                if status['cooling_stage'] >= 2:
+                    status_str = 'both'
+                elif status['cooling_stage'] >= 1:
+                    status_str = 'on'
+            else:
+                if status['cooling_stage'] >= 4:
+                    status_str = 'both'
+                elif status['cooling_stage'] >= 3:
+                    status_str = 'on'
+            print(f"compressor{HVAC_UNIT_ID}: enabled {status_str}")
+        else:
+            print(f"compressor{HVAC_UNIT_ID}: enabled off")
+            
+    else:
+        raise RuntimeError("No configuration info. found about the controller")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=f"read the compressor status of IceQube/Bard MC4002 HVAC #{HVAC_UNIT_ID}",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('-c', '--config', type=str, default=DEFAULTS_FILENAME,
+                        help='name of the SHL configuration file to use')
+    args = parser.parse_args()
+    main(args)
