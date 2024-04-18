@@ -2,7 +2,7 @@
 import time
 import logging
 import threading
-from urllib.request import urlopen
+import requests
 import xml.etree.ElementTree as ET
 
 shlQubeLogger = logging.getLogger('__main__')
@@ -86,15 +86,15 @@ def get_iceqube_status(ip_address):
     
     with _IQAL:
         try:
-            with urlopen(f"http://{ip_address}/ledstate.cgi", timeout=20) as uh:
-                value = uh.read()
-                value = value.decode()
-                value = int(value)
-                
-                value = {'cooling': bool(value & 8),
-                         'heating': bool(value & 4),
-                         'alarm':   bool(value & 2),
-                         'filter':  bool(value & 1)}
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/ledstate.cgi",
+                                   timeout=20)
+            value = int(response.text)
+            
+            value = {'cooling': bool(value & 8),
+                     'heating': bool(value & 4),
+                     'alarm':   bool(value & 2),
+                     'filter':  bool(value & 1)}
         except Exception as e:
             shlQubeLogger.warn("Failed to retrieve status from %s: %s", ip_address, str(e))
             
@@ -112,10 +112,10 @@ def get_iceqube_lead_status(ip_address):
     
     with _IQAL:
         try:
-            with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
-                value = uh.read()
-                value = value.decode()
-                value = (value.find('LEAD') != -1)
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/display.cgi",
+                                   timeout=20)
+            value = (response.text.find('LEAD') != -1)
         except Exception as e:
             shlQubeLogger.warn("Failed to retrieve status from %s: %s", ip_address, str(e))
             
@@ -133,9 +133,10 @@ def get_iceqube_settings(ip_address):
     
     with _IQAL:
         try:
-            with urlopen(f"http://{ip_address}/usersettings.xml", timeout=20) as uh:
-                value = uh.read()
-                settings = ET.fromstring(value)
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/usersettings.xml",
+                                   timeout=20)
+            settings = ET.fromstring(response.text)
         except Exception as e:
             shlQubeLogger.warn("Failed to retrieve settings from %s: %s", ip_address, str(e))
             
@@ -153,12 +154,12 @@ def get_iceqube_setpoint(ip_address):
     
     with _IQAL:
         try:
-            with urlopen(f"http://{ip_address}/display.cgi", timeout=20) as uh:
-                value = uh.read()
-                value = value.decode()
-                _, value = value.split('<br>')
-                value = value.replace('F', '')
-                value = float(value)
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/display.cgi",
+                                   timeout=20)
+            _, value = response.text.split('<br>')
+            value = value.replace('F', '')
+            value = float(value)
         except Exception as e:
             shlQubeLogger.warn("Failed to retrieve setpoint from %s: %s", ip_address, str(e))
             
@@ -176,11 +177,11 @@ def set_iceqube_setpoint(ip_address, setpoint):
     
     with _IQAL:
         try:
-            with urlopen(f"http://{ip_address}/1?07={value}&30=1&2F=1", timeout=20) as uh:
-                response = uh.read()
-                response = response.decode()
-                if response.startwith('Settings have been updated'):
-                    status = True
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/1?07={value}&30=1&2F=1",
+                                   timeout=20)
+            if response.text.startwith('Settings have been updated'):
+                status = True
         except Exception as e:
             shlQubeLogger.error("Failed to set setpoint on %s: %s", ip_address, str(e))
             
@@ -218,11 +219,11 @@ def set_iceqube_cooling_offset(ip_address, offset):
     
     with _IQAL:
         try:
-            with urlopen(f"http://{ip_address}/1?92={value}&30=1&2F=1", timeout=20) as uh:
-                response = uh.read()
-                response = response.decode()
-                if response.startwith('Settings have been updated'):
-                    status = True
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/1?92={value}&30=1&2F=1",
+                                   timeout=20)
+            if response.text.startwith('Settings have been updated'):
+                status = True
         except Exception as e:
             shlQubeLogger.error("Failed to set cooling offset on %s: %s", ip_address, str(e))
             

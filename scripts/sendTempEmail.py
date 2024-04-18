@@ -28,14 +28,6 @@ if SITE == 'lwa1':
 # Time (min) after a warning e-mail is sent for an "all-clear"
 CRITICAL_CLEAR_TIME = 30
 
-# Compressor reset temperature (F)
-RESET_TEMP = 77.00
-if SITE == 'lwa1':
-    RESET_TEMP = 80.00
-    
-# Compressor reset clear time (min)
-RESET_CLEAR_TIME = 60
-
 # E-mail Users
 TO = ['lwa1ops-l@list.unm.edu',]
 
@@ -147,46 +139,3 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTempe
             print("Remove critical temperature lock file: %s" % str(e))
 else:
     pass
-
-if shlTemp >= RESET_TEMP:
-    tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
-    tOff = 5
-    
-    if os.path.exists(os.path.join(STATE_DIR, 'inCompressorReset')):
-        # Check the age of the holding file to see if we have entered the "all-clear"
-        age = time.time() - os.path.getmtime(os.path.join(STATE_DIR, 'inCompressorReset'))
-        
-        if age >= RESET_CLEAR_TIME*60:
-            tOff += 5
-            try:
-                os.unlink(os.path.join(STATE_DIR, 'inCompressorReset'))
-            except Exception as e:
-                print("Remove compressor reset lock file: %s" % str(e))
-                
-    if not os.path.exists(os.path.join(STATE_DIR, 'inCompressorReset')):
-        # If the holding file does not exist, trigger a reset and send out an e-mail
-        try:
-            ## Reset the compressors
-            rst = subprocess.Popen(['/home/ops/reset_compressors.sh', str(tOff)])
-        except Exception as e:
-            print("Reset compressor command: %s" % str(e))
-        
-        ## Touch the file to update the modification time.  This is used to track
-        ## when the warning condition is cleared.
-        try:
-            fh = open(os.path.join(STATE_DIR, 'inCompressorReset'), 'w')
-            fh.write('%s\n' % tNow)
-            fh.close()
-        except Exception as e:
-            print("Write compresor reset lock file: %s" % str(e))
-            
-        ## Send the e-mail
-        subject = '%s - Shelter HVAC compressor reset' % (SITE.upper(),)
-        message = "At %s the shelter temperature reached %.2f F.\n\nCompressor reset temperature value set to %.2f F.\n" % (tNow, shlTemp, RESET_TEMP)
-        sendEmail(subject, message)
-        
-else:
-    try:
-        os.unlink(os.path.join(STATE_DIR, 'inCompressorReset'))
-    except Exception as e:
-        pass

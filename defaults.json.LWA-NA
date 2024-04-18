@@ -9,6 +9,7 @@
   
   /* HVAC thermostat settings (not actually used) */
   "hvac": {
+    "type": "iceqube",
     "temp_min": 70.0,  // degrees F
     "temp_max": 100.0, // degrees F
     "diff_min": 0.0,   // degrees F

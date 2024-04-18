@@ -15,6 +15,7 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 from lwainflux import LWAInfluxClient
 
 from shlThreads import *
+from shlBard import *
 from shlQube import *
 
 __version__ = "0.5"
@@ -283,13 +284,25 @@ class ShippingContainer(object):
         
         # Update the HVAC set point
         if 'ip' in self.config['hvac'].keys():
-            setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+            if self.config['hvac']['type'] == 'iceqube':
+                setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+            elif self.config['hvac']['type'] == 'bard':
+                setPoint = get_mc4002_setpoint(self.config['hvac']['ip'][0])
+            else:
+                pass
+                
             if setPoint is not None:
                 self.currentState['setPoint'] = setPoint
                 
         # Update the HVAC cooling offset
         if 'ip' in self.config['hvac'].keys():
-            diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+            if self.config['hvac']['type'] == 'iceqube':
+                diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+            elif self.config['hvac']['type'] == 'bard':
+                diffPoint = get_mc4002_cooling_offset(self.config['hvac']['ip'][0])
+            else:
+                pass
+                
             if diffPoint is not None:
                 self.currentState['diffPoint'] = diffPoint
                 
@@ -417,22 +430,31 @@ class ShippingContainer(object):
         """
         
         status = False
+        setPoint = None
         if 'ip' in self.config['hvac'].keys():
-            status = set_iceqube_setpoint(setPoint)
-            if status:
-                setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
-                if setPoint is not None:
-                    self.currentState['setPoint'] = setPoint
-                    
-                    influxdb = LWAInfluxClient.from_config(self.config)
-                    json = [{"measurement": "temperature",
-                             "tags": {"subsystem": "shl",
-                                      "monitorpoint": "hvac"},
-                             "time": influxdb.now(),
-                             "fields": {}},]
-                    json[0]['fields']['set_point'] = setPoint
-                    influxdb.write(json)
-                    
+            if self.config['hvac']['type'] == 'iceqube':
+                status = set_iceqube_setpoint(self.config['hvac']['ip'][0], setPoint)
+                if status:
+                    setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+            elif self.config['hvac']['type'] == 'bard':
+                status = set_mc4002_setpoint(self.config['hvac']['ip'][0], setPoint)
+                if status:
+                    setPoint = get_mc4002_setpoint(self.config['hvac']['ip'][0])
+            else:
+                pass
+                
+            if setPoint is not None:
+                self.currentState['setPoint'] = setPoint
+                
+                influxdb = LWAInfluxClient.from_config(self.config)
+                json = [{"measurement": "temperature",
+                         "tags": {"subsystem": "shl",
+                                  "monitorpoint": "hvac"},
+                         "time": influxdb.now(),
+                         "fields": {}},]
+                json[0]['fields']['set_point'] = setPoint
+                influxdb.write(json)
+                
         return status, self.currentState['setPoint']
         
     def dif(self, diffPoint):
@@ -462,22 +484,31 @@ class ShippingContainer(object):
         """
         
         status = False
+        diffPoint = None
         if 'ip' in self.config['hvac'].keys():
-            status = set_iceqube_cooling_offset(diffPoint)
-            if status:
-                diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
-                if diffPoint is not None:
-                    self.currentState['diffPoint'] = diffPoint
-                    
-                    influxdb = LWAInfluxClient.from_config(self.config)
-                    json = [{"measurement": "temperature",
-                             "tags": {"subsystem": "shl",
-                                      "monitorpoint": "hvac"},
-                             "time": influxdb.now(),
-                             "fields": {}},]
-                    json[0]['fields']['diff_point'] = diffPoint
-                    influxdb.write(json)
-                    
+            if self.config['hvac']['type'] == 'iceqube':
+                status = set_iceqube_cooling_offset(self.config['hvac']['ip'][0], diffPoint)
+                if status:
+                    diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+            elif self.config['hvac']['type'] == 'bard':
+                status = set_mc4002_cooling_offset(self.config['hvac']['ip'][0], diffPoint)
+                if status:
+                    diffPoint = get_mc4002_cooling_offset(self.config['hvac']['ip'][0])
+            else:
+                pass
+                
+            if diffPoint is not None:
+                self.currentState['diffPoint'] = diffPoint
+                
+                influxdb = LWAInfluxClient.from_config(self.config)
+                json = [{"measurement": "temperature",
+                         "tags": {"subsystem": "shl",
+                                  "monitorpoint": "hvac"},
+                         "time": influxdb.now(),
+                         "fields": {}},]
+                json[0]['fields']['diff_point'] = diffPoint
+                influxdb.write(json)
+                
         return status, self.currentState['diffPoint']
         
     def pwr(self, rack, port, control):
