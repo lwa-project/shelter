@@ -1099,7 +1099,7 @@ class ShippingContainer(object):
                 ## Escalation
                 _, message = self._merge_states(self.currentState['info'],
                                                 append=('TEMPERATURE',
-                                                        "Shelter temperature at %.2f" % currTemp))
+                                                        "Shelter temperature at %.2f F" % currTemp))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
                 
@@ -1109,7 +1109,7 @@ class ShippingContainer(object):
                 ## Descalation
                 _, message = self._merge_states('',
                                                 append=('TEMPERATURE',
-                                                        "Shelter temperature at %.2f" % currTemp))
+                                                        "Shelter temperature at %.2f F" % currTemp))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
                 
@@ -1125,7 +1125,7 @@ class ShippingContainer(object):
                 
             ## Change the system state
             self.currentState['status'] = 'ERROR'
-            self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f, shutting down critical ports: %s' % (currTemp, criticalPortList)
+            self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f F, shutting down critical ports: %s' % (currTemp, criticalPortList)
             
             ## Try to shut off the ports
             for rack,port in self.config['thermometers']['critical_list']:
@@ -1136,7 +1136,7 @@ class ShippingContainer(object):
                 except Exception as e:
                     shlFunctionsLogger.error('Cannot power off rack %i, port %i: %s', rack, port, str(e))
                     
-            shlFunctionsLogger.critical('Shelter temperature at %.2f, shutting down critical ports: %s', currTemp, criticalPortList)
+            shlFunctionsLogger.critical('Shelter temperature at %.2f F, shutting down critical ports: %s', currTemp, criticalPortList)
             
         return True
         
