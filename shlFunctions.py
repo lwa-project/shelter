@@ -867,7 +867,7 @@ class ShippingContainer(object):
         if out is None:
             return True, None
         else:
-            return True, "%.2f" % out
+            return True, "%.1f" % out
             
     def getOutsideHumidity(self):
         """
@@ -905,7 +905,7 @@ class ShippingContainer(object):
         if out is None:
             return True, None
         else:
-            return True, "%.2f" % out
+            return True, "%.0f" % out
             
     def getWind(self, MPH=True):
         """
@@ -1072,22 +1072,22 @@ class ShippingContainer(object):
                 ## Escalation
                 _, message = self._merge_states(self.currentState['info'],
                                                 append=('TEMPERATURE',
-                                                        "Shelter temperature at %.2f F" % currTemp))
+                                                        "Shelter temperature at %.1f F" % currTemp))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
                 
-                shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
+                shlFunctionsLogger.warning('Shelter temperature warning at %.1f', currTemp)
                 
             elif self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('TEMPERATURE!'):
                 ## Descalation
                 _, message = self._merge_states('',
                                                 append=('TEMPERATURE',
-                                                        "Shelter temperature at %.2f F" % currTemp))
+                                                        "Shelter temperature at %.1f F" % currTemp))
                 self.currentState['status'] = 'WARNING'
                 self.currentState['info'] = message
                 
                 shlFunctionsLogger.info('Shelter temperature critical condition cleared')
-                shlFunctionsLogger.warning('Shelter temperature warning at %.2f', currTemp)
+                shlFunctionsLogger.warning('Shelter temperature warning at %.1f', currTemp)
                 
         else:
             # We are critical, take action
@@ -1098,7 +1098,7 @@ class ShippingContainer(object):
                 
             ## Change the system state
             self.currentState['status'] = 'ERROR'
-            self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.2f F, shutting down critical ports: %s' % (currTemp, criticalPortList)
+            self.currentState['info'] = 'TEMPERATURE! Shelter temperature at %.1f F, shutting down critical ports: %s' % (currTemp, criticalPortList)
             
             ## Try to shut off the ports
             for rack,port in self.config['thermometers']['critical_list']:
@@ -1109,7 +1109,7 @@ class ShippingContainer(object):
                 except Exception as e:
                     shlFunctionsLogger.error('Cannot power off rack %i, port %i: %s', rack, port, str(e))
                     
-            shlFunctionsLogger.critical('Shelter temperature at %.2f F, shutting down critical ports: %s', currTemp, criticalPortList)
+            shlFunctionsLogger.critical('Shelter temperature at %.1f F, shutting down critical ports: %s', currTemp, criticalPortList)
             
         return True
         
