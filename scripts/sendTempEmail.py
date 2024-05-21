@@ -107,7 +107,7 @@ if shlTemp >= CRITICAL_TEMP:
     tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
     
     subject = '%s - Shelter Temperature Warning' % (SITE.upper(),)
-    message = "At %s the shelter temperature reached %.2f F.\n\nWarning temperature value set to %.2f F.\n" % (tNow, shlTemp, CRITICAL_TEMP)
+    message = "At %s the shelter temperature reached %.1f F.\n\nWarning temperature value set to %.1f F.\n" % (tNow, shlTemp, CRITICAL_TEMP)
     
     if not os.path.exists(os.path.join(STATE_DIR, 'inTemperatureWarning')):
         # If the holding file does not exist, send out the e-mail
@@ -130,7 +130,7 @@ elif shlTemp < CRITICAL_TEMP and os.path.exists(os.path.join(STATE_DIR, 'inTempe
         tNow = shlTime.strftime("%B %d, %Y %H:%M:%S %Z")
         
         subject = '%s - Shelter Temperature Warning - Cleared' % (SITE.upper(),)
-        message = "At %s the shelter temperature warning was cleared.\n\nWarning temperature value set to %.2f F.\n" % (tNow, CRITICAL_TEMP)
+        message = "At %s the shelter temperature warning was cleared.\n\nWarning temperature value set to %.1f F.\n" % (tNow, CRITICAL_TEMP)
         sendEmail(subject, message)
         
         try:
