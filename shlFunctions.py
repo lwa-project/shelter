@@ -531,40 +531,41 @@ class ShippingContainer(object):
         
     def getMeanTemperature(self, DegreesF=True):
         """
-        Return the current mean shelter temperature as a two-element tuple 
+        Return the current mean-max shelter temperature as a two-element tuple 
         (success, value) where success is a boolean related to if the temperature 
-        values were found.  See the currentState['lastLog'] entry for the reason for 
-        failure if the returned success value is False.
+        values were found.  The mean-max temperature is defined as:
+         if max(temps) - min(temps) <= 10 F:
+             mean(temps)
+         else:
+             max(temps)
+        See the currentState['lastLog'] entry for the reason for failure if the
+        returned success value is False.
         """
         
-        i = 0
-        meanTemp = 0
+        temps = []
         if self.currentState['enviroThread'] is not None:
             if self.currentState['enviroThread'].alive.isSet():
-                try:
-                    for temp in self.currentState['enviroThread'].getAllTemperatures(DegreesF=DegreesF):
-                        meanTemp += temp
-                        i += 1
-                except TypeError:
-                    pass
-                    
+                for temp in self.currentState['enviroThread'].getAllTemperatures(DegreesF=DegreesF):
+                    if temp is not None:
+                        temps.append(temp)
+                        
         for t in self.currentState['tempThreads']:
             # Make sure the monitoring thread is running
             if t.alive.isSet():
-                try:
-                    for temp in t.getAllTemperatures(DegreesF=DegreesF):
-                        meanTemp += temp
-                        i += 1
-                except TypeError:
-                    pass
-                     
+                for temp in t.getAllTemperatures(DegreesF=DegreesF):
+                    if temp is not None:
+                        temps.append(temp)
+                        
         # Make sure we have actual values to average
-        if i == 0:
+        if len(temps) == 0:
             self.currentState['lastLog'] = 'No temperature monitoring threads are running'
             return False, 0
             
-        meanTemp /= float(i)
-        
+        if max(temps) - min(temps) > 10*(5/9. + DegreesF*4/9.):
+            meamTemp = max(temps)
+        else:
+            meanTemp = sum(temps) / len(temps)
+            
         return True, meanTemp
         
     def getSmokeDetected(self):
