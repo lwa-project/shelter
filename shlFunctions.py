@@ -589,7 +589,7 @@ class ShippingContainer(object):
             return False, 0
             
         if max(temps) - min(temps) > 10*(5/9. + DegreesF*4/9.):
-            meamTemp = max(temps)
+            meanTemp = max(temps)
         else:
             meanTemp = sum(temps) / len(temps)
             
