@@ -482,9 +482,6 @@ class EnviroMux(object):
                     if self.door_open:
                         if self.door_first_opened is None:
                             self.door_first_opened = time.time()
-                    else:
-                        if self.door_first_opened is not None:
-                            self.door_first_opened = None
                             
                 except Exception as e:
                     _LogThreadException(self, e, logger=shlThreadsLogger)
@@ -540,11 +537,12 @@ class EnviroMux(object):
                 
             # Check for an open door
             if self.SHLCallbackInstance is not None:
-                if self.door_first_opened is None:
+                if self.door_first_opened is not None:
                     self.SHLCallbackInstance.processDoorState('closed')
+                    self.door_first_opened = None    
                 else:
                     door_opened_age = time.time() - self.door_first_opened
-                    if door_opened_age > 15*3600:
+                    if door_opened_age > 4*3600:
                         self.SHLCallbackInstance.processDoorState('open')
                         
             # Make sure the device is reachable
