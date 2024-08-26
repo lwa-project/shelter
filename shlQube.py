@@ -20,7 +20,7 @@ def _temp_to_value(degreesF):
     controller
     """
     
-    return round(((setPoint * 2) - 64) * 5 / 9.)
+    return round(((degreesF * 2) - 64) * 5 / 9.)
 
 
 def _value_to_temp(value):
