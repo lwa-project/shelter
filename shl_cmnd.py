@@ -362,6 +362,19 @@ class MCSCommunicate(Communicate):
                     
                     self.logger.debug('%s = exited with status %s', data, str(status))
                     
+                ## Individual shelter temperature sensors
+                elif data[:13] == 'TEMPERATURE-S':
+                    sensor = int(data[13:])
+                    
+                    status, temp = self.SubSystemInstance.getTemperature(sensor)
+                    
+                    if status:
+                        packed_data = '%.2f' % temp
+                    else:
+                        packed_data = self.SubSystemInstance.currentState['lastLog']
+                    
+                    self.logger.debug('%s = exited with status %s', data, str(status))
+                    
                 ## Smoke detector status
                 elif data == 'SMOKE':
                     status, smoke = self.SubSystemInstance.getSmokeDetected()
@@ -473,7 +486,7 @@ class MCSCommunicate(Communicate):
                 packed_data = 'Unknown command: %s' % command
 
             # Return status, command, reference, and the result
-            return sender, status, command, reference, packed_data		
+            return sender, status, command, reference, packed_data
 
 
 def main(args):

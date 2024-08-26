@@ -595,6 +595,41 @@ class ShippingContainer(object):
             
         return True, meanTemp
         
+    def getTemperature(self, sensor, DegreesF=True):
+        """
+        Return the current temperature of the specified sensor as a two-element
+        tuple (success, value) where success is a boolean related to if the
+        temperature values were found.  See the currentState['lastLog'] entry
+        for the reason for failure if the returned success value is False.
+        """
+        
+        temps = []
+        if self.currentState['enviroThread'] is not None:
+            if self.currentState['enviroThread'].alive.isSet():
+                for temp in self.currentState['enviroThread'].getAllTemperatures(DegreesF=DegreesF):
+                    if temp is not None:
+                        temps.append(temp)
+                        
+        for t in self.currentState['tempThreads']:
+            # Make sure the monitoring thread is running
+            if t.alive.isSet():
+                for temp in t.getAllTemperatures(DegreesF=DegreesF):
+                    if temp is not None:
+                        temps.append(temp)
+                        
+        # Make sure we have actual values to look at
+        if len(temps) == 0:
+            self.currentState['lastLog'] = 'No temperature monitoring threads are running'
+            return False, 0
+            
+        try:
+            sensorTemp = temps[sensor-1]
+        except IndexError:
+            self.currentState['lastLog'] = 'Invalid sensor number %i' % sensor
+            return False, 0
+            
+        return True, sensorTemp
+        
     def getSmokeDetected(self):
         """
         Poll the EnivroMux for the state of the smoke detector and return a two-
@@ -876,7 +911,7 @@ class ShippingContainer(object):
         if out is None:
             return True, None
         else:
-            return True, out.strftime('%Y-%m-%d %H:%M:%S')	
+            return True, out.strftime('%Y-%m-%d %H:%M:%S')
             
     def getOutsideTemperature(self, DegreesF=True):
         """
