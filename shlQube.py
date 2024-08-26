@@ -180,7 +180,7 @@ def set_iceqube_setpoint(ip_address, setpoint):
             session = requests.Session()
             response = session.get(f"http://{ip_address}/1?07={value}&30=1&2F=1",
                                    timeout=20)
-            if response.text.startwith('Settings have been updated'):
+            if response.text.startswith('Settings have been updated'):
                 status = True
         except Exception as e:
             shlQubeLogger.error("Failed to set setpoint on %s: %s", ip_address, str(e))
@@ -222,7 +222,7 @@ def set_iceqube_cooling_offset(ip_address, offset):
             session = requests.Session()
             response = session.get(f"http://{ip_address}/1?92={value}&30=1&2F=1",
                                    timeout=20)
-            if response.text.startwith('Settings have been updated'):
+            if response.text.startswith('Settings have been updated'):
                 status = True
         except Exception as e:
             shlQubeLogger.error("Failed to set cooling offset on %s: %s", ip_address, str(e))
