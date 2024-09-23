@@ -7,9 +7,10 @@ import xml.etree.ElementTree as ET
 
 shlBardLogger = logging.getLogger('__main__')
 
-__version__ = '0.1'
+__version__ = '0.2'
 __all__ = ['get_mc4002_status', 'get_mc4002_alarms', 'get_mc4002_lead_status',
-           'set_mc4002_lead_status', 'get_mc4002_setpoint', 'set_mc4002_setpoint',
+           'set_mc4002_lead_status', 'get_mc4002_temperatures',
+           'get_mc4002_setpoint', 'set_mc4002_setpoint',
            'get_mc4002_cooling_offset', 'set_mc4002_cooling_offset']
 
 
@@ -168,6 +169,43 @@ def set_mc4002_lead_status(ip_address):
             shlBardLogger.warn("Failed to retrieve status from %s: %s", ip_address, str(e))
             
     return status
+
+
+def get_mc4002_temperatures(ip_address):
+    """
+    Poll the MC4002 controller at the provided address for the current
+    temperature of the local and remote sensors.  Returns a dictionary
+    with the values or None if there was a problem.
+    """
+    
+    value = None
+    
+    with _MCAL:
+        try:
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/System/index_stat.xml",
+                                   timeout=20)
+            settings = ET.fromstring(response.text)
+            
+            avg = float(settings.find('Temps0').text)
+            loc = float(settings.find('Temps1').text)
+            try:
+                rm0 = float(settings.find('Temps2').text)
+            except ValueError:
+                rm0 = None
+            try:
+                rm1 = float(settings.find('Temps3').text)
+            except ValueError:
+                rm1 = None
+            value = {'average': avg, 'local': local}
+            if rm0 is not None:
+                value['remote1'] = rm0
+            if rm1 is not None:
+                value['remote2'] = rm1
+        except Exception as e:
+            shlQubeLogger.warn("Failed to retrieve temperatures from %s: %s", ip_address, str(e))
+            
+    return value
 
 
 def get_mc4002_setpoint(ip_address):
