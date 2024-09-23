@@ -157,7 +157,7 @@ def get_iceqube_temperatures(ip_address):
             session = requests.Session()
             response = session.get(f"http://{ip_address}/temperatures.cgi",
                                    timeout=20)
-            enc, etemp, con, ctemp = response.split(None, 3)
+            enc, etemp, con, ctemp = response.text.split(None, 3)
             enc = enc.lower().replace(':', '')
             etemp = float(etemp.replace('F', ''))
             con = con.lower().replace(':', '')
