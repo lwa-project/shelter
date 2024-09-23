@@ -197,13 +197,13 @@ def get_mc4002_temperatures(ip_address):
                 rm1 = float(settings.find('Temps3').text)
             except ValueError:
                 rm1 = None
-            value = {'average': avg, 'local': local}
+            value = {'average': avg, 'local': loc}
             if rm0 is not None:
                 value['remote1'] = rm0
             if rm1 is not None:
                 value['remote2'] = rm1
         except Exception as e:
-            shlQubeLogger.warn("Failed to retrieve temperatures from %s: %s", ip_address, str(e))
+            shlBardLogger.warn("Failed to retrieve temperatures from %s: %s", ip_address, str(e))
             
     return value
 
