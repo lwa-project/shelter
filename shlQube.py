@@ -157,11 +157,11 @@ def get_iceqube_temperatures(ip_address):
             session = requests.Session()
             response = session.get(f"http://{ip_address}/temperatures.cgi",
                                    timeout=20)
-            enc, etemp, con, ctemp = responace.split(None, 3)
+            enc, etemp, con, ctemp = response.split(None, 3)
             enc = enc.lower().replace(':', '')
-            etemp = float(etemp[:-1])
+            etemp = float(etemp.replace('F', ''))
             con = con.lower().replace(':', '')
-            ctemp = float(ctime[:-1])
+            ctemp = float(ctemp.replace('F', ''))
             value = {enc: etemp, con: ctemp}
         except Exception as e:
             shlQubeLogger.warn("Failed to retrieve temperatures from %s: %s", ip_address, str(e))
