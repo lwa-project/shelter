@@ -8,9 +8,9 @@ import xml.etree.ElementTree as ET
 shlQubeLogger = logging.getLogger('__main__')
 
 
-__version__ = '0.1'
+__version__ = '0.2'
 __all__ = ['get_iceqube_status', 'get_iceqube_lead_status', 'get_iceqube_settings',
-           'get_iceqube_setpoint', 'set_iceqube_setpoint',
+           'get_iceqube_temperatures', 'get_iceqube_setpoint', 'set_iceqube_setpoint',
            'get_iceqube_cooling_offset', 'set_iceqube_cooling_offset']
 
 
@@ -143,6 +143,32 @@ def get_iceqube_settings(ip_address):
     return settings
 
 
+def get_iceqube_temperatures(ip_address):
+    """
+    Poll the IceQube controller at the provided address for the current
+    temperature of the enclosure and the condenser.  Returns a dictionary
+    with the values or None if there was a problem.
+    """
+    
+    value = None
+    
+    with _IQAL:
+        try:
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/temperatures.cgi",
+                                   timeout=20)
+            enc, etemp, con, ctemp = responace.split(None, 3)
+            enc = enc.lower().replace(':', '')
+            etemp = float(etemp[:-1])
+            con = con.lower().replace(':', '')
+            ctemp = float(ctime[:-1])
+            value = {enc: etemp, con: ctemp}
+        except Exception as e:
+            shlQubeLogger.warn("Failed to retrieve temperatures from %s: %s", ip_address, str(e))
+            
+    return value
+
+
 def get_iceqube_setpoint(ip_address):
     """
     Poll the IceQube controller at the provided address and return the current
@@ -154,12 +180,10 @@ def get_iceqube_setpoint(ip_address):
     
     with _IQAL:
         try:
-            session = requests.Session()
-            response = session.get(f"http://{ip_address}/display.cgi",
-                                   timeout=20)
-            _, value = response.text.split('<br>')
-            value = value.replace('F', '')
-            value = float(value)
+            settings = get_iceqube_settings(ip_address)
+            value = settings.find('COOLON').text
+            value = float(value) * 9 / 5. + 32
+            value = round(value)
         except Exception as e:
             shlQubeLogger.warn("Failed to retrieve setpoint from %s: %s", ip_address, str(e))
             
