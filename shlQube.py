@@ -8,10 +8,11 @@ import xml.etree.ElementTree as ET
 shlQubeLogger = logging.getLogger('__main__')
 
 
-__version__ = '0.2'
+__version__ = '0.3'
 __all__ = ['get_iceqube_status', 'get_iceqube_lead_status', 'get_iceqube_settings',
            'get_iceqube_temperatures', 'get_iceqube_setpoint', 'set_iceqube_setpoint',
-           'get_iceqube_cooling_offset', 'set_iceqube_cooling_offset']
+           'get_iceqube_cooling_offset', 'set_iceqube_cooling_offset',
+           'get_webrelay_status', 'get_webrelay_state', 'set_webrelay_state']
 
 
 def _temp_to_value(degreesF):
@@ -250,5 +251,89 @@ def set_iceqube_cooling_offset(ip_address, offset):
                 status = True
         except Exception as e:
             shlQubeLogger.error("Failed to set cooling offset on %s: %s", ip_address, str(e))
+            
+    return status
+
+
+def get_webrelay_status(ip_address):
+    """
+    Return the status of a WebRelay-10 device.  Returns a complete list of the
+    device's status as a `xml.etree.ElementTree` instance.  If the status
+    cannot be loaded None is returned instead.
+    """
+    
+    status = None
+    with _IQAL:
+        try:
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/state.xml",
+                                   timeout=20)
+            status = ET.fromstring(response.text)
+        except Exception as e:
+            shlQubeLogger.error("Failed to query WebRelay-10 status: %s", str(e))
+            
+    return status
+
+
+def get_webrelay_state(ip_address, relay):
+    """
+    Return the status of a particular relay (or list of relays) controlled by
+    a WebRelay-10 device.  Return the relay state(s) as integers or None if
+    there was a problem querying the device.
+    """
+    
+    is_list = True
+    if not isinstance(relay, (tuple, list)):
+        is_list = False
+        relay = [relay,]
+    for r in relay:
+        if r < 0 or r > 10:
+            raise ValueError(f"Invalid relay '{r}'")
+            
+    status = get_webrelay_status(ip_address)
+    
+    state = None
+    if status is not None:
+        state = []
+        for r in relay:
+            for child in status:
+                if child.tag == f"relay{r}state":
+                    state.append(int(child.text))
+                    
+    if not is_list:
+        state = state[0]
+        
+    return state
+            
+            
+def set_webrelay_state(ip_address, relay, state):
+    """
+    Control a WebRelay-10 device to set the specified relay (or list of relays)
+    to the provided state.  Valid states are 0 = off, 1 = on, 2 = power cycle.
+    Return True if successful, False otherwise.
+    """
+    
+    if not isinstance(relay, (tuple, list)):
+        relay = [relay,]
+    for r in relay:
+        if r < 0 or r > 10:
+            raise ValueError(f"Invalid relay '{r}'")
+    if state not in (0, 1, 2):
+        raise ValueError(f"Invalid state '{state}'")
+        
+    status = False
+    with _IQAL:
+        try:
+            qs = ''
+            for r in relay:
+                qs += f"relay{r}State={state}&"
+            qs = qs[:-1]
+            
+            session = requests.Session()
+            response = session.get(f"http://{ip_address}/state.xml?{qs}",
+                                   timeout=20)
+            status = True
+        except Exception as e:
+            shlQubeLogger.error("Failed to set WebRelay-10 relay %s state: %s", str(relay), str(e))
             
     return status
