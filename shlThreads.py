@@ -1851,6 +1851,59 @@ class Outage(object):
         if config is not None:
             self.config = config
             
+    @staticmethod
+    def write_power_state(outage_timestamp):
+        """Write power outage state to disk.
+        
+        Args:
+            outage_timestamp: Time outage started (float timestamp)
+        """
+        
+        state = {'outage_start': outage_time.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                 'last_updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")}
+        
+        # Write to temporary file first then rename for atomicity
+        state_file = os.path.join(STATE_DIR, 'power_state.json')
+        temp_file = state_file + '.tmp'
+        
+        with open(temp_file, 'w') as fh:
+            json.dump(state, fh)
+        os.rename(temp_file, state_file)
+        
+    @staticmethod
+    def read_power_state():
+        """Read power outage state from disk.
+        
+        Returns:
+            float timestamp of outage start time if state exists and is valid,
+            None otherwise
+        """
+        
+        state_file = os.path.join(STATE_DIR, 'power_state.json')
+        
+        try:
+            with open(state_file, 'r') as fh:
+                state = json.load(fh)
+                
+            # Verify state file isn't too old
+            last_updated = datetime.strptime(state['last_updated'], "%Y-%m-%d %H:%M:%S.%f") 
+            if datetime.utcnow() - last_updated > timedelta(minutes=10):
+                return None
+                
+            return datetime.strptime(state['outage_start'], "%Y-%m-%d %H:%M:%S.%f")
+            
+        except (OSError, ValueError, KeyError, json.JSONDecodeError):
+            return None
+            
+    @staticmethod
+    def clear_power_state():
+        """Clear power outage state file."""
+        
+        try:
+            os.unlink(os.path.join(STATE_DIR, 'power_state.json'))
+        except OSError:
+            pass
+            
     def start(self):
         """
         Start the monitoring thread.
@@ -1861,27 +1914,10 @@ class Outage(object):
             
         # Check for some state
         ## 120 VAC
-        try:
-            with open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'r') as fh:
-                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
-                
-            self.outage_120 = t
-            shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 120VAC')
-            
-            #os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
-        except Exception as e:
-            pass
-        ### 240 VAC
-        try:
-            with open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'r') as fh:
-                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
-                
-            self.outage_240 = t
-            shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 240VAC')
-            
-            #os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
-        except Exception as e:
-            pass
+        t_outage = self.read_power_state()
+        if t_outage is not None:
+            self.outage_120, self.outage_240 = t_outage, t_outage
+            shlThreadsLogger.info('Outage: start - restored a saved power outage from disk')
             
         self.thread = threading.Thread(target=self.monitorThread)
         self.thread.setDaemon(1)
@@ -1985,24 +2021,14 @@ class Outage(object):
                         shlThreadsLogger.info('Outage: monitorThread - outage - 120VAC')
                         self.outage_120 = tEvent
                         
-                        try:
-                            with open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'w') as fh:
-                                fh.write(mtch.group('date'))
-                        except (OSError, IOError) as e:
-                            exc_type, exc_value, exc_traceback = sys.exc_info()
-                            shlThreadsLogger.warning("Outage: monitorThread 120VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
-                            
+                        self.write_power_state(tEvent)
+                        
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - outage - 240VAC')
                         self.outage_240 = tEvent
                         
-                        try:
-                            with open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'w') as fh:
-                                fh.write(mtch.group('date'))
-                        except (OSError, IOError) as e:
-                            exc_type, exc_value, exc_traceback = sys.exc_info()
-                            shlThreadsLogger.warning("Outage: monitorThread 240VAC save state failed with: %s at line %i", str(e), exc_traceback.tb_lineno)
-                            
+                        self.write_power_state(tEvent)
+                        
                     if self.SHLCallbackInstance is not None:
                         self.SHLCallbackInstance.processPowerOutage(True)
                         
@@ -2011,18 +2037,15 @@ class Outage(object):
                         shlThreadsLogger.info('Outage: monitorThread - clear - 120VAC')
                         self.outage_120 = None
                         
-                        try:
-                            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure120'))
-                        except OSError:
-                            pass
+                        if self.outage_240 is None:
+                            self.clear_power_state()
+                            
                     else:
                         shlThreadsLogger.info('Outage: monitorThread - clear - 240VAC')
                         self.outage_240 = None
                         
-                        try:
-                            os.unlink(os.path.join(STATE_DIR, 'inPowerFailure240'))
-                        except OSError:
-                            pass
+                        if self.outage_120 is None:
+                            self.clear_power_state()
                             
                     if self.SHLCallbackInstance is not None:
                         self.SHLCallbackInstance.processPowerOutage(False)
