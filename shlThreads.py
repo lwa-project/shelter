@@ -222,7 +222,7 @@ class Thermometer(object):
                         self.temp[s] = None
                         
             # Log the data
-            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nSensors)]))
+            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -99) for s in range(self.nSensors)]))
             with open('/data/thermometer%02i.txt' % self.id, 'a+') as fh:
                 fh.write('%s\n' % toDataLog)
                 
@@ -509,7 +509,7 @@ class EnviroMux(object):
                         self.airflow[s] = None
                         
             # Log the data
-            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -1) for s in range(self.nTemperature)]))
+            toDataLog = '%.2f,%s' % (time.time(), ','.join(["%.2f" % (self.temp[s] if self.temp[s] is not None else -99) for s in range(self.nTemperature)]))
             if self.oidSmokeEntry is not None:
                 toDataLog += ',smoke=%s' % str(self.smoke_detected)
             if self.oidWaterEntry is not None:
