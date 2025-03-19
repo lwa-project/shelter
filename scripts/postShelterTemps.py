@@ -27,6 +27,7 @@ else:
     test = subprocess.check_output(["tail", "-n1", '/data/thermometer01.txt'], stderr=subprocess.DEVNULL)
     test = test.decode('ascii', errors='ignore')
     test = test.replace('\n', '')
+test = test.replace('-99.00', 'NaN')
     
 # Get the HVAC status
 try:
