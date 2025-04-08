@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Script that attemptes to reset the west unit at LWA-NA when it is in runaway
 cooling.  The procedure is:
