@@ -96,6 +96,9 @@ def main(args):
                 shlQube.set_webrelay_state(IP_ADDRESS, RELAY_PORTS, 0)
                 time.sleep(DEADTIME_ON_SEC)
                 
+        else:
+            time.sleep(120)
+            
         # Periodic message to let users know we are still alive
         if time.time() - tlast > 1800:
             print(f"[{tnow_str}] Temperature is {tempF:.1f} F")
