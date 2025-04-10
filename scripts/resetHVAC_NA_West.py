@@ -34,7 +34,7 @@ while temps['enclosure'] < 77 and nattempts < 6:
     shlQube.set_webrelay_state('172.16.1.152', [6,7], 0)
     time.sleep(10)
 
-    temps = shlQube.get_iceqube_temperature(IP_ADDRESS)
+    temps = shlQube.get_iceqube_temperatures(IP_ADDRESS)
     nattempts += 1
 if nattempts == 6:
     raise RuntimeError(f"Failed to warm up after {nattempts} tries")
