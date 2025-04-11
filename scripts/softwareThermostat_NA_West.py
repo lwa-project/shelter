@@ -68,13 +68,13 @@ def main(args):
     tlast = 0.0
     while True:
         # Make sure we haven't been running too long
+        tnow = datetime.utcnow()
+        tnow_str = tnow.strftime("%Y-%m-%d %H:%M:%S")
         if time.time() - tstart > 86400:
             print(f"[{tnow_str}] Running for over 24 hr, exiting")
             break
             
         # Get the latest temperature reading for the west side
-        tnow = datetime.utcnow()
-        tnow_str = tnow.strftime("%Y-%m-%d %H:%M:%S")
         temp = get_latest_temperature(0)
         if temp is None:
             print(f"[{tnow_str}] Failed to query the temperature, retrying in 1 min")
