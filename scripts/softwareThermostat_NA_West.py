@@ -64,8 +64,14 @@ def main(args):
     print(f"  On deadtime: {DEADTIME_ON_SEC/60.:.1f} min")
     print("")
     
+    tstart = time.time()
     tlast = 0.0
     while True:
+        # Make sure we haven't been running too long
+        if time.time() - tstart > 86400:
+            print(f"[{tnow_str}] Running for over 24 hr, exiting")
+            break
+            
         # Get the latest temperature reading for the west side
         tnow = datetime.utcnow()
         tnow_str = tnow.strftime("%Y-%m-%d %H:%M:%S")
