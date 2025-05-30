@@ -72,6 +72,7 @@ def main(args):
         tnow_str = tnow.strftime("%Y-%m-%d %H:%M:%S")
         if time.time() - tstart > 86400:
             print(f"[{tnow_str}] Running for over 24 hr, exiting")
+            shlQube.set_webrelay_state(IP_ADDRESS, RELAY_PORTS, 0)
             break
             
         # Get the latest temperature reading for the west side
