@@ -57,38 +57,46 @@
         "description": "ASP"
       },
       "2": {
-        "type": "TrippLite",
+        "type": "Raritan,
         "ip": "172.16.1.114",
-        "port": 161,
-        "security_model": ["my-agent", "public", 0],
-        "noutlet": 8,
-        "description": "DP - 120VAC"
-      },
-      "3": {
-        "type": "Raritan",
-        "ip": "172.16.1.117",
         "port": 161,
         "security_model": ["my-agent", "private", 0],
         "noutlet": 8,
-        "description": "DP - 240VAC"
+        "description": "NDP - 120VAC"
+      },
+      "3": {
+        "type": "APC",
+        "ip": "172.16.1.116",
+        "port": 161,
+        "security_model": ["my-agent", "public", 0],
+        "noutlet": 8,
+        "description": "NDP - 240VAC - #1"
       },
       "4": {
+        "type": "APC",
+        "ip": "172.16.1.117",
+        "port": 161,
+        "security_model": ["my-agent", "public", 0],
+        "noutlet": 8,
+        "description": "NDP - 240VAC - #2"
+      },
+      "5": {
         "type": "APC",
         "ip": "172.16.1.112",
         "port": 161,
         "security_model": ["my-agent", "public", 0],
         "noutlet": 8,
-        "description": "3-Bay - 120VAC - #1"
+        "description": "2-Bay - 120VAC - No UPS"
       },
-      "5": {
+      "6": {
         "type": "APC",
         "ip": "172.16.1.115",
         "port": 161,
         "security_model": ["my-agent", "public", 0],
         "noutlet": 8,
-        "description": "3-Bay - 120VAC - #2"
+        "description": "2-Bay - 120VAC - On UPS"
       },
-      "6": {
+      "7": {
         "type": "TrippLiteUPS",
         "ip": "172.16.1.118",
         "port": 161,
