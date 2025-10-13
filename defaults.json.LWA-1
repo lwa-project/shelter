@@ -57,7 +57,7 @@
         "description": "ASP"
       },
       "2": {
-        "type": "Raritan,
+        "type": "Raritan",
         "ip": "172.16.1.114",
         "port": 161,
         "security_model": ["my-agent", "private", 0],
