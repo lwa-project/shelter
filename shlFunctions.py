@@ -421,21 +421,21 @@ class ShippingContainer(object):
         """
         
         status = False
-        setPoint = None
+        setPoint_final = None
         if 'ip' in self.config['hvac'].keys():
             if self.config['hvac']['type'] == 'iceqube':
                 status = set_iceqube_setpoint(self.config['hvac']['ip'][0], setPoint)
                 if status:
-                    setPoint = get_iceqube_setpoint(self.config['hvac']['ip'][0])
+                    setPoint_final = get_iceqube_setpoint(self.config['hvac']['ip'][0])
             elif self.config['hvac']['type'] == 'bard':
                 status = set_mc4002_setpoint(self.config['hvac']['ip'][0], setPoint)
                 if status:
-                    setPoint = get_mc4002_setpoint(self.config['hvac']['ip'][0])
+                    setPoint_final = get_mc4002_setpoint(self.config['hvac']['ip'][0])
             else:
                 pass
                 
-            if setPoint is not None:
-                self.currentState['setPoint'] = setPoint
+            if setPoint_final is not None:
+                self.currentState['setPoint'] = setPoint_final
                 
         return status, self.currentState['setPoint']
         
@@ -466,21 +466,21 @@ class ShippingContainer(object):
         """
         
         status = False
-        diffPoint = None
+        diffPoint_final = None
         if 'ip' in self.config['hvac'].keys():
             if self.config['hvac']['type'] == 'iceqube':
                 status = set_iceqube_cooling_offset(self.config['hvac']['ip'][0], diffPoint)
                 if status:
-                    diffPoint = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
+                    diffPoint_final = get_iceqube_cooling_offset(self.config['hvac']['ip'][0])
             elif self.config['hvac']['type'] == 'bard':
                 status = set_mc4002_cooling_offset(self.config['hvac']['ip'][0], diffPoint)
                 if status:
-                    diffPoint = get_mc4002_cooling_offset(self.config['hvac']['ip'][0])
+                    diffPoint_final = get_mc4002_cooling_offset(self.config['hvac']['ip'][0])
             else:
                 pass
                 
-            if diffPoint is not None:
-                self.currentState['diffPoint'] = diffPoint
+            if diffPoint_final is not None:
+                self.currentState['diffPoint'] = diffPoint_final
                 
         return status, self.currentState['diffPoint']
         
