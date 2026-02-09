@@ -258,10 +258,10 @@ class MCSCommunicate(Communicate):
                         packed_data = self.SubSystemInstance.currentState['lastLog']
                 ## Weather Station - Gust
                 elif data[0:7] == 'WX-GUST':
-                    status, wind = self.SubSystemInstance.getWind()
+                    status, gust = self.SubSystemInstance.getGust()
                     if status:
-                        if wind is not None:
-                            packed_data = str(wind)
+                        if gust is not None:
+                            packed_data = str(gust)
                         else:
                             packed_data = 'UNK'
                     else:
