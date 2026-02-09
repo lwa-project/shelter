@@ -292,7 +292,7 @@ def set_mc4002_cooling_offset(ip_address, offset):
             session = requests.Session()
             response = session.post(f"http://{ip_address}/System/setpoints.htm",
                                     data={'Row': 12,
-                                          'Value': {offset}},
+                                          'Value': offset},
                                     timeout=20)
             
             new_offset = get_mc4002_cooling_offset(ip_address)
