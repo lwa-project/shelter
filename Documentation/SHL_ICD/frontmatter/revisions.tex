@@ -1,0 +1,44 @@
+% revisions.tex - Change record table for SHL ICD
+
+\changerecordheader
+
+\begin{longtable}{|p{1.5cm}|p{2.5cm}|p{3cm}|p{7cm}|}
+    \hline
+    \textbf{Version} & \textbf{Date} & \textbf{Author(s)} & \textbf{Changes} \\
+    \hline
+    \endfirsthead
+
+    \hline
+    \textbf{Version} & \textbf{Date} & \textbf{Author(s)} & \textbf{Changes} \\
+    \hline
+    \endhead
+
+    \hline
+    \endfoot
+
+    A & 2009-2-13 & J.~Craig & Initial draft \\
+    \hline
+    B & 2009-8-11 & J.~Craig & Updated UPS MIB entries \\
+    \hline
+    C & 2010-8-5 & J.~Craig & Added Weather Station interface \\
+    \hline
+    D & 2011-1-14 & J.~Craig & Added Lightning Monitor interface \\
+    \hline
+    E & 2014-5-29 & J.~Craig & Updated PDU types, added temperature monitoring details \\
+    \hline
+    F & 2026-2-4 & J.~Dowell &
+    \begin{minipage}[t]{\linewidth}
+        \begin{itemize}[leftmargin=*,nosep,after=\strut]
+            \item Added EnviroMux support (SMOKE, WATER, DOOR MIB entries)
+            \item Added voltage monitor interface (POWER-FLICKER, POWER-OUTAGE)
+            \item Added individual temperature sensor MIB entries (TEMPERATURE-S\{n\})
+            \item Updated TMP and DIF commands (now functional via HVAC controllers)
+            \item Added SHT command documentation
+            \item Documented Bard MC4002 and IceQube HVAC controller support
+            \item Added hardware reference appendix
+            \item Site-specific annotations for configuration differences
+        \end{itemize}
+    \end{minipage} \\
+    \hline
+
+\end{longtable}

@@ -1,0 +1,62 @@
+% 01-description.tex - Section 1: Description
+
+\chapter{Description}
+\label{sec:description}
+
+\section{Purpose}
+
+This document describes the interface control for the Shelter (SHL) subsystem of the Long Wavelength Array (LWA). The SHL subsystem is responsible for monitoring and controlling the environmental conditions, power distribution, and safety systems within the station shelter.
+
+\section{Scope}
+
+This Interface Control Document (ICD) defines:
+\begin{itemize}
+    \item Physical interfaces to and from SHL
+    \item Monitor and control (M\&C) interfaces
+    \item Safety interfaces
+    \item Command and response message formats
+    \item Management Information Base (MIB) entries
+\end{itemize}
+
+\section{System Overview}
+
+The SHL subsystem performs the following functions:
+\begin{itemize}
+    \item \textbf{Power Distribution}: Control and monitoring of rack-mounted PDUs and UPSs
+    \item \textbf{Environmental Control}: Temperature monitoring and HVAC system interface
+    \item \textbf{Weather Monitoring}: Integration with on-site weather station
+    \item \textbf{Lightning Detection}: Interface with electric field mill for lightning alerts
+    \item \textbf{Voltage Monitoring}: Detection of power flickers and outages
+    \item \textbf{Safety Monitoring}: Smoke detection, water detection, and door status
+\end{itemize}
+
+\begin{siteNote}
+The specific hardware configuration varies by LWA site. The number of PDUs, type of HVAC controller, and availability of environmental sensors depends on the site installation. Site-specific configurations are defined in the \texttt{defaults.json} configuration file.
+\end{siteNote}
+
+\section{Related Documents}
+
+The following documents are related to this ICD:
+
+\begin{itemize}
+    \item MCS Common ICD (LWA Engineering Memo MCS0005)
+    \item MCS-NDP Interface Control Document
+    \item MCS-ASP Interface Control Document
+\end{itemize}
+
+\section{Order of Precedence}
+
+In the event of a conflict between this document and other project documentation, the MCS common ICD takes precedence, followed by this subsystem-specific ICD.
+
+\section{Document Organization}
+
+This document is organized as follows:
+\begin{itemize}
+    \item \textbf{Section~\ref{sec:description}} (this section): General description and scope
+    \item \textbf{Section~\ref{sec:abbreviations}}: Abbreviations and definitions
+    \item \textbf{Section~\ref{sec:physical}}: Physical interface specifications
+    \item \textbf{Section~\ref{sec:monitor-control}}: Monitor and control interface
+    \item \textbf{Section~\ref{sec:safety}}: Safety interface
+    \item \textbf{Section~\ref{sec:references}}: References
+    \item \textbf{Appendix~\ref{app:hardware}}: Supported hardware reference
+\end{itemize}

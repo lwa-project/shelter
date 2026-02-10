@@ -1,0 +1,205 @@
+% appendix-a.tex - Appendix A: Hardware Reference
+
+\chapter{Hardware Reference}
+\label{app:hardware}
+
+This appendix provides a reference for the hardware supported by the SHL subsystem.
+
+\section{Command Exit Codes}
+
+Table~\ref{tab:exit-codes} lists the exit codes returned by SHL commands.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{cl}
+        \toprule
+        \textbf{Code} & \textbf{Description} \\
+        \midrule
+        \hex{00} & Process accepted without error \\
+        \hex{01} & Invalid temperature set point \\
+        \hex{02} & Invalid temperature differential \\
+        \hex{03} & Invalid PDU rack number \\
+        \hex{04} & Invalid PDU port number \\
+        \hex{05} & Invalid PDU control keyword \\
+        \hex{06} & Invalid command arguments \\
+        \hex{07} & Blocking operation in progress \\
+        \hex{08} & Subsystem already initialized \\
+        \hex{09} & Subsystem needs to be initialized \\
+        \bottomrule
+    \end{tabular}
+    \caption{Command Exit Codes}
+    \label{tab:exit-codes}
+\end{table}
+
+\section{Subsystem Status Values}
+
+Table~\ref{tab:status-values} lists the possible values for the \mib{SUMMARY} MIB entry.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Status} & \textbf{Description} \\
+        \midrule
+        \texttt{SHUTDWN} & Subsystem is shut down, monitoring threads stopped \\
+        \texttt{BOOTING} & Subsystem is initializing \\
+        \texttt{NORMAL} & Subsystem operating normally \\
+        \texttt{WARNING} & Warning condition exists (check INFO) \\
+        \texttt{ERROR} & Error condition exists (check INFO) \\
+        \bottomrule
+    \end{tabular}
+    \caption{Subsystem Status Values}
+    \label{tab:status-values}
+\end{table}
+
+\section{Supported PDU Types}
+
+\begin{longtable}{p{2.5cm}p{4cm}p{3cm}p{4.5cm}}
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Outlets} & \textbf{Features} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Outlets} & \textbf{Features} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    APC & APC AP7921B & 8 & Switching, current metering \\
+    Raritan & Raritan PX2 Series & 8 & Switching, V/I metering \\
+    Dominion & Raritan Dominion PX & Variable & Switching, V/I metering \\
+    TrippLite & PDUMH20ATNET & 8 & Switching, V/I/Hz metering \\
+
+\end{longtable}
+
+\section{Supported UPS Types}
+
+\begin{longtable}{p{3cm}p{4cm}p{7cm}}
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Features} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Features} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    APCUPS & APC Smart-UPS & Battery status, charge level, output source, outlet switching \\
+    TrippLiteUPS & TrippLite SmartOnline & Battery status, charge level, output source, outlet switching \\
+
+\end{longtable}
+
+\section{Supported Thermometers}
+
+\begin{longtable}{p{2.5cm}p{3.5cm}p{2cm}p{6cm}}
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Sensors} & \textbf{Notes} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Sensors} & \textbf{Notes} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    HWg & HW group STE & 1--2 & Supports external sensor probes \\
+    Comet & Comet P8510 & 1 & Integrated sensor \\
+
+\end{longtable}
+
+\section{Environmental Monitoring System}
+
+\begin{longtable}{p{3cm}p{4cm}p{7cm}}
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Supported Sensors} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Supported Sensors} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    EnviroMux & Network Technologies E-MINI-LXO & Temperature (2), smoke, water, door, airflow \\
+
+\end{longtable}
+
+\section{HVAC Controllers}
+
+\begin{longtable}{p{2.5cm}p{3cm}p{8.5cm}}
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Capabilities} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Type} & \textbf{Model} & \textbf{Capabilities} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    bard & Bard MC4002 & Multi-stage cooling/heating, lead/lag control, temperature sensors (local + 2 remote), alarms (fire, temp, controller) \\
+    iceqube & IceQube OUTDOOR & Single-stage cooling, lead status, temperatures (enclosure + condenser), filter status \\
+
+\end{longtable}
+
+\section{Weather Station}
+
+\begin{longtable}{p{3cm}p{4cm}p{7cm}}
+    \toprule
+    \textbf{Component} & \textbf{Model} & \textbf{Data Provided} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Component} & \textbf{Model} & \textbf{Data Provided} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    Weather Station & Davis VantagePro2 & Temperature, humidity, pressure, wind, rainfall \\
+    Data Logger & WeatherLink & Serial/USB interface to wview software \\
+
+\end{longtable}
+
+\section{Lightning Detection}
+
+\begin{longtable}{p{3cm}p{3.5cm}p{7.5cm}}
+    \toprule
+    \textbf{Component} & \textbf{Model} & \textbf{Description} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Component} & \textbf{Model} & \textbf{Description} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    Electric Field Mill & Boltek EFM-100C & Measures atmospheric electric field, detects lightning strikes with distance estimation \\
+
+\end{longtable}
+
+\section{Voltage Monitoring}
+
+\begin{longtable}{p{3cm}p{4cm}p{7cm}}
+    \toprule
+    \textbf{Component} & \textbf{Model} & \textbf{Description} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Component} & \textbf{Model} & \textbf{Description} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    Monitor Board & LWA custom & Arduino-based board monitors 120V and 240V AC lines \\
+    Software & lineMonitor.py & Broadcasts power events via UDP multicast \\
+
+\end{longtable}

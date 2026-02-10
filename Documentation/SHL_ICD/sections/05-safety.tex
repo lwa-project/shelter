@@ -1,0 +1,186 @@
+% 05-safety.tex - Section 5: Safety Interface
+
+\chapter{Safety Interface}
+\label{sec:safety}
+
+\section{Overview}
+
+The SHL subsystem implements several safety mechanisms to protect equipment and personnel. These include temperature monitoring with automated responses, smoke and fire detection, water intrusion detection, and power monitoring.
+
+\section{Temperature Monitoring}
+
+\subsection{Temperature Thresholds}
+
+The system monitors shelter temperature and takes action based on the configurable thresholds listed in Table~\ref{tab:temp-thresholds}.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Condition} & \textbf{Default Threshold} & \textbf{Action} \\
+        \midrule
+        Normal & $<$ 80\textdegree F & No action \\
+        Warning & 80--90\textdegree F & Set status to WARNING \\
+        Critical & $\geq$ 90\textdegree F & Set status to ERROR, shutdown critical ports \\
+        \bottomrule
+    \end{tabular}
+    \caption{Temperature Thresholds and Actions}
+    \label{tab:temp-thresholds}
+\end{table}
+
+\begin{siteNote}
+Threshold values are configurable per site via the \texttt{thermometers.warning\_temp} and \texttt{thermometers.critical\_temp} settings in \texttt{defaults.json}.
+\end{siteNote}
+
+\subsection{Critical Port Shutdown}
+
+When the temperature exceeds the critical threshold, the system can automatically power off designated ``critical'' PDU ports. The list of critical ports is defined in the configuration file under \texttt{thermometers.critical\_list}.
+
+Format: List of \texttt{[rack, port]} pairs.
+
+Example:
+\begin{verbatim}
+"critical_list": [[1, 3], [1, 4], [2, 1]]
+\end{verbatim}
+
+\subsection{Temperature Status Messages}
+
+The system \mib{INFO} field reflects the temperature status:
+\begin{itemize}
+    \item \texttt{TEMPERATURE! Shelter temperature at XX.X F, shutting down critical ports: ...}
+    \item \texttt{TEMPERATURE! Shelter temperature at XX.X F} (warning level)
+\end{itemize}
+
+\section{Smoke and Fire Detection}
+
+\begin{newInVersion}{F}
+Available through a correctly configured EnviroMux.
+\end{newInVersion}
+
+When an EnviroMux system is configured with a smoke detector, the SHL subsystem monitors for smoke/fire conditions.
+
+\subsection{Smoke Detection Response}
+
+When smoke is detected:
+\begin{enumerate}
+    \item System status is set to \texttt{ERROR}
+    \item \mib{INFO} is set to \texttt{SMOKE! Shelter smoke detector activated}
+    \item Event is logged
+\end{enumerate}
+
+When smoke clears:
+\begin{enumerate}
+    \item System status returns to \texttt{NORMAL}
+    \item \mib{INFO} indicates error condition cleared
+\end{enumerate}
+
+\begin{noteBox}
+The smoke detector response is informational only. No automated equipment shutdown is triggered by smoke detection. Human intervention is required for fire response.
+\end{noteBox}
+
+\section{Water Intrusion Detection}
+
+\begin{newInVersion}{F}
+Available through a correctly configured EnviroMux.
+\end{newInVersion}
+
+When an EnviroMux system is configured with a water/leak sensor, the SHL subsystem monitors for water intrusion.
+
+\subsection{Water Detection Response}
+
+When water is detected:
+\begin{enumerate}
+    \item System status is set to \texttt{ERROR}
+    \item \mib{INFO} is set to \texttt{WATER! Shelter water sensor activated}
+    \item Event is logged
+\end{enumerate}
+
+When water clears:
+\begin{enumerate}
+    \item System status returns to \texttt{NORMAL}
+    \item \mib{INFO} indicates error condition cleared
+\end{enumerate}
+
+\section{Door Monitoring}
+
+\begin{newInVersion}{F}
+Available through a correctly configured EnviroMux.
+\end{newInVersion}
+
+When an EnviroMux system is configured with a door sensor, the SHL subsystem monitors the shelter door status.
+
+\subsection{Door Open Response}
+
+To avoid false alarms during maintenance, the door warning is delayed:
+\begin{itemize}
+    \item Door open $<$ 4 hours: No warning
+    \item Door open $\geq$ 4 hours: Set status to \texttt{WARNING}, \mib{INFO} indicates door is open
+\end{itemize}
+
+When the door is closed:
+\begin{enumerate}
+    \item Warning condition is cleared
+    \item Door open timer is reset
+\end{enumerate}
+
+\section{Power Monitoring}
+
+\begin{newInVersion}{F}
+Available through the LWA line voltage monitor board.
+\end{newInVersion}
+
+The voltage monitor detects power quality issues on the AC mains.
+
+\subsection{Power Flicker}
+
+A power flicker is a brief voltage drop that recovers quickly. When detected:
+\begin{enumerate}
+    \item System status is set to \texttt{WARNING}
+    \item \mib{INFO} includes \texttt{POWER-FLICKER! Flicker in the shelter power}
+    \item Flicker status clears automatically after 5 minutes
+\end{enumerate}
+
+\subsection{Power Outage}
+
+A power outage is a sustained loss of voltage. When detected:
+\begin{enumerate}
+    \item System status is set to \texttt{ERROR}
+    \item \mib{INFO} is set to \texttt{POWER-OUTAGE! Shelter power outage}
+    \item Outage state is saved to disk for persistence across restarts
+    \item When power is restored, status returns to \texttt{NORMAL}
+\end{enumerate}
+
+\begin{noteBox}
+The voltage monitor tracks both 120V and 240V lines independently. Either line experiencing an issue will trigger the corresponding warning or error.
+\end{noteBox}
+
+\section{Device Unreachable Monitoring}
+
+The SHL subsystem monitors the reachability of all network devices (PDUs, thermometers, EnviroMux). When a device becomes unreachable:
+
+\begin{enumerate}
+    \item Device is added to the unreachable list
+    \item If any devices are unreachable, status is set to \texttt{WARNING}
+    \item \mib{INFO} shows count and list of unreachable devices
+\end{enumerate}
+
+Devices are removed from the unreachable list after successful communication is restored (with hysteresis to prevent flapping).
+
+\section{Warning State Merging}
+
+Multiple warning conditions can exist simultaneously. The system merges warning states using the format:
+
+\begin{verbatim}
+{MIB1}! {MIB2}! ... {description1}; {description2}; ...
+\end{verbatim}
+
+Example:
+\begin{verbatim}
+TEMPERATURE! DOOR! Shelter temperature at 82.0 F; Shelter door is open
+\end{verbatim}
+
+When a warning condition clears:
+\begin{itemize}
+    \item If other warnings remain: Update message to remove cleared condition
+    \item If no warnings remain: Set status to \texttt{NORMAL}, set \mib{INFO} to ``Warning condition(s) cleared, system operating normally''
+\end{itemize}
