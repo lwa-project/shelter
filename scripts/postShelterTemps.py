@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 
 import os
+import json
 import time
 import requests
 import subprocess
+import json_minify
 from socket import gethostname
 
 from lwa_auth import KEYS as LWA_AUTH_KEYS
 from lwa_auth.signed_requests import post as signed_post
+
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from shl_cmnd import DEFAULTS_FILENAME
+    from shlBard import get_mc4002_temperatures
+    from shlQube import get_iceqube_temperatures
+except ImportError:
+    pass
 
 
 URL = "https://lwalab.phys.unm.edu/OpScreen/update"
@@ -69,6 +81,26 @@ if time.time() > lastUpdated + 300:
     test = "%.2f,NaN,NaN" % time.time()
     test += ',NaN,NaN,NaN'
     
+# If we don't have a reading from the temperature sensor, at least try to
+# get something from the HVAC controller.  Be sure to get the units correct!
+fields = test.split(',')
+if fields[1] == 'NaN' and fields[2] == 'NaN':
+    try:
+        with open(DEFAULTS_FILENAME, 'r') as ch:
+            config = json.loads(json_minify.json_minify(ch.read()))
+        if 'ip' in config['hvac'].keys():
+            if config['hvac']['type'] == 'iceqube':
+                hvac_temp = get_iceqube_temperatures(config['hvac']['ip'][0])
+                hvac_temp = hvac_temp['enclosure']
+            elif config['hvac']['type'] == 'bard':
+                hvac_temp = get_mc4002_temperatures(config['hvac']['ip'][0])
+                hvac_temp = hvac_temp['average']
+                
+            fields[1] = "%.1f" % ((hvac_temp - 32)*5/9,)
+            test = ','.join(fields)
+    except Exception as e:
+        pass
+        
 # Send the update to lwalab
 f = signed_post(LWA_AUTH_KEYS.get('shl', kind='private'), URL,
                 data={'site': SITE, 'subsystem': SUBSYSTEM, 'data': test})
