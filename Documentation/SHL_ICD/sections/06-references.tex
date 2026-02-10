@@ -1,0 +1,232 @@
+% 06-references.tex - Section 6: References
+
+\chapter{References}
+\label{sec:references}
+
+\section{LWA Documentation}
+
+\begin{enumerate}
+    \item MCS Common ICD (LWA Engineering Memo MCS0005)
+    \item MCS-NDP Interface Control Document
+    \item MCS-ASP Interface Control Document
+\end{enumerate}
+
+\section{External Software}
+
+\begin{description}
+    \item[lightning\_detector] Software for reading Boltek EFM-100C electric field mill data and broadcasting lightning strike notifications. Repository contains \texttt{spinningCan.py}.
+
+    URL: \url{https://github.com/lwa-project/lightning_detector}
+
+    \item[voltage\_monitor] Software for monitoring AC line voltage using an Arduino-based sensor board and broadcasting power events. Repository contains \texttt{lineMonitor.py}.
+
+    URL: \url{https://github.com/lwa-project/voltage_monitor}
+
+    \item[wview] Weather station software that reads Davis VantagePro2 data and stores it in an SQLite database. The SHL subsystem reads from this database for weather MIB entries.
+
+    URL: \url{http://www.wviewweather.com/}
+
+    \item[shelter] The SHL subsystem software itself. Contains \texttt{shl\_cmnd.py} (main command handler), \texttt{shlFunctions.py} (control functions), \texttt{shlThreads.py} (monitoring threads), \texttt{shlBard.py} (MC4002 interface), and \texttt{shlQube.py} (IceQube interface).
+
+    URL: \url{https://github.com/lwa-project/shelter}
+\end{description}
+
+\section{Configuration Files}
+\label{sec:configuration}
+
+SHL configuration is stored in JSON format in site-specific files
+(\texttt{defaults.json.\textit{site}}).  The top-level keys and their
+nested structure are described below.
+
+\subsection{Global Parameters}
+
+The top-level scalar parameter identifies the SHL instance (Table~\ref{tab:config-global}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Top-level Configuration Parameters}
+    \label{tab:config-global}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{serial\_number} & string & SHL unit serial number (e.g., ``SHL01'') \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{mcs} --- MCS Communication}
+
+The \texttt{mcs} object configures the UDP interface between SHL and MCS (Table~\ref{tab:config-mcs}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{mcs} Configuration Parameters}
+    \label{tab:config-mcs}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{message\_host}     & string & MCS host IP address \\
+        \texttt{message\_out\_port} & int   & UDP port for sending responses to MCS \\
+        \texttt{message\_in\_port}  & int   & UDP port for receiving commands from MCS \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{hvac} --- HVAC Controller}
+
+The \texttt{hvac} object configures the HVAC controller interface and validation ranges for the \cmd{TMP} and \cmd{DIF} commands (Table~\ref{tab:config-hvac}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{hvac} Configuration Parameters}
+    \label{tab:config-hvac}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{type}      & string         & HVAC controller type (``bard'' or ``iceqube'') \\
+        \texttt{temp\_min}  & float          & Minimum allowed temperature set point (\textdegree F) \\
+        \texttt{temp\_max}  & float          & Maximum allowed temperature set point (\textdegree F) \\
+        \texttt{diff\_min}  & float          & Minimum allowed cooling differential (\textdegree F) \\
+        \texttt{diff\_max}  & float          & Maximum allowed cooling differential (\textdegree F) \\
+        \texttt{ip}        & array of string & HVAC controller IP addresses \\
+        \texttt{webrelay}  & string         & WebRelay IP address (IceQube type only) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{thermometers} --- Temperature Sensors}
+
+The \texttt{thermometers} object configures standalone temperature sensor devices and the thresholds that trigger warning and critical actions (Table~\ref{tab:config-therm}).  The \texttt{devices} sub-object is a dictionary keyed by rack number.
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{thermometers} Configuration Parameters}
+    \label{tab:config-therm}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{warning\_temp}   & float          & Warning temperature threshold (\textdegree F) \\
+        \texttt{critical\_temp}  & float          & Critical temperature threshold (\textdegree F) \\
+        \texttt{critical\_list}  & array of array & \texttt{[rack, port]} pairs to shut down at critical temperature \\
+        \texttt{monitor\_period} & float          & Monitoring interval (seconds) \\
+        \midrule
+        \multicolumn{3}{l}{\textit{\texttt{thermometers.devices.\{id\}}}} \\
+        \quad\texttt{type}           & string         & Sensor type (``HWg'' or ``Comet'') \\
+        \quad\texttt{ip}             & string         & Device IP address \\
+        \quad\texttt{port}           & int            & SNMP port \\
+        \quad\texttt{security\_model} & array         & SNMP security: \texttt{[agent, community, version]} \\
+        \quad\texttt{nsensor}        & int            & Number of sensors on the device \\
+        \quad\texttt{description}    & string         & Human-readable description \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{enviromux} --- Environmental Monitoring}
+
+The \texttt{enviromux} object configures EnviroMux environmental sensor devices (Table~\ref{tab:config-enviro}).  The \texttt{devices} sub-object is a dictionary keyed by device number.
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{enviromux} Configuration Parameters}
+    \label{tab:config-enviro}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{warning\_temp}   & float          & Warning temperature threshold (\textdegree F) \\
+        \texttt{critical\_temp}  & float          & Critical temperature threshold (\textdegree F) \\
+        \texttt{critical\_list}  & array of array & \texttt{[rack, port]} pairs to shut down at critical temperature \\
+        \texttt{monitor\_period} & float          & Monitoring interval (seconds) \\
+        \midrule
+        \multicolumn{3}{l}{\textit{\texttt{enviromux.devices.\{id\}}}} \\
+        \quad\texttt{ip}             & string          & Device IP address \\
+        \quad\texttt{port}           & int             & SNMP port \\
+        \quad\texttt{security\_model} & array          & SNMP security: \texttt{[agent, community, version]} \\
+        \quad\texttt{sensor\_list}   & array of string & Sensor types present (e.g., ``door'', ``water'', ``smoke'') \\
+        \quad\texttt{description}    & string          & Human-readable description \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{pdus} --- PDU and UPS Devices}
+
+The \texttt{pdus} object configures power distribution units and uninterruptible power supplies (Table~\ref{tab:config-pdus}).  The \texttt{devices} sub-object is a dictionary keyed by rack number.
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{pdus} Configuration Parameters}
+    \label{tab:config-pdus}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{monitor\_period} & float & Monitoring interval (seconds) \\
+        \midrule
+        \multicolumn{3}{l}{\textit{\texttt{pdus.devices.\{id\}}}} \\
+        \quad\texttt{type}           & string & Device type (``APC'', ``Raritan'', ``Dominion'', ``TrippLite'', ``APCUPS'', or ``TrippLiteUPS'') \\
+        \quad\texttt{ip}             & string & Device IP address \\
+        \quad\texttt{port}           & int    & SNMP port \\
+        \quad\texttt{security\_model} & array & SNMP security: \texttt{[agent, community, version]} \\
+        \quad\texttt{noutlet}        & int    & Number of controllable outlets \\
+        \quad\texttt{description}    & string & Human-readable description \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{weather} --- Weather Station}
+
+The \texttt{weather} object configures access to the wview weather database (Table~\ref{tab:config-weather}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{weather} Configuration Parameters}
+    \label{tab:config-weather}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{database}       & string & Path to wview SQLite database \\
+        \texttt{monitor\_period} & float & Polling interval (seconds) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{lightning} --- Lightning Alert Multicast}
+
+The \texttt{lightning} object configures the UDP multicast group for receiving lightning strike notifications from \texttt{spinningCan.py} (Table~\ref{tab:config-lightning}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{lightning} Configuration Parameters}
+    \label{tab:config-lightning}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{ip}   & string & Multicast group IP address \\
+        \texttt{port} & int    & Multicast port \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{\texttt{outage} --- Power Outage Alert Multicast}
+
+The \texttt{outage} object configures the UDP multicast group for receiving power flicker and outage notifications from \texttt{lineMonitor.py} (Table~\ref{tab:config-outage}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{\texttt{outage} Configuration Parameters}
+    \label{tab:config-outage}
+    \begin{tabular}{llp{7cm}}
+        \toprule
+        \textbf{Key} & \textbf{Type} & \textbf{Description} \\
+        \midrule
+        \texttt{ip}   & string & Multicast group IP address \\
+        \texttt{port} & int    & Multicast port \\
+        \bottomrule
+    \end{tabular}
+\end{table}

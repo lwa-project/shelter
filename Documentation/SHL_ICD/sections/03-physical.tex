@@ -1,0 +1,112 @@
+% 03-physical.tex - Section 3: Physical Interfaces
+
+\chapter{Physical Interfaces}
+\label{sec:physical}
+
+\section{Overview}
+
+The SHL subsystem interfaces with various hardware components through network connections. All monitored and controlled devices communicate via Ethernet using either SNMP or HTTP protocols.
+
+\section{Network Interfaces}
+
+\subsection{Device Network Interfaces}
+
+All monitored devices are connected to the shelter's internal network (typically 172.16.1.x subnet), as summarized in Table~\ref{tab:device-interfaces}.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{Device Type} & \textbf{Protocol} & \textbf{Port} & \textbf{Notes} \\
+        \midrule
+        PDUs & SNMP & 161 & Various manufacturers \\
+        UPSs & SNMP & 161 & APC, TrippLite \\
+        Thermometers & SNMP & 161 & HWg STE, Comet P8510 \\
+        EnviroMux & SNMP & 161 & Network Technologies \\
+        HVAC Controllers & HTTP & 80 & Bard MC4002, IceQube \\
+        WebRelay & HTTP & 80 & Control Relay Solutions \\
+        \bottomrule
+    \end{tabular}
+    \caption{Device Network Interfaces}
+    \label{tab:device-interfaces}
+\end{table}
+
+\subsection{External Software Interfaces}
+
+\begin{newInVersion}{F}
+The SHL subsystem receives data from two external software processes via UDP multicast (Table~\ref{tab:external-interfaces}): the lightning detector (Boltek EFM-100C electric field mill) and the voltage monitor (AC line quality monitoring). See Section~\ref{sec:monitor-control} for details.
+\end{newInVersion}
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{Interface} & \textbf{Multicast Address} & \textbf{Port} & \textbf{Source} \\
+        \midrule
+        Lightning Detector & 224.168.2.9 & 7163 & spinningCan.py \\
+        Voltage Monitor & 224.168.2.10 & 7165 & lineMonitor.py \\
+        \bottomrule
+    \end{tabular}
+    \caption{External Software UDP Multicast Interfaces}
+    \label{tab:external-interfaces}
+\end{table}
+
+\section{Power Interfaces}
+
+\begin{siteNote}
+The number of racks and PDUs varies by site. The configuration is defined in the site's \texttt{defaults.json} file under the \texttt{pdus.devices} section. Each device entry specifies the PDU type, IP address, and number of outlets.
+\end{siteNote}
+
+\subsection{Supported PDU Types}
+
+The following PDU types are supported:
+
+\begin{itemize}
+    \item \textbf{APC}: APC AP7921B Switched Rack PDU (8 outlets)
+    \item \textbf{Raritan}: Raritan PX2 Series (8 outlets)
+    \item \textbf{Dominion}: Raritan Dominion PX (variable outlets)
+    \item \textbf{TrippLite}: TrippLite PDUMH20ATNET (8 outlets)
+\end{itemize}
+
+\subsection{Supported UPS Types}
+
+The following UPS types are supported:
+
+\begin{itemize}
+    \item \textbf{APCUPS}: APC Smart-UPS with network management card
+    \item \textbf{TrippLiteUPS}: TrippLite SmartOnline UPS
+\end{itemize}
+
+\section{Environmental Interfaces}
+
+\subsection{Temperature Monitoring}
+
+Temperature sensors are polled via SNMP. Two thermometer types are supported:
+
+\begin{itemize}
+    \item \textbf{HWg STE}: HW group STE Ethernet thermometer (up to 2 sensors)
+    \item \textbf{Comet}: Comet P8510 Ethernet thermometer (1 sensor)
+\end{itemize}
+
+\subsection{Environmental Monitoring System}
+
+\begin{newInVersion}{F}
+The Network Technologies E-MINI-LXO EnviroMux system provides integrated monitoring for:
+\begin{itemize}
+    \item Temperature sensors (up to 2)
+    \item Smoke detector
+    \item Water/leak sensor
+    \item Door open/closed sensor
+    \item Airflow sensors
+\end{itemize}
+\end{newInVersion}
+
+\begin{siteNote}
+Not all sites have an EnviroMux installed. When not present, the corresponding MIB entries (SMOKE, WATER, DOOR) will return error messages.
+\end{siteNote}
+
+\subsection{Weather Station}
+
+Weather data is obtained from a wview database (SQLite format). The weather station hardware is typically a Davis VantagePro2 with WeatherLink data logger.
+
+Database location: \texttt{/var/wview/archive/wview-archive.sdb} (may vary by site)

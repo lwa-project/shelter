@@ -1,0 +1,59 @@
+% 02-abbreviations.tex - Section 2: Abbreviations and Definitions
+
+\chapter{Abbreviations and Definitions}
+\label{sec:abbreviations}
+
+\section{Abbreviations}
+
+\begin{longtable}{p{3cm}p{11cm}}
+    \toprule
+    \textbf{Abbreviation} & \textbf{Definition} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \textbf{Abbreviation} & \textbf{Definition} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+
+    APC & American Power Conversion (PDU/UPS manufacturer) \\
+    ECS & Environmental Control System \\
+    EFM & Electric Field Mill (lightning detector) \\
+    EnviroMux & Network Technologies environmental monitoring system \\
+    HVAC & Heating, Ventilation, and Air Conditioning \\
+    ICD & Interface Control Document \\
+    IceQube & IceQube V Series air conditioner \\
+    LWA & Long Wavelength Array \\
+    M\&C & Monitor and Control \\
+    MC4002 & Bard MC4002 HVAC controller \\
+    MCS & Monitor and Control System \\
+    MIB & Management Information Base \\
+    MJD & Modified Julian Date \\
+    MPM & Milliseconds Past Midnight \\
+    PDU & Power Distribution Unit \\
+    SHL & Shelter subsystem \\
+    SNMP & Simple Network Management Protocol \\
+    UDP & User Datagram Protocol \\
+    UPS & Uninterruptible Power Supply \\
+    VAC & Volts Alternating Current \\
+
+\end{longtable}
+
+\section{Definitions}
+
+\begin{description}
+    \item[Rack] A standard 19-inch equipment rack within the shelter. Each rack may have one or more PDUs.
+
+    \item[PDU] A Power Distribution Unit that provides switched power outlets for equipment. Controlled via SNMP.
+
+    \item[UPS] An Uninterruptible Power Supply that provides battery backup and power conditioning.  Controlled via SNMP.
+
+    \item[Set Point] The target temperature for the HVAC system.
+
+    \item[Differential] The temperature offset from the set point at which cooling engages. For example, with a set point of 72\textdegree F and a differential of 2\textdegree F, cooling starts at 74\textdegree F.
+
+    \item[SCRAM] An emergency shutdown mode that immediately stops all monitoring threads but does not power off equipment.
+
+    \item[Monitor Period] The polling interval for a particular monitoring thread (e.g., temperature, PDU status).
+\end{description}

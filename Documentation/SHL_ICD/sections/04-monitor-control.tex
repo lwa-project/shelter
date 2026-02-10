@@ -1,0 +1,586 @@
+% 04-monitor-control.tex - Section 4: Monitor and Control Interface
+
+\chapter{Monitor and Control Interface}
+\label{sec:monitor-control}
+
+\section{Overview}
+
+The SHL subsystem communicates with the Monitor and Control System (MCS) via UDP messages. Commands are received on port 5008 and responses are sent to port 5009.
+
+\begin{siteNote}
+The MCS communication ports are configurable via \texttt{mcs.message\_in\_port} and \texttt{mcs.message\_out\_port} in the site configuration file. The MCS host address is configurable via \texttt{mcs.message\_host}.
+\end{siteNote}
+
+\section{Message Format}
+
+\subsection{Command Message Format}
+
+Commands from MCS to SHL follow the standard LWA message format, as shown in Table~\ref{tab:cmd-format}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Command Message Format}
+    \label{tab:cmd-format}
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{Field} & \textbf{Bytes} & \textbf{Position} & \textbf{Description} \\
+        \midrule
+        Destination & 3 & 0--2 & Subsystem ID (``SHL'') \\
+        Sender & 3 & 3--5 & Sender ID (``MCS'') \\
+        Command & 3 & 6--8 & Command code \\
+        Reference & 9 & 9--17 & Reference number \\
+        Data Length & 4 & 18--21 & Length of data section \\
+        MJD & 6 & 22--27 & Modified Julian Date \\
+        MPM & 9 & 28--36 & Milliseconds Past Midnight \\
+        - & 1 & 37 & Space \\
+        Data & Variable & 38+ & Command-specific data \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Response Message Format}
+
+Responses from SHL to MCS include the command status and any requested data (Table~\ref{tab:resp-format}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Response Message Format}
+    \label{tab:resp-format}
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{Field} & \textbf{Bytes} & \textbf{Position} & \textbf{Description} \\
+        \midrule
+        Destination & 3 & 0--2 & Destination ID \\
+        Sender & 3 & 3--5 & ``SHL'' \\
+        Command & 3 & 6--8 & Echo of command \\
+        Reference & 9 & 9--17 & Echo of reference number \\
+        Data Length & 4 & 18--21 & Length of data section \\
+        MJD & 6 & 22--27 & Response MJD \\
+        MPM & 9 & 28--36 & Response MPM \\
+        - & 1 & 37 & Space \\
+        Status & 1 & 38 & ``A'' (accept) or ``R'' (reject) \\
+        Summary & 7 & 39--45 & System status summary \\
+        Data & Variable & 46+ & Response data \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Management Information Base (MIB)}
+\label{sec:mib}
+
+The following MIB entries can be queried using the \cmd{RPT} command. All MIB values are returned as ASCII text strings.
+
+\subsection{General Information}
+
+General system information is available via the MIB entries listed in Table~\ref{tab:mib-general}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{General MIB Entries}
+    \label{tab:mib-general}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{MIB Entry} & \textbf{Description} \\
+        \midrule
+        \mib{SUMMARY} & Current system status (7 characters) \\
+        \mib{INFO} & Detailed status information (up to 256 characters) \\
+        \mib{LASTLOG} & Last log message (up to 256 characters) \\
+        \mib{SUBSYSTEM} & Subsystem identifier (``SHL'') \\
+        \mib{SERIALNO} & Subsystem serial number (site-specific, e.g., ``SHL01'') \\
+        \mib{VERSION} & Software version \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Power Distribution}
+
+The SHL subsystem monitors and controls power distribution equipment including PDUs and UPSs (Table~\ref{tab:mib-power}). Each device is assigned to a rack number for addressing purposes.
+
+\begin{siteNote}
+The number of racks and their configurations vary by site. For example:
+\begin{itemize}
+    \item LWA1: 7 racks (mix of APC, Raritan, TrippLite PDUs/UPSs)
+    \item LWA-SV: Similar to LWA1 (multiple racks, mix of PDU types)
+    \item LWA-NA: 3 racks (APC PDUs and UPS)
+\end{itemize}
+\end{siteNote}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Power Distribution MIB Entries}
+    \label{tab:mib-power}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{MIB Entry} & \textbf{Description} \\
+        \midrule
+        \mib{PORTS-AVAILABLE-R\{n\}} & Number of outlets available on rack \{n\} \\
+        \mib{CURRENT-R\{n\}} & Total current draw (Amps) for rack \{n\} \\
+        \mib{VOLTAGE-R\{n\}} & Input voltage (VAC) for rack \{n\} \\
+        \mib{FREQUENCY-R\{n\}} & Input frequency (Hz) for rack \{n\} \\
+        \mib{PWR-R\{n\}-\{m\}} & Power state of outlet \{m\} on rack \{n\} (``ON'', ``OFF'', or ``UNK'') \\
+        \mib{BATCHARGE-R\{n\}} & Battery charge percentage (UPS only) \\
+        \mib{BATSTATUS-R\{n\}} & Battery status (UPS only) \\
+        \mib{OUTSOURCE-R\{n\}} & Output power source (UPS only) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Where \{n\} is the rack number (1-indexed) and \{m\} is the outlet number (1-indexed).
+
+The \mib{BATSTATUS-R\{n\}} entries return one of: ``Unknown'', ``Normal'', ``Low'', or ``Depleted''.
+
+The \mib{OUTSOURCE-R\{n\}} entries return one of: ``Other'', ``None'', ``Normal'', ``Bypass'', ``Battery'', ``Booster'', or ``Reducer''.
+
+\subsection{Environmental Control System}
+
+The environmental control system maintains shelter temperature within acceptable limits (Table~\ref{tab:mib-ecs}). The system supports two types of HVAC controllers:
+
+\begin{itemize}
+    \item \textbf{Bard MC4002}: Multi-stage cooling/heating with lead/lag control, local and remote sensors, and multiple alarm types
+    \item \textbf{IceQube V Series}: Single-stage cooling with lead/lag operation, enclosure/condenser temperature monitoring, and filter status
+\end{itemize}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Environmental Control System MIB Entries}
+    \label{tab:mib-ecs}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{MIB Entry} & \textbf{Description} \\
+        \midrule
+        \mib{SET-POINT} & Current temperature set point (\textdegree F) \\
+        \mib{DIFFERENTIAL} & Current cooling differential (\textdegree F) \\
+        \mib{TEMPERATURE} & Mean shelter temperature (\textdegree F) \\
+        \mib{TEMPERATURE-S\{n\}} & Individual sensor \{n\} temperature (\textdegree F) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{newInVersion}{F}
+The \mib{TEMPERATURE-S\{n\}} entries provide access to individual temperature sensors. The sensor number is 1-indexed and includes sensors from all configured thermometers and EnviroMux devices.
+\end{newInVersion}
+
+The \mib{TEMPERATURE} entry returns a ``mean-max'' temperature: if the spread between the highest and lowest sensor readings is $\leq$ 10\textdegree F, the mean is returned; otherwise, the maximum is returned. This prevents a single cold sensor from masking an overheating condition.
+
+\begin{calloutBox}{HVAC Controller Note}{blue}
+Not all HVAC capabilities are exposed through the MCS interface. Direct access to the HVAC controller's web interface provides additional functionality. See Section~\ref{sec:hvac-capabilities} for details.
+\end{calloutBox}
+
+\subsection{Weather Station}
+
+Weather data is obtained by reading from a wview SQLite database (Table~\ref{tab:mib-wx}). The database is populated by the wview daemon which communicates with the weather station hardware.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Weather Station MIB Entries}
+    \label{tab:mib-wx}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{MIB Entry} & \textbf{Description} \\
+        \midrule
+        \mib{WX-UPDATED} & Last update timestamp (YYYY-MM-DD HH:MM:SS) \\
+        \mib{WX-TEMPERATURE} & Outside temperature (\textdegree F) \\
+        \mib{WX-HUMIDITY} & Outside humidity (\%) \\
+        \mib{WX-PRESSURE} & Barometric pressure (inHg) \\
+        \mib{WX-WIND} & Wind speed and direction \\
+        \mib{WX-GUST} & Wind gust speed and direction \\
+        \mib{WX-RAINFALL-RATE} & Current rainfall rate (in/hr) \\
+        \mib{WX-RAINFALL-TOTAL} & Total rainfall accumulation (in) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The \mib{WX-WIND} and \mib{WX-GUST} entries return a formatted string: \texttt{\{speed\} mph at \{direction\} degrees} (e.g., \texttt{5.2 mph at 180 degrees}).
+
+\subsection{Lightning Detection}
+
+Lightning detection is provided by a Boltek EFM-100C Electric Field Mill (Table~\ref{tab:mib-lightning}). The \texttt{spinningCan.py} process reads data from the EFM-100C and broadcasts lightning strike notifications via UDP multicast. The SHL subsystem subscribes to these notifications and maintains a rolling window of recent strikes.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Lightning Detection MIB Entries}
+    \label{tab:mib-lightning}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{MIB Entry} & \textbf{Description} \\
+        \midrule
+        \mib{LIGHTNING-RADIUS} & Detection radius (km), currently fixed at 15~km \\
+        \mib{LIGHTNING-10MIN} & Strike count within radius in last 10 minutes \\
+        \mib{LIGHTNING-30MIN} & Strike count within radius in last 30 minutes \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Power Monitoring}
+\label{subsec:power-monitoring}
+
+\begin{newInVersion}{F}
+The voltage monitor detects power flickers and outages on the 120V and 240V AC lines (Table~\ref{tab:mib-outage}). An Arduino-based voltage monitor board runs the \texttt{lineMonitor.py} process which broadcasts power events via UDP multicast.
+\end{newInVersion}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Power Monitoring MIB Entries}
+    \label{tab:mib-outage}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{MIB Entry} & \textbf{Description} \\
+        \midrule
+        \mib{POWER-FLICKER} & Power flicker detected (True/False) \\
+        \mib{POWER-OUTAGE} & Power outage detected (True/False) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The voltage monitor tracks both 120V and 240V AC lines. A flicker is a brief voltage drop, while an outage is a sustained loss of power. Flicker status automatically clears after 5 minutes. Outage status clears when power is restored.
+
+\subsection{Environmental Sensors}
+\label{subsec:enviro-sensors}
+
+\begin{newInVersion}{F}
+Available through a correctly configured EnviroMux. See Table~\ref{tab:mib-enviro} for the available MIB entries.
+\end{newInVersion}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Environmental Sensors MIB Entries}
+    \label{tab:mib-enviro}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{MIB Entry} & \textbf{Description} \\
+        \midrule
+        \mib{SMOKE} & Smoke detector status (True = smoke detected) \\
+        \mib{WATER} & Water sensor status (True = water detected) \\
+        \mib{DOOR} & Door status (OPEN or CLOSED) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{siteNote}
+These MIB entries require an EnviroMux system to be configured. If no EnviroMux is present, querying these entries will return an error message indicating ``No environmental monitoring system configured.''
+\end{siteNote}
+
+\section{Control Commands}
+\label{sec:commands}
+
+\subsection{PNG --- Ping}
+
+The \cmd{PNG} command tests connectivity with the SHL subsystem (Table~\ref{tab:cmd-png}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{PNG Command}
+    \label{tab:cmd-png}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Field} & \textbf{Value} \\
+        \midrule
+        Command & \cmd{PNG} \\
+        Data & (none) \\
+        Response & Status only \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{INI --- Initialize}
+
+The \cmd{INI} command initializes the SHL subsystem (Table~\ref{tab:cmd-ini}). This starts all monitoring threads and sets initial HVAC parameters.
+
+\begin{table}[htbp]
+    \centering
+    \caption{INI Command}
+    \label{tab:cmd-ini}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Field} & \textbf{Value} \\
+        \midrule
+        Command & \cmd{INI} \\
+        Data & \texttt{\{setpoint\}\&\{differential\}\&\{rack\_flags\}} \\
+        Response & Status; on failure: exit code and message \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The data field contains three ampersand-separated values:
+\begin{itemize}
+    \item \texttt{\{setpoint\}}: Temperature set point in \textdegree F (e.g., \texttt{72})
+    \item \texttt{\{differential\}}: Cooling differential in \textdegree F (e.g., \texttt{1.0})
+    \item \texttt{\{rack\_flags\}}: String of 1s and 0s indicating which racks are present (e.g., \texttt{1111111})
+\end{itemize}
+
+Example: \texttt{72\&1.0\&1111111}
+
+\subsubsection{Exit Codes}
+
+\begin{tabular}{cl}
+    \hex{00} & Process accepted without error \\
+    \hex{01} & Invalid temperature set point \\
+    \hex{02} & Invalid temperature differential \\
+    \hex{06} & Invalid command arguments \\
+    \hex{07} & Blocking operation in progress \\
+    \hex{08} & Subsystem already initialized \\
+\end{tabular}
+
+\subsection{SHT --- Shutdown}
+
+The \cmd{SHT} command shuts down the SHL subsystem (Table~\ref{tab:cmd-sht}). This stops all monitoring threads.
+
+\begin{table}[htbp]
+    \centering
+    \caption{SHT Command}
+    \label{tab:cmd-sht}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Field} & \textbf{Value} \\
+        \midrule
+        Command & \cmd{SHT} \\
+        Data & Mode (optional): ``SCRAM'', ``RESTART'', or ``SCRAM RESTART'' \\
+        Response & Status; on failure: exit code and message \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Exit Codes}
+
+\begin{tabular}{cl}
+    \hex{00} & Process accepted without error \\
+    \hex{06} & Invalid command arguments (unknown mode) \\
+    \hex{07} & Blocking operation in progress \\
+\end{tabular}
+
+\subsection{TMP --- Set Temperature}
+
+The \cmd{TMP} command sets the HVAC temperature set point (Table~\ref{tab:cmd-tmp}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{TMP Command}
+    \label{tab:cmd-tmp}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Field} & \textbf{Value} \\
+        \midrule
+        Command & \cmd{TMP} \\
+        Data & Temperature set point in \textdegree F \\
+        Response & Status; on failure: exit code and message \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{newInVersion}{F}
+The \cmd{TMP} command now communicates with the HVAC controller to change the actual set point. Previously, this command only updated internal state and did not affect the HVAC system.
+\end{newInVersion}
+
+\begin{calloutBox}{HVAC Controller Note}{blue}
+Valid temperature range is typically 60--110\textdegree F, but depends on site configuration.
+\end{calloutBox}
+
+\subsubsection{Exit Codes}
+
+\begin{tabular}{cl}
+    \hex{00} & Process accepted without error \\
+    \hex{01} & Invalid temperature set point \\
+    \hex{09} & Subsystem needs to be initialized \\
+\end{tabular}
+
+\subsection{DIF --- Set Differential}
+
+The \cmd{DIF} command sets the HVAC cooling differential (Table~\ref{tab:cmd-dif}), the offset from set point at which cooling engages.
+
+\begin{table}[htbp]
+    \centering
+    \caption{DIF Command}
+    \label{tab:cmd-dif}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Field} & \textbf{Value} \\
+        \midrule
+        Command & \cmd{DIF} \\
+        Data & Differential in \textdegree F \\
+        Response & Status; on failure: exit code and message \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{newInVersion}{F}
+The \cmd{DIF} command now communicates with the HVAC controller to change the actual cooling offset. Previously, this command only updated internal state and did not affect the HVAC system.
+\end{newInVersion}
+
+\subsubsection{Exit Codes}
+
+\begin{tabular}{cl}
+    \hex{00} & Process accepted without error \\
+    \hex{02} & Invalid temperature differential \\
+    \hex{09} & Subsystem needs to be initialized \\
+\end{tabular}
+
+\subsection{PWR --- Power Control}
+
+The \cmd{PWR} command controls the power state of a PDU outlet (Table~\ref{tab:cmd-pwr}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{PWR Command}
+    \label{tab:cmd-pwr}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Field} & \textbf{Value} \\
+        \midrule
+        Command & \cmd{PWR} \\
+        Data & \texttt{\{rack\}\{port\}\{control\}} \\
+        Response & Status; on failure: exit code and message \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The data field is a concatenation of:
+\begin{itemize}
+    \item \texttt{\{rack\}}: Single digit rack number (1--9)
+    \item \texttt{\{port\}}: Two-digit port number (01--99)
+    \item \texttt{\{control\}}: Three-character control word (``ON~'', ``OFF'', or ``CYC'')
+\end{itemize}
+
+Example: \texttt{101ON } (turn on rack 1, port 1). Note the trailing space in the ``ON~'' control word.
+
+The ``CYC'' control word power cycles the outlet (off, delay, on).
+
+\subsubsection{Exit Codes}
+
+\begin{tabular}{cl}
+    \hex{00} & Process accepted without error \\
+    \hex{03} & Invalid PDU rack number \\
+    \hex{04} & Invalid PDU port number \\
+    \hex{05} & Invalid PDU control keyword \\
+    \hex{09} & Subsystem needs to be initialized \\
+\end{tabular}
+
+\subsection{RPT --- Report MIB Entry}
+
+The \cmd{RPT} command queries a MIB entry (Table~\ref{tab:cmd-rpt}).
+
+\begin{table}[htbp]
+    \centering
+    \caption{RPT Command}
+    \label{tab:cmd-rpt}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Field} & \textbf{Value} \\
+        \midrule
+        Command & \cmd{RPT} \\
+        Data & MIB entry name \\
+        Response & MIB value; on failure: error message \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Example: \cmd{RPT TEMPERATURE} returns the mean shelter temperature.
+
+\section{System States}
+
+The SHL subsystem reports one of the status values listed in Table~\ref{tab:sys-status}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{System Status Values}
+    \label{tab:sys-status}
+    \begin{tabular}{lp{10cm}}
+        \toprule
+        \textbf{Status} & \textbf{Description} \\
+        \midrule
+        \texttt{SHUTDWN} & System is shut down or not initialized \\
+        \texttt{BOOTING} & System is initializing \\
+        \texttt{NORMAL} & System is operating normally \\
+        \texttt{WARNING} & Warning condition (e.g., temperature approaching limit) \\
+        \texttt{ERROR} & Error condition requiring attention \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+%==============================================================================
+\section{HVAC Control Capabilities}
+\label{sec:hvac-capabilities}
+
+\begin{newInVersion}{F}
+This section documents the full set of HVAC controller capabilities. The set point and cooling offset are exposed through the \cmd{TMP} and \cmd{DIF} commands, respectively. The remaining capabilities are accessible through the HVAC controller's web interface.
+\end{newInVersion}
+
+\subsection{Bard MC4002 Controller}
+
+The Bard MC4002 is an industrial HVAC controller accessible via HTTP at port 80. Its available functions are listed in Table~\ref{tab:bard-functions}.
+
+\subsubsection{Available Functions}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Bard MC4002 Functions}
+    \label{tab:bard-functions}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{Function} & \textbf{Description} \\
+        \midrule
+        Status & Cooling/heating mode, stage active, alarm state \\
+        Alarms & List of active alarms (fire/smoke, temperature, controller) \\
+        Lead/Lag & Which unit (1 or 2) is currently lead \\
+        Temperatures & Average, local, and remote sensor readings \\
+        Set Point & Target temperature (exposed via \cmd{TMP}) \\
+        Cooling Offset & Differential (exposed via \cmd{DIF}) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Alarm Types}
+
+\begin{itemize}
+    \item Power loss 1 / Power loss 2
+    \item Fire/smoke
+    \item Low temperature
+    \item High temperature 1 / High temperature 2
+    \item Controller failure
+\end{itemize}
+
+\subsection{IceQube Controller}
+
+The IceQube V Series controller is accessible via HTTP at port 80. Its available functions are listed in Table~\ref{tab:iceqube-functions}.
+
+\subsubsection{Available Functions}
+
+\begin{table}[htbp]
+    \centering
+    \caption{IceQube Functions}
+    \label{tab:iceqube-functions}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{Function} & \textbf{Description} \\
+        \midrule
+        Status & Cooling, heating, alarm, and filter status LEDs \\
+        Lead Status & Whether this unit is the lead unit \\
+        Temperatures & Enclosure and condenser temperatures \\
+        Set Point & Cooling on temperature (exposed via \cmd{TMP}) \\
+        Cooling Offset & Offset from set point (exposed via \cmd{DIF}) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{WebRelay Control}
+
+Some sites use a WebRelay-10 device to control HVAC unit power for recovery from hung controllers. The available functions are listed in Table~\ref{tab:webrelay-functions}.
+
+\subsubsection{Available Functions}
+
+\begin{table}[htbp]
+    \centering
+    \caption{WebRelay Functions}
+    \label{tab:webrelay-functions}
+    \begin{tabular}{lp{8cm}}
+        \toprule
+        \textbf{Function} & \textbf{Description} \\
+        \midrule
+        Get State & Query relay state (on/off) \\
+        Set State & Set relay to off (0), on (1), or cycle (2) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{noteBox}
+WebRelay control is not exposed through MCS. It is available programmatically through the \texttt{shlQube} module functions: \texttt{get\_webrelay\_status()}, \texttt{get\_webrelay\_state()}, \texttt{set\_webrelay\_state()}.
+\end{noteBox}
