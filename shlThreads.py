@@ -1438,7 +1438,7 @@ class Weather(object):
                 conn.row_factory = sqlite3.Row
                 
                 c = conn.cursor()
-                c.execute("SELECT * FROM archive ORDER BY dateTime DESC")
+                c.execute("SELECT * FROM archive ORDER BY dateTime DESC LIMIT 1")
                 row = c.fetchone()
                 
                 self.updatetime = int(row['dateTime'])
