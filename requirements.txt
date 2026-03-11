@@ -3,3 +3,4 @@ json_minify
 lwa_auth
 pysnmp >= 4.4.3
 requests
+backports.zoneinfo; python_version < '3.9'
