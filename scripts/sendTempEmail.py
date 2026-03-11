@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
 import os
-import pytz
 import time
 import uuid
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
+    
 from socket import gethostname
 
 import smtplib
@@ -14,8 +18,7 @@ from email.mime.text import MIMEText
 from lwa_auth import STORE as LWA_AUTH_STORE
 
 # Timezones
-UTC = pytz.utc
-MST = pytz.timezone('US/Mountain')
+MST = zoneinfo.ZoneInfo('America/Denver')
 
 # Site
 SITE = gethostname().split('-', 1)[0]
@@ -95,8 +98,7 @@ shlTime = float(output[0])
 shlTemp = max([float(v) for v in output[1:]])
 
 ## Timestamp to time
-shlTime = datetime.utcfromtimestamp(shlTime)
-shlTime = UTC.localize(shlTime)
+shlTime = datetime.fromtimestamp(shlTime, tz=timezone.utc)
 shlTime = shlTime.astimezone(MST)
 
 ## C to F

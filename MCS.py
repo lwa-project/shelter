@@ -21,7 +21,7 @@ try:
 except ImportError:
     from io import StringIO
     
-from datetime import datetime
+from datetime import datetime, timezone
 
 __version__ = "0.3"
 __all__ = ['MCS_RCV_BYTES', 'getTime', 'Communicate']
@@ -37,7 +37,7 @@ def getTime():
     """
     
     # determine current time
-    dt = datetime.utcnow()
+    dt = datetime.now(tz=timezone.utc)
     year        = dt.year             
     month       = dt.month      
     day         = dt.day    

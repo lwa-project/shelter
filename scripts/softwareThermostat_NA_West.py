@@ -9,7 +9,7 @@ import os
 import sys
 import time
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 sys.path.append('/lwa/software')
 
 import shlQube
@@ -68,7 +68,7 @@ def main(args):
     tlast = 0.0
     while True:
         # Make sure we haven't been running too long
-        tnow = datetime.utcnow()
+        tnow = datetime.now(tz=timezone.utc)
         tnow_str = tnow.strftime("%Y-%m-%d %H:%M:%S")
         if time.time() - tstart > 86400:
             print(f"[{tnow_str}] Running for over 24 hr, exiting")

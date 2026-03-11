@@ -12,7 +12,7 @@ import logging
 import sqlite3
 import threading
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -1610,7 +1610,7 @@ class Weather(object):
         if self.updatetime is None:
             return None
             
-        return datetime.utcfromtimestamp(self.updatetime)
+        return datetime.fromtimestamp(self.updatetime, tz=timezone.utc)
         
     def getTemperature(self, DegreesF=True):
         """
@@ -1826,7 +1826,7 @@ class Lightning(object):
                 except AttributeError:
                     pass
                 mtch = dataRE.match(data)
-                t = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
+                t = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc)
                 
                 # If we have a lightning strike, figure out it if is close
                 # enough to warrant saving the strike info.
@@ -1861,7 +1861,7 @@ class Lightning(object):
         specified radius in km and the spcified time interval in minutes.
         """
         
-        tNow = datetime.utcnow()
+        tNow = datetime.now(tz=timezone.utc)
         tWindow = tNow - timedelta(minutes=int(interval))
         counter = 0
         
@@ -1939,7 +1939,7 @@ class Outage(object):
         ## 120 VAC
         try:
             with open(os.path.join(STATE_DIR, 'inPowerFailure120'), 'r') as fh:
-                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
+                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc)
                 
             self.outage_120 = t
             shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 120VAC')
@@ -1950,7 +1950,7 @@ class Outage(object):
         ### 240 VAC
         try:
             with open(os.path.join(STATE_DIR, 'inPowerFailure240'), 'r') as fh:
-                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f")
+                t = datetime.strptime(fh.read(), "%Y-%m-%d %H:%M:%S.%f").replace(tz=timezone.utc)
                 
             self.outage_240 = t
             shlThreadsLogger.info('Outage: start - restored a saved power outage from disk - 240VAC')
@@ -2010,7 +2010,7 @@ class Outage(object):
         #create a UDP socket
         sock = self._connect()
         
-        tCull = datetime.utcnow()
+        tCull = datetime.now(tz=timezone.utc)
         deltaCull = timedelta(minutes=2)
         deltaAging = timedelta(seconds=int(self.aging))
         
@@ -2018,7 +2018,7 @@ class Outage(object):
         
         while self.alive.isSet():
             try:
-                tNow = datetime.utcnow()
+                tNow = datetime.now(tz=timezone.utc)
                 try:
                     data, addr = sock.recvfrom(1024)
                     
@@ -2042,7 +2042,7 @@ class Outage(object):
                 except AttributeError:
                     pass
                 mtch = dataRE.match(data)
-                tEvent = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f")
+                tEvent = datetime.strptime(mtch.group('date'), "%Y-%m-%d %H:%M:%S.%f").replace(tzinfo=timezone.utc)
                 
                 # Figure out what to do with the notification
                 if mtch.group('type') == 'FLICKER':
