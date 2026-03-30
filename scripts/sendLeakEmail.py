@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import time
 import uuid
 import subprocess
@@ -52,6 +53,9 @@ def getLast(filename, N):
     Function that takes in a filename and returns the last N lines of the file.
     """
     
+    if not os.path.exists(filename):
+        raise FileNotFoundError("No such file: '%s'" % filename)
+        
     output = subprocess.check_output(['tail', '-n%i' % int(N), filename], stderr=subprocess.DEVNULL)
     output = output.decode('ascii')
     output = output.split('\n')[:-1]
@@ -87,7 +91,11 @@ def sendEmail(subject, message, debug=False):
 
 
 ## Read in the enviromux smoke detector status
-output = getLast(os.path.join(DATA_DIR, 'enviromux.txt'), 1)
+try:
+    output = getLast(os.path.join(DATA_DIR, 'enviromux.txt'), 1)
+except FileNotFoundError as e:
+    print("WARNING: %s" % str(e))
+    sys.exit()
 output = output[0].split(',', 1)
 shlTime = float(output[0])
 shlLeak = (output[1].find('water=True') != -1)
