@@ -30,7 +30,7 @@ CRITICAL_TEMP = 80.00
 if SITE == 'lwa1':
     CRITICAL_TEMP = 83.00
 try:
-    with open('/lwa/software/defaults.json', 'rb') as fh:
+    with open('/lwa/software/defaults.json', 'r') as fh:
         config = json.loads(json_minify.json_minify(fh.read()))
         
     if config['enviromux']['devices']:
