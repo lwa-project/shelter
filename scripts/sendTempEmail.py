@@ -26,6 +26,7 @@ MST = zoneinfo.ZoneInfo('America/Denver')
 SITE = gethostname().split('-', 1)[0]
 
 # Critical shelter temperature (F)
+IS_ENVIROMUX = False
 CRITICAL_TEMP = 80.00
 if SITE == 'lwa1':
     CRITICAL_TEMP = 83.00
@@ -34,6 +35,7 @@ try:
         config = json.loads(json_minify.json_minify(fh.read()))
         
     if config['enviromux']['devices']:
+        IS_ENVIROMUX = True
         CRITICAL_TEMP = config['enviromux']['warning_temp']
     else:
         CRITICAL_TEMP = config['thermometers']['warning_temp']
@@ -105,10 +107,13 @@ def sendEmail(subject, message, debug=False):
 
 
 ## Read in the shelter temperature
-output = getLast(os.path.join(DATA_DIR, 'thermometer01.txt'), 1)
+temp_filename = 'thermemter01.txt'
+if IS_ENVIROMUX:
+    temp_filename = 'enviromux.txt'
+output = getLast(os.path.join(DATA_DIR, temp_filename), 1)
 output = output[0].split(',')
 shlTime = float(output[0])
-shlTemp = max([float(v) for v in output[1:]])
+shlTemp = max([float(v) for v in output[1:3]])
 
 ## Timestamp to time
 shlTime = datetime.fromtimestamp(shlTime, tz=timezone.utc)
