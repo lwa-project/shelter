@@ -71,6 +71,9 @@ def getLast(filename, N):
     Function that takes in a filename and returns the last N lines of the file.
     """
     
+    if not os.path.exists(filename):
+        raise FileNotFoundError("No such file: '%s'" % filename)
+        
     output = subprocess.check_output(['tail', '-n%i' % int(N), filename], stderr=subprocess.DEVNULL)
     output = output.decode('ascii')
     output = output.split('\n')[:-1]
@@ -106,7 +109,7 @@ def sendEmail(subject, message, debug=False):
 
 
 ## Read in the shelter temperature
-temp_filename = 'thermemter01.txt'
+temp_filename = 'thermometer01.txt'
 if IS_ENVIROMUX:
     temp_filename = 'enviromux.txt'
 output = getLast(os.path.join(DATA_DIR, temp_filename), 1)
