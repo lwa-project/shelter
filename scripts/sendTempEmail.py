@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
 import os
+import json
 import time
 import uuid
 import subprocess
+import json_minify
 from datetime import datetime, timezone
 try:
     import zoneinfo
 except ImportError:
     from backports import zoneinfo
-    
+
 from socket import gethostname
 
 import smtplib
@@ -27,6 +29,17 @@ SITE = gethostname().split('-', 1)[0]
 CRITICAL_TEMP = 80.00
 if SITE == 'lwa1':
     CRITICAL_TEMP = 83.00
+try:
+    with open('/lwa/software/defaults.json', 'rb') as fh:
+        config = json.loads(json_minify.json_minify(fh.read()))
+        
+    if config['enviromux']['devices']:
+        CRITICAL_TEMP = config['enviromux']['warning_temp']
+    else:
+        CRITICAL_TEMP = config['thermometers']['warning_temp']
+        
+except Exception as e:
+    print("WARNING: Could not load temperature limit from defaults.json: %s" % str(e))
 
 # Time (min) after a warning e-mail is sent for an "all-clear"
 CRITICAL_CLEAR_TIME = 30
