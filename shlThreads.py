@@ -1692,8 +1692,11 @@ class Lightning(object):
         """
         
         if sock is not None:
-            sock.close()
-            
+            try:
+                sock.close()
+            except Exception as e:
+                self.log.warning('Lightning: _connect error closing out the existing socket: %s', str(e))
+                
         #create a UDP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         #allow multiple sockets to use the same PORT number
@@ -1736,8 +1739,17 @@ class Lightning(object):
                         was_unreachable = 0
                         self.SHLCallbackInstance.processUnreachable('cleared-lightning-detector')
                         
-                except socket.timeout:
+                except (socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
+                    if self.SHLCallbackInstance is not None:
+                        was_unreachable = 5
+                        self.SHLCallbackInstance.processUnreachable('lightning-detector')
+                        
+                    sock = self._connect(sock)
+                    continue
+                    
+                except OSError as e:
+                    shlThreadsLogger.warning('Lightning: monitorThread OS-level error (%s) on socket, re-trying', str(e))
                     if self.SHLCallbackInstance is not None:
                         was_unreachable = 5
                         self.SHLCallbackInstance.processUnreachable('lightning-detector')
@@ -1905,8 +1917,11 @@ class Outage(object):
         """
         
         if sock is not None:
-            sock.close()
-            
+            try:
+                sock.close()
+            except Exception as e:
+                self.log.warning('Outage: _connect error closing out the existing socket: %s', str(e))
+                
         #create a UDP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         #allow multiple sockets to use the same PORT number
@@ -1951,8 +1966,18 @@ class Outage(object):
                     elif was_unreachable == 1:
                         was_unreachable = 0
                         self.SHLCallbackInstance.processUnreachable('cleared-voltage-monitor')
+                        
                 except socket.timeout:
                     shlThreadsLogger.warning('Outage: monitorThread timeout on socket, re-trying')
+                    if self.SHLCallbackInstance is not None:
+                        was_unreachable = 5
+                        self.SHLCallbackInstance.processUnreachable('voltage-monitor')
+                        
+                    sock = self._connect(sock)
+                    continue
+                    
+                except OSError as e:
+                    shlThreadsLogger.warning('Outage: monitorThread OS-leve error (%s) on socket, re-trying', str(e))
                     if self.SHLCallbackInstance is not None:
                         was_unreachable = 5
                         self.SHLCallbackInstance.processUnreachable('voltage-monitor')
