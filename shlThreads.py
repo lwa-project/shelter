@@ -1814,7 +1814,7 @@ class Lightning(object):
                         was_unreachable = 0
                         self.SHLCallbackInstance.processUnreachable('cleared-lightning-detector')
                         
-                except (socket.timeout:
+                except socket.timeout:
                     shlThreadsLogger.warning('Lightning: monitorThread timeout on socket, re-trying')
                     if self.SHLCallbackInstance is not None:
                         was_unreachable = 5
