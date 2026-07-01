@@ -1184,7 +1184,7 @@ class ShippingContainer(object):
         if not smokeDetected:
             # Everything is OK
             if self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('SMOKE!'):
-                ## From ERROR
+                self.currentState['status'] = 'NORMAL'
                 self.currentState['info'] = 'Error condition cleared, system operating normally'
                 
                 shlFunctionsLogger.info('Shelter smoke detector condition cleared')
@@ -1206,7 +1206,7 @@ class ShippingContainer(object):
         if not waterDetected:
             # Everything is OK
             if self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('WATER!'):
-                ## From ERROR
+                self.currentState['status'] = 'NORMAL'
                 self.currentState['info'] = 'Error condition cleared, system operating normally'
                 
                 shlFunctionsLogger.info('Shelter water sensor condition cleared')
