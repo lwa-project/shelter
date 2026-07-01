@@ -73,12 +73,12 @@
         "description": "ADP - 240VAC - #2"
       },
       "4": {
-        "type": "APCUPS",
+        "type": "APC",
         "ip": "172.16.1.116",
         "port": 161,
         "security_model": ["my-agent", "private", 0],
-        "noutlet": 3,
-        "description": "ADP - 240VAC - UPS"
+        "noutlet": 8,
+        "description": "ADP - 240VAC - #3"
       },
       "5": {
         "type": "APCUPS",
