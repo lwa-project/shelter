@@ -287,7 +287,7 @@ def get_webrelay_state(ip_address, relay):
         is_list = False
         relay = [relay,]
     for r in relay:
-        if r < 0 or r > 10:
+        if r < 1 or r > 11:
             raise ValueError(f"Invalid relay '{r}'")
             
     status = get_webrelay_status(ip_address)
@@ -316,7 +316,7 @@ def set_webrelay_state(ip_address, relay, state):
     if not isinstance(relay, (tuple, list)):
         relay = [relay,]
     for r in relay:
-        if r < 0 or r > 10:
+        if r < 1 or r > 11:
             raise ValueError(f"Invalid relay '{r}'")
     if state not in (0, 1, 2):
         raise ValueError(f"Invalid state '{state}'")
