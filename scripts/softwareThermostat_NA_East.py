@@ -19,7 +19,7 @@ from typing import Optional
 
 # WebRelay setup
 IP_ADDRESS = '172.16.1.152'
-RELAY_PORTS = [0, 1]
+RELAY_PORTS = [1, 2]
 
 # Temperature limits for turning the HVAC off/on
 TEMP_HVAC_OFF_F = 65
