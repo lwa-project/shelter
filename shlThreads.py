@@ -1424,9 +1424,6 @@ class Weather(object):
         while self.alive.isSet():
             tStart = time.time()
             
-            updated_list = []
-            updated_age = 86400
-            
             try:
                 # Make sure we don't try near the edge of a minute
                 tNow = int(time.time())
@@ -1434,85 +1431,47 @@ class Weather(object):
                     time.sleep(5)
                     tNow = int(time.time())
                     
-                conn = sqlite3.connect(self.database, timeout=15)
-                conn.row_factory = sqlite3.Row
-                
-                c = conn.cursor()
-                c.execute("SELECT * FROM archive ORDER BY dateTime DESC LIMIT 1")
-                row = c.fetchone()
-                
-                self.updatetime = int(row['dateTime'])
-                updated_list.append('updatetime')
-                updated_age = tStart - self.updatetime
-                
-                self.usUnits = bool(row['usUnits'])
-                updated_list.append('usUnits')
-                self.pressure = float(row['barometer'])
-                updated_list.append('pressure')
-                self.temperature = float(row['outTemp'])
-                updated_list.append('temperature')
-                self.humidity = float(row['outHumidity'])
-                updated_list.append('humidity')
-                self.windSpeed = float(row['windSpeed'])
-                updated_list.append('windSpeed')
-                self.windDir = float(row['windDir'])
-                updated_list.append('windDir')
-                self.windGust = float(row['windGust'])
-                updated_list.append('windGust')
-                self.windGustDir = float(row['windGustDir'])
-                updated_list.append('windGustDir')
-                self.rain = float(row['rain'])
-                updated_list.append('rain')
-                self.rainRate = float(row['rainRate'])
-                updated_list.append('rainRate')
-                
-                conn.close()
-                
+                with sqlite3.connect(f"file:{self.database}?mode=ro", uri=True, timeout=15) as conn:
+                    conn.row_factory = sqlite3.Row
+                    
+                    c = conn.cursor()
+                    c.execute("SELECT * FROM archive ORDER BY dateTime DESC LIMIT 1")
+                    row = c.fetchone()
+                    
+                    self.updatetime = row['dateTime']
+                    self.usUnits = row['usUnits']
+                    self.pressure = row['barometer']
+                    self.temperature = row['outTemp']
+                    self.humidity = row['outHumidity']
+                    self.windSpeed = row['windSpeed']
+                    self.windDir = row['windDir']
+                    self.windGust = row['windGust']
+                    self.windGustDir = row['windGustDir']
+                    self.rain = row['rain']
+                    self.rainRate = row['rainRate']
+                    
             except Exception as e:
                 _LogThreadException(self, e, logger=shlThreadsLogger)
                 
-                try:
-                    conn.close()
-                except:
-                    pass
-                    
                 if self.lastError is not None:
                     self.lastError = "%s; %s" % (self.lastError, str(e))
                 else:
                     self.lastError = str(e)
-                if 'updatetime' not in updated_list:
-                    self.updatetime = None
-                    if os.path.exists(self.database):
-                        updated_age = tStart - os.path.getmtime(self.database)
-                        
-                if 'usUnits' not in updated_list:
-                    self.usUnits = False
-                if 'pressure' not in updated_list:
-                    self.pressure = None
-                if 'temperature' not in updated_list:
-                    self.temperature = None
-                if 'humidity' not in updated_list:
-                    self.humidity = None
-                if 'windSpeed' not in updated_list:
-                    self.windSpeed = None
-                if 'windDir' not in updated_list:
-                    self.windDir = None
-                if 'windGust' not in updated_list:
-                    self.windGust = None
-                if 'windGustDir' not in updated_list:
-                    self.windGustDir = None
-                if 'rain' not in updated_list:
-                    self.rain = None
-                if 'rainRate' not in updated_list:
-                    self.rainRate = None
                     
+            if self.updatetime is not None:
+                updated_age = tStart - self.updatetime
+            elif os.path.exists(self.database):
+                updated_age = tStart - os.path.getmtime(self.database)
+            else:
+                updated_age = 86400
+                
             if self.SHLCallbackInstance is not None:
                 if updated_age > 900:
                     was_unreachable = 2
                     self.SHLCallbackInstance.processUnreachable('weather-station')
                 else:
-                    if was_unreachable > 1:
-                        was_unreachable -= 1
+                    if was_unreachable == 2:
+                        was_unreachable = 1
                     elif was_unreachable == 1:
                         was_unreachable = 0
                         self.SHLCallbackInstance.processUnreachable('cleared-weather-station')
