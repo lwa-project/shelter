@@ -1490,44 +1490,6 @@ class Weather(object):
                     time.sleep(5)
                     tNow = int(time.time())
                     
-<<<<<<< HEAD
-                conn = sqlite3.connect(self.database, timeout=15)
-                conn.row_factory = sqlite3.Row
-                
-                c = conn.cursor()
-                c.execute("SELECT * FROM archive ORDER BY dateTime DESC LIMIT 1")
-                row = c.fetchone()
-                
-                self.updatetime = int(row['dateTime'])
-                updated_list.append('updatetime')
-                updated_age = tStart - self.updatetime
-                
-                self.usUnits = bool(row['usUnits'])
-                updated_list.append('usUnits')
-                self.pressure = float(row['barometer'])
-                updated_list.append('pressure')
-                self.temperature = float(row['outTemp'])
-                updated_list.append('temperature')
-                self.humidity = float(row['outHumidity'])
-                updated_list.append('humidity')
-                self.windSpeed = float(row['windSpeed'])
-                updated_list.append('windSpeed')
-                self.windDir = float(row['windDir'])
-                updated_list.append('windDir')
-                self.windGust = float(row['windGust'])
-                updated_list.append('windGust')
-                self.windGustDir = float(row['windGustDir'])
-                updated_list.append('windGustDir')
-                self.rain = float(row['rain'])
-                updated_list.append('rain')
-                self.rainRate = float(row['rainRate'])
-                updated_list.append('rainRate')
-                
-                updated_age = tStart - self.updatetime
-                
-                conn.close()
-                
-=======
                 with sqlite3.connect(f"file:{self.database}?mode=ro", uri=True, timeout=15) as conn:
                     conn.row_factory = sqlite3.Row
                     
@@ -1547,7 +1509,6 @@ class Weather(object):
                     self.rain = row['rain']
                     self.rainRate = row['rainRate']
                     
->>>>>>> main
             except Exception as e:
                 _LogThreadException(self, e, logger=shlThreadsLogger)
                 
