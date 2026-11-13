@@ -542,7 +542,7 @@ class EnviroMux(object):
                         door_opened_age = time.time() - self.door_first_opened
                         if door_opened_age > 4*3600:
                             self.SHLCallbackInstance.processDoorState('open')
-                    else:
+                    elif self.door_open is not None:
                         self.SHLCallbackInstance.processDoorState('closed')
                         self.door_first_opened = None
                         
