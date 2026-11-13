@@ -1097,7 +1097,7 @@ class ShippingContainer(object):
                 shlFunctionsLogger.info('Shelter temperature warning condition cleared')
                 
             elif self.currentState['status'] == 'ERROR' and self.currentState['info'].startswith('TEMPERATURE!'):
-                ## From ERROR
+                self.currentState['status'] = 'NORMAL'
                 self.currentState['info'] = 'Error condition cleared, system operating normally'
                 
                 shlFunctionsLogger.info('Shelter temperature critical condition cleared')
