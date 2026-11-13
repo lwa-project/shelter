@@ -652,8 +652,8 @@ class ShippingContainer(object):
             
     def getDoorOpen(self):
         """
-        Poll the EnivroMux for the state of the door and return a two-element
-        tuple (sucess, value) where success is a boolean related to if the door
+        Poll the EnviroMux for the state of the door and return a two-element
+        tuple (success, value) where success is a boolean related to if the door
         state was found.  See the currentState['lastLog'] entry for the reason
         for failure if the returned success value is False.
         """
