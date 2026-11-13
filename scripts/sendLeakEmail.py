@@ -90,7 +90,7 @@ def sendEmail(subject, message, debug=False):
         return False
 
 
-## Read in the enviromux smoke detector status
+## Read in the enviromux leak detector status
 try:
     output = getLast(os.path.join(DATA_DIR, 'enviromux.txt'), 1)
 except FileNotFoundError as e:
